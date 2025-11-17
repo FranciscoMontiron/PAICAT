@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+INICIO_RAPIDO.md
+*.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies (se instalan en el contenedor)
+vendor/
+node_modules/
+
+# Logs
+*.log
+storage/logs/*
+
+# Environment
+.env
+.env.*
+
+# Testing
+coverage/
+.phpunit.result.cache
+
+# Build artifacts
+public/hot
+public/storage
+public/build
+
+# Backup files
+*.sql
+*.backup
+
+# Temp files
+tmp/
+temp/

@@ -1,0 +1,156 @@
+services:
+  # Servidor web Nginx
+  nginx:
+    image: nginx:alpine
+    container_name: paicat_nginx
+    ports:
+      - "80:80"
+    volumes:
+      # Montar todo el proyecto para que Nginx pueda servir archivos estáticos
+      - ./:/var/www/html:cached
+      # Archivos de configuración
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+    networks:
+      - paicat_network
+    restart: unless-stopped
+
+  # PHP-FPM 8.2
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: paicat_php
+    volumes:
+      # Optimización de volúmenes para Windows Docker Desktop
+      # Usar 'cached' en lugar de 'delegated' para mejor rendimiento en Windows
+      - ./:/var/www/html:cached
+    environment:
+      - DB_CONNECTION=paicat
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_DATABASE=paicat
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=secret
+      - PHP_OPCACHE_ENABLE=1
+      - PHP_OPCACHE_VALIDATE_TIMESTAMPS=1
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - paicat_network
+    restart: unless-stopped
+
+  # Vite Dev Server (HMR para desarrollo)
+  vite:
+    image: node:20-alpine
+    container_name: paicat_vite
+    working_dir: /var/www/html
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./:/var/www/html:cached
+      - vite_node_modules:/var/www/html/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    networks:
+      - paicat_network
+    restart: unless-stopped
+    depends_on:
+      - php
+
+  # MariaDB 11.7
+  mariadb:
+    image: mariadb:11.7
+    container_name: paicat_mariadb
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: paicat
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MARIADB_CHARACTER_SET_SERVER: utf8mb4
+      MARIADB_COLLATE_SERVER: utf8mb4_unicode_ci
+    command: >
+      --innodb-buffer-pool-size=512M
+      --innodb-log-file-size=128M
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-method=O_DIRECT
+      --query-cache-type=1
+      --query-cache-size=64M
+      --max-connections=200
+      --table-open-cache=4000
+      --thread-cache-size=50
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./docker/mariadb/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./backup_27-10-2025.sql:/docker-entrypoint-initdb.d/02-backup.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - paicat_network
+    restart: unless-stopped
+
+  # Redis para cache y queues
+  redis:
+    image: redis:7-alpine
+    container_name: paicat_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - paicat_network
+    restart: unless-stopped
+
+  # PHPMyAdmin
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: paicat_phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+      UPLOAD_LIMIT: 100M
+    depends_on:
+      - mariadb
+    networks:
+      - paicat_network
+    restart: unless-stopped
+
+  # Mailhog
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: paicat_mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - paicat_network
+    restart: unless-stopped
+
+networks:
+  paicat_network:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+    driver: local
+  redis_data:
+    driver: local
+  vite_node_modules:
+    driver: local
