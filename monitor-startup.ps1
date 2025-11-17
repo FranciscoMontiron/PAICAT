@@ -1,9 +1,9 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Monitorea el progreso de inicialización de PAICAT
+    Monitorea el progreso de inicializacion de PAICAT
 .DESCRIPTION
-    Script que muestra en tiempo real el progreso de inicialización del contenedor PHP
+    Script que muestra en tiempo real el progreso de inicializacion del contenedor PHP
     con barra de progreso y estado de cada paso del proceso.
 #>
 
@@ -39,7 +39,7 @@ function Show-ProgressBar {
     $completed = [math]::Floor($percent / 2)
     $remaining = 50 - $completed
     
-    $bar = "[" + ("█" * $completed) + ("░" * $remaining) + "]"
+    $bar = "[" + ("" * $completed) + ("" * $remaining) + "]"
     Write-Host "`r$bar $percent% - $Activity" -NoNewline -ForegroundColor Cyan
 }
 
@@ -60,7 +60,7 @@ Write-Host "   Monitor de Inicializacion de PAICAT" -ForegroundColor Magenta
 Write-Host "=======================================================" -ForegroundColor Magenta
 Write-Host ""
 
-# Verificar que Docker esté corriendo
+# Verificar que Docker este corriendo
 Write-Host "[?] Verificando Docker..." -ForegroundColor Yellow
 $dockerRunning = docker ps 2>&1
 if ($LASTEXITCODE -ne 0) {
@@ -85,17 +85,17 @@ if (-not $phpContainer) {
 Write-Host "[+] Contenedores encontrados" -ForegroundColor Green
 Write-Host ""
 
-# Pasos del proceso de inicialización
+# Pasos del proceso de inicializacion
 $steps = @(
-    @{ Name = "Instalación de dependencias Composer"; Pattern = "Generating optimized autoload files"; Progress = 15 }
+    @{ Name = "Instalacion de dependencias Composer"; Pattern = "Generating optimized autoload files"; Progress = 15 }
     @{ Name = "Descubrimiento de paquetes"; Pattern = "Discovering packages"; Progress = 25 }
-    @{ Name = "Generación de clave de aplicación"; Pattern = "Application key set successfully"; Progress = 35 }
-    @{ Name = "Limpieza de caché"; Pattern = "Configuration cache cleared successfully"; Progress = 45 }
-    @{ Name = "Ejecución de migraciones"; Pattern = "Running migrations"; Progress = 60 }
-    @{ Name = "Ejecución de seeders"; Pattern = "Seeding database"; Progress = 70 }
-    @{ Name = "Optimización de aplicación"; Pattern = "Configuration cached successfully"; Progress = 80 }
-    @{ Name = "Creación de enlaces simbólicos"; Pattern = "link has been connected"; Progress = 90 }
-    @{ Name = "Configuración de permisos"; Pattern = "Configurando permisos"; Progress = 95 }
+    @{ Name = "Generacion de clave de aplicacion"; Pattern = "Application key set successfully"; Progress = 35 }
+    @{ Name = "Limpieza de cache"; Pattern = "Configuration cache cleared successfully"; Progress = 45 }
+    @{ Name = "Ejecucion de migraciones"; Pattern = "Running migrations"; Progress = 60 }
+    @{ Name = "Ejecucion de seeders"; Pattern = "Seeding database"; Progress = 70 }
+    @{ Name = "Optimizacion de aplicacion"; Pattern = "Configuration cached successfully"; Progress = 80 }
+    @{ Name = "Creacion de enlaces simbolicos"; Pattern = "link has been connected"; Progress = 90 }
+    @{ Name = "Configuracion de permisos"; Pattern = "Configurando permisos"; Progress = 95 }
     @{ Name = "PHP-FPM iniciado"; Pattern = "ready to handle connections"; Progress = 100 }
 )
 
@@ -106,7 +106,7 @@ Write-Host "-------------------------------------------------------" -Foreground
 Write-Host ""
 
 # Monitoreo en tiempo real
-$maxAttempts = 120  # 2 minutos máximo
+$maxAttempts = 120  # 2 minutos maximo
 $attempt = 0
 $allDone = $false
 
@@ -121,7 +121,7 @@ while (-not $allDone -and $attempt -lt $maxAttempts) {
                 $completed += $step.Name
                 $currentStep = $step.Progress
                 
-                # Limpiar línea de progreso anterior
+                # Limpiar linea de progreso anterior
                 Write-Host "`r" + (" " * 80) + "`r" -NoNewline
                 
                 # Mostrar paso completado
@@ -134,7 +134,7 @@ while (-not $allDone -and $attempt -lt $maxAttempts) {
         }
     }
     
-    # Verificar si todo está completo
+    # Verificar si todo esta completo
     if ($completed.Count -eq $steps.Count) {
         $allDone = $true
         break
@@ -159,9 +159,9 @@ if ($allDone) {
     Write-Host "   Password: admin123" -ForegroundColor White
     Write-Host ""
     Write-Host "[*] Servicios disponibles:" -ForegroundColor Cyan
-    Write-Host "   • PHPMyAdmin: http://localhost:8081" -ForegroundColor White
-    Write-Host "   • Mailhog:    http://localhost:8025" -ForegroundColor White
-    Write-Host "   • Vite HMR:   http://localhost:5173" -ForegroundColor White
+    Write-Host "   - PHPMyAdmin: http://localhost:8081" -ForegroundColor White
+    Write-Host "   - Mailhog:    http://localhost:8025" -ForegroundColor White
+    Write-Host "   - Vite HMR:   http://localhost:5173" -ForegroundColor White
     Write-Host ""
     Write-Host "=======================================================" -ForegroundColor Green
 } else {
@@ -169,12 +169,13 @@ if ($allDone) {
     Write-Host "   [!] Inicializacion en progreso o timeout" -ForegroundColor Yellow
     Write-Host "=======================================================" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "El proceso está tomando más tiempo del esperado." -ForegroundColor Yellow
+    Write-Host "El proceso esta tomando mas tiempo del esperado." -ForegroundColor Yellow
     Write-Host "Puedes verificar los logs manualmente con:" -ForegroundColor Cyan
     Write-Host "   docker logs paicat_php -f" -ForegroundColor White
     Write-Host ""
 }
 
 Write-Host ""
-Write-Host "[i] Tip: Ejecuta este script despues de 'docker-compose up -d'" -ForegroundColor Gray
+Write-Host "[i] Ejecuta este script despues de 'docker-compose up -d'" -ForegroundColor Gray
+Write-Host "[i] O usa el script de instalacion automatica: .\install.ps1" -ForegroundColor Gray
 Write-Host ""

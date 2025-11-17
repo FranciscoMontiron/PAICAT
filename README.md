@@ -2,6 +2,8 @@
 
 Sistema de gestión integral para el Curso de Ingreso de la Universidad Tecnológica Nacional - Facultad Regional La Plata.
 
+> **🚀 ¿Primera vez aquí?** Consulta [INICIO-RAPIDO.md](INICIO-RAPIDO.md) para comenzar en 1 minuto.
+
 ##  Descripción
 
 PAICAT es una plataforma web desarrollada en Laravel 11 que permite gestionar de manera eficiente todo el proceso del curso de ingreso universitario, incluyendo inscripciones, asistencias, calificaciones y generación de reportes.
@@ -33,58 +35,46 @@ git clone https://github.com/tu-usuario/paicat.git
 cd paicat
 ```
 
-### 2. Copiar archivo de configuración
+### 2. Instalación Automática (Recomendado)
 
-```bash
-cp .env.example .env
-```
+El script de instalación se encarga de todo automáticamente:
+- Verifica que Docker esté corriendo
+- Copia el archivo `.env.example` a `.env` si no existe: ```cp .env.example .env ```
+- Levanta los contenedores con `docker-compose up -d`
+- Muestra el progreso de inicialización en tiempo real
+- Instala dependencias, ejecuta migraciones y crea el usuario admin
 
-### 3. Levantar los contenedores Docker
-
-**Opcion 1: Instalacion automatica con monitor de progreso (Recomendado)**
-
-Windows (PowerShell):
+**Windows (PowerShell):**
 ```powershell
 .\install.ps1
 ```
 
-Linux/Mac:
+**Linux/Mac:**
 ```bash
 chmod +x install.sh
 ./install.sh
 ```
 
-Estos scripts ejecutaran automaticamente `docker-compose up -d` y mostraran el progreso de inicializacion en tiempo real con una barra de progreso.
+> **Nota**: La primera inicialización puede tardar 2-3 minutos mientras se descargan las imágenes de Docker, se instalan las dependencias de Composer y NPM, se ejecutan las migraciones y se configura la aplicación. El script te mostrará el progreso de cada paso.
 
-**Opcion 2: Manual**
+### 3. Instalación Manual (Alternativa)
+
+Si prefieres hacerlo manualmente:
 
 ```bash
+# 1. Copiar archivo de configuración
+cp .env.example .env
+
+# 2. Levantar contenedores
 docker-compose up -d
-```
 
-Para ver el progreso de inicializacion:
-
-Windows (PowerShell):
-```powershell
-.\monitor.ps1
-```
-
-Linux/Mac:
-```bash
+# 3. Monitorear el progreso (opcional)
+# Windows:
+.\monitor-startup.ps1
+# Linux/Mac:
 chmod +x monitor-startup.sh
 ./monitor-startup.sh
 ```
-
-> **Importante**: La primera inicializacion puede tardar 1-2 minutos mientras se instalan las dependencias, ejecutan las migraciones y se configura la aplicacion. El monitor te mostrara el progreso de cada paso.
-
-El script de entrypoint se encargara automaticamente de:
-- Esperar a que MariaDB este disponible
-- Crear la base de datos
-- Instalar dependencias de Composer y NPM
-- Generar la clave de la aplicacion
-- Ejecutar las migraciones
-- Ejecutar los seeders (creando el usuario admin)
-- Configurar permisos
 
 ### 4. Acceder a la aplicación
 
@@ -107,6 +97,26 @@ El script de entrypoint se encargara automaticamente de:
 - **Password**: root
 
 ## 🛠️ Desarrollo
+
+### Monitoreo del Sistema
+
+Para verificar el estado de la inicialización después de `docker-compose up -d`:
+
+**Windows:**
+```powershell
+.\monitor-startup.ps1
+```
+
+**Linux/Mac:**
+```bash
+./monitor-startup.sh
+```
+
+Este script muestra en tiempo real el progreso de:
+- Instalación de dependencias
+- Ejecución de migraciones
+- Configuración de la aplicación
+- Estado de los servicios
 
 ### Hot Module Replacement (HMR) Automático
 

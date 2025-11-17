@@ -58,7 +58,7 @@ if [ -f "./monitor-startup.sh" ]; then
     ./monitor-startup.sh
 else
     echo " Esperando a que los servicios estén listos..."
-    sleep 10
+    sleep 30
     echo ""
     echo " Verificando estado de los contenedores..."
     docker-compose ps
