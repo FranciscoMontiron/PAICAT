@@ -41,18 +41,50 @@ cp .env.example .env
 
 ### 3. Levantar los contenedores Docker
 
+**Opcion 1: Instalacion automatica con monitor de progreso (Recomendado)**
+
+Windows (PowerShell):
+```powershell
+.\install.ps1
+```
+
+Linux/Mac:
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+Estos scripts ejecutaran automaticamente `docker-compose up -d` y mostraran el progreso de inicializacion en tiempo real con una barra de progreso.
+
+**Opcion 2: Manual**
+
 ```bash
 docker-compose up -d
 ```
 
-El script de entrypoint se encargará automáticamente de:
--  Esperar a que MariaDB esté disponible
--  Crear la base de datos
--  Instalar dependencias de Composer y NPM
--  Generar la clave de la aplicación
--  Ejecutar las migraciones
--  Ejecutar los seeders (creando el usuario admin)
--  Configurar permisos
+Para ver el progreso de inicializacion:
+
+Windows (PowerShell):
+```powershell
+.\monitor.ps1
+```
+
+Linux/Mac:
+```bash
+chmod +x monitor-startup.sh
+./monitor-startup.sh
+```
+
+> **Importante**: La primera inicializacion puede tardar 1-2 minutos mientras se instalan las dependencias, ejecutan las migraciones y se configura la aplicacion. El monitor te mostrara el progreso de cada paso.
+
+El script de entrypoint se encargara automaticamente de:
+- Esperar a que MariaDB este disponible
+- Crear la base de datos
+- Instalar dependencias de Composer y NPM
+- Generar la clave de la aplicacion
+- Ejecutar las migraciones
+- Ejecutar los seeders (creando el usuario admin)
+- Configurar permisos
 
 ### 4. Acceder a la aplicación
 

@@ -41,12 +41,21 @@ Write-Host " Levantando contenedores Docker..." -ForegroundColor Cyan
 docker-compose up -d
 
 Write-Host ""
-Write-Host " Esperando a que los servicios estén listos..." -ForegroundColor Yellow
-Start-Sleep -Seconds 10
-
+Write-Host " Iniciando monitor de progreso..." -ForegroundColor Cyan
+Write-Host "   (Presiona Ctrl+C si deseas saltar el monitoreo)" -ForegroundColor Gray
 Write-Host ""
-Write-Host " Verificando estado de los contenedores..." -ForegroundColor Yellow
-docker-compose ps
+Start-Sleep -Seconds 2
+
+# Ejecutar monitor de startup
+if (Test-Path ".\monitor.ps1") {
+    & ".\monitor.ps1"
+} else {
+    Write-Host " Esperando a que los servicios estén listos..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 10
+    Write-Host ""
+    Write-Host " Verificando estado de los contenedores..." -ForegroundColor Yellow
+    docker-compose ps
+}
 
 Write-Host ""
 Write-Host "✅ ¡Instalación completada!" -ForegroundColor Green

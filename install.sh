@@ -47,12 +47,22 @@ echo " Levantando contenedores Docker..."
 docker-compose up -d
 
 echo ""
-echo " Esperando a que los servicios estén listos..."
-sleep 10
-
+echo " Iniciando monitor de progreso..."
+echo "   (Presiona Ctrl+C si deseas saltar el monitoreo)"
 echo ""
-echo " Verificando estado de los contenedores..."
-docker-compose ps
+sleep 2
+
+# Ejecutar monitor de startup
+if [ -f "./monitor-startup.sh" ]; then
+    chmod +x ./monitor-startup.sh
+    ./monitor-startup.sh
+else
+    echo " Esperando a que los servicios estén listos..."
+    sleep 10
+    echo ""
+    echo " Verificando estado de los contenedores..."
+    docker-compose ps
+fi
 
 echo ""
 echo " ¡Instalación completada!"
