@@ -57,7 +57,14 @@ Route::middleware('auth')->group(function () {
     // Módulo 2: Comisiones (Admin, Coordinador, Docente)
     Route::prefix('comisiones')->name('comisiones.')->middleware('permission:comisiones.ver')->group(function () {
         Route::get('/', [ComisionController::class, 'index'])->name('index');
-        // TODO: Agregar rutas CRUD cuando se implementen con sus respectivos permisos
+        Route::get('/create', [ComisionController::class, 'create'])->middleware('permission:comisiones.crear')->name('create');
+        Route::post('/', [ComisionController::class, 'store'])->middleware('permission:comisiones.crear')->name('store');
+        Route::get('/{comision}', [ComisionController::class, 'show'])->name('show');
+        Route::get('/{comision}/edit', [ComisionController::class, 'edit'])->middleware('permission:comisiones.editar')->name('edit');
+        Route::put('/{comision}', [ComisionController::class, 'update'])->middleware('permission:comisiones.editar')->name('update');
+        Route::delete('/{comision}', [ComisionController::class, 'destroy'])->middleware('permission:comisiones.eliminar')->name('destroy');
+        Route::post('/{comision}/estado', [ComisionController::class, 'cambiarEstado'])->middleware('permission:comisiones.editar')->name('cambiarEstado');
+        Route::post('/{comision}/docente', [ComisionController::class, 'asignarDocente'])->middleware('permission:comisiones.editar')->name('asignarDocente');
     });
 
     // Módulo 3: Asistencias (todos los roles)

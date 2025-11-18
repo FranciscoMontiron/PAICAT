@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SysacadDataSeeder::class,
             RolesAndPermissionsSeeder::class,
+            CreateAdminUserSeeder::class,
         ]);
     }
 }
