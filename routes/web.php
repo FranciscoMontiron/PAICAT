@@ -70,7 +70,16 @@ Route::middleware('auth')->group(function () {
     // Módulo 3: Asistencias (todos los roles)
     Route::prefix('asistencias')->name('asistencias.')->middleware('permission:asistencias.ver')->group(function () {
         Route::get('/', [AsistenciaController::class, 'index'])->name('index');
-        // TODO: Agregar rutas CRUD cuando se implementen con sus respectivos permisos
+        Route::get('/buscar-alumno', [AsistenciaController::class, 'buscarAlumno'])->middleware('permission:asistencias.editar')->name('buscar-alumno');
+        Route::get('/{comision}/pasar-asistencia', [AsistenciaController::class, 'create'])->middleware('permission:asistencias.crear')->name('create');
+        Route::post('/{comision}/pasar-asistencia', [AsistenciaController::class, 'store'])->middleware('permission:asistencias.crear')->name('store');
+        Route::get('/{comision}/historial', [AsistenciaController::class, 'historial'])->name('historial');
+        Route::get('/{comision}/justificar-inasistencias', [AsistenciaController::class, 'seleccionarAlumno'])->middleware('permission:asistencias.editar')->name('seleccionar-alumno');
+        Route::get('/{comision}/alumno/{inscripcion}', [AsistenciaController::class, 'alumnoHistorial'])->name('alumno.historial');
+        Route::get('/{comision}/alumno/{inscripcion}/justificar', [AsistenciaController::class, 'justificarForm'])->middleware('permission:asistencias.editar')->name('alumno.justificar');
+        Route::post('/{comision}/alumno/{inscripcion}/justificar', [AsistenciaController::class, 'justificarStore'])->middleware('permission:asistencias.editar')->name('alumno.justificar.store');
+        Route::get('/{comision}/editar/{fecha}', [AsistenciaController::class, 'edit'])->middleware('permission:asistencias.editar')->name('edit');
+        Route::put('/{comision}/editar/{fecha}', [AsistenciaController::class, 'update'])->middleware('permission:asistencias.editar')->name('update');
     });
 
     // Módulo 4: Evaluaciones y Notas (todos los roles)
