@@ -234,5 +234,8 @@
             </div>
         </footer>
     </div>
+
+    {{-- Stack para scripts adicionales de cada vista --}}
+    @stack('scripts')
 </body>
 </html>
