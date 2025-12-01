@@ -159,9 +159,7 @@ if ($allDone) {
     Write-Host "   Password: admin123" -ForegroundColor White
     Write-Host ""
     Write-Host "[*] Servicios disponibles:" -ForegroundColor Cyan
-    Write-Host "   - PHPMyAdmin: http://localhost:8081" -ForegroundColor White
-    Write-Host "   - Mailhog:    http://localhost:8025" -ForegroundColor White
-    Write-Host "   - Vite HMR:   http://localhost:5173" -ForegroundColor White
+    Write-Host "   - Vite HMR:   Ejecutar 'npm run dev' localmente" -ForegroundColor White
     Write-Host ""
     Write-Host "=======================================================" -ForegroundColor Green
 } else {

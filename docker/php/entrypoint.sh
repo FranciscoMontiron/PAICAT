@@ -28,6 +28,8 @@ echo " Verificando base de datos..."
 php -r "
 \$pdo = new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', '${DB_USERNAME}', '${DB_PASSWORD}');
 \$pdo->exec('CREATE DATABASE IF NOT EXISTS ${DB_DATABASE} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+$pdo->exec('CREATE DATABASE IF NOT EXISTS sysacad CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+$pdo->exec('CREATE DATABASE IF NOT EXISTS alumnos_utn CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
 "
 echo " Base de datos verificada/creada"
 
@@ -36,6 +38,8 @@ if [ ! -d "vendor" ]; then
     echo " Instalando dependencias de Composer..."
     composer install --no-interaction --optimize-autoloader --no-dev
     echo "Generating optimized autoload files"
+else
+    echo " Vendor ya existe, saltando composer install..."
 fi
 
 # Instalar dependencias de NPM si no existen
@@ -43,6 +47,8 @@ if [ ! -d "node_modules" ]; then
     echo " Instalando dependencias de NPM..."
     npm install --silent
     echo " Dependencias de NPM instaladas"
+else
+    echo " node_modules ya existe, saltando npm install..."
 fi
 
 # Descubrir paquetes Laravel
@@ -70,11 +76,18 @@ echo "🗄️  Ejecutando migraciones..."
 php artisan migrate --force 2>&1 || echo "⚠️  Migraciones ya ejecutadas o error (continuando...)"
 echo " Migraciones completadas"
 
-# Ejecutar seeders
+# Ejecutar seeders SOLO si la base de datos está vacía (o forzado)
+# Verificamos si existe la tabla users y si tiene registros
 echo "Seeding database"
-echo "🌱 Ejecutando seeders..."
-php artisan db:seed --force 2>&1 || echo "⚠️  Seeders ya ejecutados o error (continuando...)"
-echo " Seeders completados"
+USER_COUNT=$(php artisan tinker --execute="echo \App\Models\User::count();" 2>/dev/null | tail -n1)
+
+if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ]; then
+    echo "🌱 Base de datos vacía, ejecutando seeders..."
+    php artisan db:seed --force 2>&1 || echo "⚠️  Error en seeders (continuando...)"
+    echo " Seeders completados"
+else
+    echo "⚠️  La base de datos ya tiene datos ($USER_COUNT usuarios). Saltando seeders."
+fi
 
 # Optimizar aplicación
 echo " Optimizando aplicación..."

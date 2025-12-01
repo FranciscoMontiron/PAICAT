@@ -114,35 +114,6 @@ services:
       - paicat_network
     restart: unless-stopped
 
-  # PHPMyAdmin
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: paicat_phpmyadmin
-    ports:
-      - "8081:80"
-    environment:
-      PMA_HOST: mariadb
-      PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: root
-      UPLOAD_LIMIT: 100M
-    depends_on:
-      - mariadb
-    networks:
-      - paicat_network
-    restart: unless-stopped
-
-  # Mailhog
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: paicat_mailhog
-    ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # Web UI
-    networks:
-      - paicat_network
-    restart: unless-stopped
-
 networks:
   paicat_network:
     driver: bridge
@@ -152,5 +123,4 @@ volumes:
     driver: local
   redis_data:
     driver: local
-  vite_node_modules:
-    driver: local
+

@@ -62,9 +62,7 @@ Write-Host " Instalacion completada!" -ForegroundColor Green
 Write-Host ""
 Write-Host " Informacion importante:" -ForegroundColor Cyan
 Write-Host "   Aplicacion: http://localhost" -ForegroundColor White
-Write-Host "   Vite HMR: http://localhost:5173 (levantado automaticamente)" -ForegroundColor White
-Write-Host "   PHPMyAdmin: http://localhost:8081" -ForegroundColor White
-Write-Host "   Mailhog: http://localhost:8025" -ForegroundColor White
+Write-Host "   Vite HMR:   Ejecutar 'npm run dev' localmente" -ForegroundColor White
 Write-Host ""
 Write-Host "   Usuario admin:" -ForegroundColor Cyan
 Write-Host "      Email: admin@paicat.utn.edu.ar" -ForegroundColor White
