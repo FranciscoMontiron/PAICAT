@@ -91,8 +91,6 @@ services:
       --thread-cache-size=50
     volumes:
       - mariadb_data:/var/lib/mysql
-      - ./docker/mariadb/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ./backup_27-10-2025.sql:/docker-entrypoint-initdb.d/02-backup.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -122,5 +120,7 @@ volumes:
   mariadb_data:
     driver: local
   redis_data:
+    driver: local
+  vite_node_modules:
     driver: local
 

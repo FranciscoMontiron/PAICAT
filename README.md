@@ -91,10 +91,28 @@ chmod +x monitor-startup.sh
 - **Email**: admin@paicat.utn.edu.ar
 - **Password**: admin123
 
-### Base de Datos (PHPMyAdmin)
-- **Servidor**: mariadb
-- **Usuario**: root
-- **Password**: root
+### Base de Datos (Conexión Externa)
+
+Para conectarte a MariaDB desde tu máquina local usando un cliente de base de datos como **MySQL Workbench**, etc o la extensión **Database Client** de VS Code:
+
+| Parámetro | Valor |
+|-----------|-------|
+| **Host** | `localhost` |
+| **Puerto** | `3308` |
+| **Usuario** | `laravel` |
+| **Contraseña** | `secret` |
+| **Base de datos** | `paicat` |
+
+> **Nota**: El puerto es `3308` (no `3306`) porque se mapea así en Docker para evitar conflictos con instalaciones locales de MySQL.
+
+**Conexión como root** (acceso completo):
+- **Usuario**: `root`
+- **Contraseña**: `root`
+
+**Conexión desde terminal:**
+```bash
+docker exec -it paicat_mariadb mariadb -u laravel -psecret paicat
+```
 
 ## 🛠️ Desarrollo
 

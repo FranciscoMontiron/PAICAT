@@ -46,11 +46,41 @@ echo ""
 echo " Levantando contenedores Docker..."
 docker-compose up -d
 
+if [ $? -ne 0 ]; then
+    echo " Error al levantar los contenedores"
+    echo "   Revisa los logs con: docker-compose logs"
+    exit 1
+fi
+
+echo ""
+echo " Esperando a que los contenedores estén listos..."
+
+# Esperar a que el contenedor PHP esté corriendo
+max_wait=60
+waited=0
+while [ $waited -lt $max_wait ]; do
+    php_container=$(docker ps --filter "name=paicat_php" --filter "status=running" --format "{{.Names}}" 2>/dev/null)
+    if [ -n "$php_container" ]; then
+        echo " Contenedor PHP está corriendo"
+        break
+    fi
+    sleep 2
+    waited=$((waited + 2))
+    echo -n "."
+done
+
+if [ $waited -ge $max_wait ]; then
+    echo ""
+    echo " Timeout esperando contenedor PHP"
+    echo "   Verifica los logs con: docker-compose logs php"
+    exit 1
+fi
+
 echo ""
 echo " Iniciando monitor de progreso..."
 echo "   (Presiona Ctrl+C si deseas saltar el monitoreo)"
 echo ""
-sleep 2
+sleep 3
 
 # Ejecutar monitor de startup
 if [ -f "./monitor-startup.sh" ]; then
@@ -69,13 +99,18 @@ echo " ¡Instalación completada!"
 echo ""
 echo " Información importante:"
 echo "    Aplicación: http://localhost"
-echo "    Vite HMR: http://localhost:5173 (levantado automáticamente)"
-echo "    PHPMyAdmin: http://localhost:8081"
-echo "    Mailhog: http://localhost:8025"
+echo "    Vite HMR:   http://localhost:5173"
 echo ""
-echo "      Usuario admin:"
+echo "   Usuario admin:"
 echo "      Email: admin@paicat.utn.edu.ar"
 echo "      Password: admin123"
+echo ""
+echo "   Base de datos (para MySQL Workbench, DBeaver, etc.):"
+echo "      Host:     localhost"
+echo "      Puerto:   3308"
+echo "      Usuario:  laravel"
+echo "      Password: secret"
+echo "      BD:       paicat"
 echo ""
 echo "  Comandos útiles:"
 echo "   docker-compose logs -f       Ver logs"
