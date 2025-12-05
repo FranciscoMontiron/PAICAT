@@ -76,6 +76,12 @@ Route::middleware('auth')->group(function () {
     // Módulo 4: Evaluaciones y Notas (todos los roles)
     Route::prefix('evaluaciones')->name('evaluaciones.')->middleware('permission:evaluaciones.ver')->group(function () {
         Route::get('/', [EvaluacionController::class, 'index'])->name('index');
+        Route::get('/create', [EvaluacionController::class, 'create'])->middleware('permission:evaluaciones.crear')->name('create');
+        Route::post('/', [EvaluacionController::class, 'store'])->middleware('permission:evaluaciones.crear')->name('store');
+        Route::get('/{evaluacion}/edit', [EvaluacionController::class, 'edit'])->middleware('permission:evaluaciones.editar')->name('edit');
+        Route::put('/{evaluacion}', [EvaluacionController::class, 'update'])->middleware('permission:evaluaciones.editar')->name('update');
+        Route::delete('/{evaluacion}', [EvaluacionController::class, 'destroy'])->middleware('permission:evaluaciones.eliminar')->name('destroy');
+       
         // TODO: Agregar rutas CRUD cuando se implementen con sus respectivos permisos
     });
 
