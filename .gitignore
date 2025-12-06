@@ -23,6 +23,7 @@ yarn-error.log
 
 # Documentación local
 /docs
+/identidad_visual_utn
 
 # Testing
 /coverage

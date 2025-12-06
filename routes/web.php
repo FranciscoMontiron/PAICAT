@@ -45,13 +45,19 @@ Route::middleware('auth')->group(function () {
     // Módulo 1: Inscripciones (todos los roles pueden ver)
     Route::prefix('inscripciones')->name('inscripciones.')->middleware('permission:inscripciones.ver')->group(function () {
         Route::get('/', [InscripcionController::class, 'index'])->name('index');
-        // TODO: Agregar rutas CRUD cuando se implementen con sus respectivos permisos
-        // Route::get('/create', [InscripcionController::class, 'create'])->middleware('permission:inscripciones.crear')->name('create');
-        // Route::post('/', [InscripcionController::class, 'store'])->middleware('permission:inscripciones.crear')->name('store');
-        // Route::get('/{id}', [InscripcionController::class, 'show'])->name('show');
-        // Route::get('/{id}/edit', [InscripcionController::class, 'edit'])->middleware('permission:inscripciones.editar')->name('edit');
-        // Route::put('/{id}', [InscripcionController::class, 'update'])->middleware('permission:inscripciones.editar')->name('update');
-        // Route::delete('/{id}', [InscripcionController::class, 'destroy'])->middleware('permission:inscripciones.eliminar')->name('destroy');
+        Route::get('/create', [InscripcionController::class, 'create'])->middleware('permission:inscripciones.crear')->name('create');
+        Route::post('/', [InscripcionController::class, 'store'])->middleware('permission:inscripciones.crear')->name('store');
+        Route::get('/buscar-aspirante', [InscripcionController::class, 'buscarAspirante'])->name('buscar-aspirante');
+        Route::get('/importar', [InscripcionController::class, 'showImportar'])->middleware('permission:inscripciones.crear')->name('importar.show');
+        Route::post('/importar', [InscripcionController::class, 'importar'])->middleware('permission:inscripciones.crear')->name('importar');
+        Route::get('/exportar', [InscripcionController::class, 'exportar'])->name('exportar');
+        Route::get('/{inscripcion}', [InscripcionController::class, 'show'])->name('show');
+        Route::get('/{inscripcion}/edit', [InscripcionController::class, 'edit'])->middleware('permission:inscripciones.editar')->name('edit');
+        Route::put('/{inscripcion}', [InscripcionController::class, 'update'])->middleware('permission:inscripciones.editar')->name('update');
+        Route::post('/{inscripcion}/validar-documentacion', [InscripcionController::class, 'validarDocumentacion'])->middleware('permission:inscripciones.editar')->name('validar-documentacion');
+        Route::post('/{inscripcion}/confirmar', [InscripcionController::class, 'confirmar'])->middleware('permission:inscripciones.editar')->name('confirmar');
+        Route::post('/{inscripcion}/cancelar', [InscripcionController::class, 'cancelar'])->middleware('permission:inscripciones.editar')->name('cancelar');
+        Route::delete('/{inscripcion}', [InscripcionController::class, 'destroy'])->middleware('permission:inscripciones.eliminar')->name('destroy');
     });
 
     // Módulo 2: Comisiones (Admin, Coordinador, Docente)

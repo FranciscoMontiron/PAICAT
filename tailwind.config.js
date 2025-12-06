@@ -10,11 +10,16 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Arial', 'Helvetica', ...defaultTheme.fontFamily.sans],
+                arial: ['Arial', 'Helvetica', 'sans-serif'],
             },
             colors: {
                 'utn-blue': '#003366',
+                'utn-blue-dark': '#002244',
+                'utn-blue-light': '#004488',
                 'utn-orange': '#FF6600',
+                'utn-orange-dark': '#E55A00',
+                'utn-orange-light': '#FF8533',
             },
         },
     },
