@@ -16,13 +16,7 @@ fi
 
 # Esperar a que MariaDB esté listo
 echo " Esperando a que MariaDB esté disponible..."
-until php -r '
-new PDO(
-  "mysql:host=".$_SERVER["DB_HOST"].";port=".$_SERVER["DB_PORT"],
-  $_SERVER["DB_USERNAME"],
-  $_SERVER["DB_PASSWORD"]
-);
-' 2>/dev/null; do
+until php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', '${DB_USERNAME}', '${DB_PASSWORD}');" 2>/dev/null; do
   echo "   MariaDB no está listo - esperando..."
   sleep 2
 done
@@ -31,24 +25,21 @@ echo " MariaDB está listo!"
 
 # Verificar si la base de datos existe, si no, crearla
 echo " Verificando base de datos..."
-php -r '
-$pdo = new PDO(
-  "mysql:host=".$_SERVER["DB_HOST"].";port=".$_SERVER["DB_PORT"],
-  $_SERVER["DB_USERNAME"],
-  $_SERVER["DB_PASSWORD"]
-);
-$pdo->exec(
-  "CREATE DATABASE IF NOT EXISTS ".$_SERVER["DB_DATABASE"]."
-   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-);
-'
+php -r "
+\$pdo = new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', '${DB_USERNAME}', '${DB_PASSWORD}');
+\$pdo->exec('CREATE DATABASE IF NOT EXISTS ${DB_DATABASE} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+$pdo->exec('CREATE DATABASE IF NOT EXISTS sysacad CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+$pdo->exec('CREATE DATABASE IF NOT EXISTS alumnos_utn CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+"
 echo " Base de datos verificada/creada"
 
 # Instalar dependencias de Composer si no existen
 if [ ! -d "vendor" ]; then
     echo " Instalando dependencias de Composer..."
     composer install --no-interaction --optimize-autoloader --no-dev
-    echo " Generating optimized autoload files"
+    echo "Generating optimized autoload files"
+else
+    echo " Vendor ya existe, saltando composer install..."
 fi
 
 # Instalar dependencias de NPM si no existen
@@ -56,17 +47,19 @@ if [ ! -d "node_modules" ]; then
     echo " Instalando dependencias de NPM..."
     npm install --silent
     echo " Dependencias de NPM instaladas"
+else
+    echo " node_modules ya existe, saltando npm install..."
 fi
 
 # Descubrir paquetes Laravel
-echo " Discovering packages"
+echo "Discovering packages"
 php artisan package:discover --ansi 2>/dev/null || true
 
 # Generar clave de aplicación si no existe
 if ! grep -q "APP_KEY=base64:" .env 2>/dev/null; then
     echo " Generando clave de aplicación..."
     php artisan key:generate --force
-    echo " Application key set successfully"
+    echo "Application key set successfully"
 fi
 
 # Limpiar caché antes de migrar
@@ -75,32 +68,41 @@ php artisan config:clear
 php artisan cache:clear
 php artisan route:clear
 php artisan view:clear
-echo " Configuration cache cleared successfully"
+echo "Configuration cache cleared successfully"
 
 # Ejecutar migraciones
+echo "Running migrations"
 echo "🗄️  Ejecutando migraciones..."
 php artisan migrate --force 2>&1 || echo "⚠️  Migraciones ya ejecutadas o error (continuando...)"
 echo " Migraciones completadas"
 
-# Ejecutar seeders
-echo "🌱 Ejecutando seeders..."
-php artisan db:seed --force 2>&1 || echo "⚠️  Seeders ya ejecutados o error (continuando...)"
-echo " Seeders completados"
+# Ejecutar seeders SOLO si la base de datos está vacía (o forzado)
+# Verificamos si existe la tabla users y si tiene registros
+echo "Seeding database"
+USER_COUNT=$(php artisan tinker --execute="echo \App\Models\User::count();" 2>/dev/null | tail -n1)
+
+if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ]; then
+    echo "🌱 Base de datos vacía, ejecutando seeders..."
+    php artisan db:seed --force 2>&1 || echo "⚠️  Error en seeders (continuando...)"
+    echo " Seeders completados"
+else
+    echo "⚠️  La base de datos ya tiene datos ($USER_COUNT usuarios). Saltando seeders."
+fi
 
 # Optimizar aplicación
 echo " Optimizando aplicación..."
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-echo " Configuration cached successfully"
+echo "Configuration cached successfully"
 
 # Crear enlaces simbólicos de storage
 echo " Creando enlaces simbólicos..."
 php artisan storage:link 2>/dev/null || true
-echo " The [public/storage] link has been connected"
+echo "The [public/storage] link has been connected"
 
 # Arreglar permisos
-echo " Configurando permisos..."
+echo "Configurando permisos"
 chown -R www-data:www-data /var/www/html
 chmod -R 775 storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache
@@ -117,7 +119,6 @@ echo "   Password: admin123"
 echo ""
 echo " Accede a la aplicación en: http://localhost"
 echo ""
-
 echo " Iniciando PHP-FPM..."
 
 # Ejecutar el comando original de PHP-FPM
