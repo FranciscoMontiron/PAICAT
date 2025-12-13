@@ -7,7 +7,7 @@
     <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-gray-900">Módulo de Evaluaciones y Notas</h1>
-                <p class="text-gray-600 mt-1">Administra las evaluaciones y notas</p>
+                <p class="text-gray-600 mt-1">Administra las evaluaciones</p>
             </div>
             <a href="{{ route('evaluaciones.create') }}"
                 class="bg-utn-blue text-white px-6 py-3 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center gap-2">
@@ -33,8 +33,12 @@
         </div>
     </div>
     @endif
+
+
+
+
   {{-- Tabla de Evaluaciones --}}
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+    <div class="bg-white shadow-md rounded-lg overflow-hidden mb-8">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -105,7 +109,7 @@
 
                 @empty
                 <tr class="px-6 py-12 text-center text-gray-500">
-                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                    <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                         </svg>
@@ -123,6 +127,72 @@
 
         </table>
     </div>
+
+  <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Comisiones-Notas</h1>
+                <p class="text-gray-600 mt-1">Administra las notas segun la comision</p>
+            </div>
+    </div>
+    
+{{-- Tabla de notas --}}
+    <div class="bg-white shadow-md rounded-lg overflow-hidden mb-8">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comision</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">año</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">turno</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">periodo</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            
+            <tbody class="bg-white divide-y divide-gray-200">
+                @forelse($comisiones as $comision)
+                    <tr class="{{ $evaluacion->trashed() ? 'bg-gray-100 opacity-60' : '' }}">
+
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ $comision->nombre }}
+                    </td>
+
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ $comision->anio }}
+                    </td>
+
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ $comision->turno }}
+                    </td>
+
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ $comision->periodo }}
+                    </td>
+
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">                      
+                            <a href="{{ route('evaluaciones.indexnota', $comision) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Ver</a>
+                    </td>
+
+                </tr>    
+
+                @empty
+                    <tr class="px-6 py-12 text-center text-gray-500">
+                        <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            <p class="mt-2">No hay Notas registradas</p>
+                            <a  href="" class="mt-4 inline-block text-utn-blue hover:text-blue-800">
+                                Crear la primer Nota
+                            </a>
+                        </td>
+                    </tr>
+                 @endforelse
+            </tbody>
+
+        </table>
+    </div>
+
 
 
 

@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use App\Models\Evaluacion;
+use App\Models\Comision;
+use App\Models\InscripcionComision;
+use App\Models\Nota;
+use App\Models\AcademicoDato;
 
 
 class EvaluacionController extends Controller
@@ -19,8 +23,11 @@ class EvaluacionController extends Controller
         {
             $evaluaciones = Evaluacion::orderBy('created_at', 'desc')
                 ->paginate(15);
+
+            $comisiones = Comision::orderBy('created_at', 'desc')
+                ->paginate(15);
                 
-            return view('evaluaciones.index',compact('evaluaciones'));
+            return view('evaluaciones.index',compact('evaluaciones','comisiones'));
         }
 
 
@@ -103,5 +110,53 @@ class EvaluacionController extends Controller
             ->route('evaluaciones.index')
             ->with('success', 'Evaluacion eliminada exitosamente.');
     }
+
+    
+     /**
+     * ESTA SECCION LE PERTENECE A NOTAS
+     */
+    
+
+
+
+    public function indexnota(Comision $comision): View
+        {
+            //Traigo todas las inscripciones ya que contiene las comisiones, por lo que voy a buscar solo las notas pertenecientes a mi comision
+            $inscripcion_comision= InscripcionComision::where('comision_id',$comision->id)
+            ->pluck('id');
+
+            //Filtro todas las notas pertenecientes a las inscripciones de la comision
+            $notas = Nota::whereIn('inscripcion_comision_id',$inscripcion_comision)
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
+
+                
+                
+            return view('notas.index',compact('notas','comision'));
+        }
+
+           
+
+    
+    public function createnota(Comision $comision): View
+        {                
+                //Me traigo las incripciones de las comision para cargar la nota 
+                $academico_datos= InscripcionComision::where('comision_id',$comision->id)
+                ->where('estado','confirmado')
+                ->pluck('academico_dato_id');
+
+                $user_id=AcademicoDato::whereIn('id',$academico_datos)
+                ->pluck('user_id');
+                
+
+                $evaluaciones = Evaluacion::orderBy('created_at', 'desc')
+                ->paginate(15);
+
+            return view('notas.create',compact('comision','evaluaciones'));
+        }
+
+
+
+
    
 }

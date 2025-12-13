@@ -87,6 +87,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/{evaluacion}/edit', [EvaluacionController::class, 'edit'])->middleware('permission:evaluaciones.editar')->name('edit');
         Route::put('/{evaluacion}', [EvaluacionController::class, 'update'])->middleware('permission:evaluaciones.editar')->name('update');
         Route::delete('/{evaluacion}', [EvaluacionController::class, 'destroy'])->middleware('permission:evaluaciones.eliminar')->name('destroy');
+
+        //NOTAS
+        Route::get('/notas/{comision}', [EvaluacionController::class, 'indexnota'])->name('indexnota');
+        Route::get('/notas/{comision}/create', [EvaluacionController::class, 'createnota'])->middleware('permission:evaluaciones.crear')->name('createnota');
+
+
        
         // TODO: Agregar rutas CRUD cuando se implementen con sus respectivos permisos
     });
