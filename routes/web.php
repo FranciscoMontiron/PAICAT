@@ -74,35 +74,58 @@ Route::middleware('auth')->group(function () {
 
     // Módulo 3: Asistencias
     Route::prefix('asistencias')->name('asistencias.')->middleware('permission:asistencias.ver')->group(function () {
-
+        
         // Pantalla principal: listado de comisiones
         Route::get('/', [AsistenciaController::class, 'index'])->name('index');
 
-        // Pantalla de comisión: lista de alumnos y resumen
-        Route::get('/comision/{comision}', [AsistenciaController::class, 'verComision'])
-            ->name('comision');
+        // Buscador global de alumnos
+        Route::get('/buscar-alumno', [AsistenciaController::class, 'buscarAlumno'])
+            ->middleware('permission:asistencias.editar')
+            ->name('buscar-alumno');
 
-        // Registrar o modificar asistencia
-        Route::get('/comision/{comision}/registrar', [AsistenciaController::class, 'mostrarRegistro'])
-            ->middleware('permission:asistencias.crear')->name('registrar');
+        // Alertas de alumnos en riesgo
+        Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
 
-        Route::post('/comision/{comision}/registrar', [AsistenciaController::class, 'guardarRegistro'])
-            ->middleware('permission:asistencias.crear')->name('guardar');
+        // Pasar asistencia (crear/modificar del día)
+        Route::get('/{comision}/pasar-asistencia', [AsistenciaController::class, 'create'])
+            ->middleware('permission:asistencias.crear')
+            ->name('create');
+        
+        Route::post('/{comision}/pasar-asistencia', [AsistenciaController::class, 'store'])
+            ->middleware('permission:asistencias.crear')
+            ->name('store');
 
-        // Justificación de inasistencia
-        Route::get('/comision/{comision}/justificar', [AsistenciaController::class, 'mostrarJustificacion'])
-            ->middleware('permission:asistencias.editar')->name('justificar');
-        Route::post('/comision/{comision}/justificar', [AsistenciaController::class, 'guardarJustificacion'])
-            ->middleware('permission:asistencias.editar');
-
-        // Historial de asistencias de alumno
-        Route::get('/historial/{inscripcionComision}', [AsistenciaController::class, 'historial'])
+        // Historial de asistencias de la comisión
+        Route::get('/{comision}/historial', [AsistenciaController::class, 'historial'])
             ->name('historial');
 
-        // Alertas por riesgo de perder
-        Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
-    });
+        // Editar asistencia de un día específico
+        Route::get('/{comision}/editar/{fecha}', [AsistenciaController::class, 'edit'])
+            ->middleware('permission:asistencias.editar')
+            ->name('edit');
+        
+        Route::put('/{comision}/editar/{fecha}', [AsistenciaController::class, 'update'])
+            ->middleware('permission:asistencias.editar')
+            ->name('update');
 
+        // Justificar inasistencias - seleccionar alumno de la comisión
+        Route::get('/{comision}/justificar-inasistencias', [AsistenciaController::class, 'seleccionarAlumno'])
+            ->middleware('permission:asistencias.editar')
+            ->name('seleccionar-alumno');
+
+        // Historial individual de alumno
+        Route::get('/{comision}/alumno/{inscripcion}', [AsistenciaController::class, 'alumnoHistorial'])
+            ->name('alumno.historial');
+
+        // Formulario de justificación para un alumno específico
+        Route::get('/{comision}/alumno/{inscripcion}/justificar', [AsistenciaController::class, 'justificarForm'])
+            ->middleware('permission:asistencias.editar')
+            ->name('alumno.justificar');
+        
+        Route::post('/{comision}/alumno/{inscripcion}/justificar', [AsistenciaController::class, 'justificarStore'])
+            ->middleware('permission:asistencias.editar')
+            ->name('alumno.justificar.store');
+    });
 
     // Módulo 4: Evaluaciones
     Route::prefix('evaluaciones')->name('evaluaciones.')->middleware('permission:evaluaciones.ver')->group(function () {
