@@ -74,27 +74,35 @@ Route::middleware('auth')->group(function () {
 
     // Módulo 3: Asistencias
     Route::prefix('asistencias')->name('asistencias.')->middleware('permission:asistencias.ver')->group(function () {
+
+        // Pantalla principal: listado de comisiones
         Route::get('/', [AsistenciaController::class, 'index'])->name('index');
 
-        // Registrar asistencia
-        Route::get('/registrar', [AsistenciaController::class, 'mostrarRegistro'])
-            ->middleware('permission:asistencias.crear')
-            ->name('registrar');
-        Route::post('/registrar', [AsistenciaController::class, 'guardarRegistro'])
-            ->middleware('permission:asistencias.crear')
-            ->name('guardar');
+        // Pantalla de comisión: lista de alumnos y resumen
+        Route::get('/comision/{comision}', [AsistenciaController::class, 'verComision'])
+            ->name('comision');
 
-        // Ver historial de asistencias de un alumno
+        // Registrar o modificar asistencia
+        Route::get('/comision/{comision}/registrar', [AsistenciaController::class, 'mostrarRegistro'])
+            ->middleware('permission:asistencias.crear')->name('registrar');
+
+        Route::post('/comision/{comision}/registrar', [AsistenciaController::class, 'guardarRegistro'])
+            ->middleware('permission:asistencias.crear')->name('guardar');
+
+        // Justificación de inasistencia
+        Route::get('/comision/{comision}/justificar', [AsistenciaController::class, 'mostrarJustificacion'])
+            ->middleware('permission:asistencias.editar')->name('justificar');
+        Route::post('/comision/{comision}/justificar', [AsistenciaController::class, 'guardarJustificacion'])
+            ->middleware('permission:asistencias.editar');
+
+        // Historial de asistencias de alumno
         Route::get('/historial/{inscripcionComision}', [AsistenciaController::class, 'historial'])
             ->name('historial');
 
-        // Alertas de alumnos en riesgo
+        // Alertas por riesgo de perder
         Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
-
-        // Futuras rutas: modificar asistencia y justificar inasistencia
-        // Route::get('/modificar', ...);
-        // Route::post('/justificar', ...);
     });
+
 
     // Módulo 4: Evaluaciones
     Route::prefix('evaluaciones')->name('evaluaciones.')->middleware('permission:evaluaciones.ver')->group(function () {

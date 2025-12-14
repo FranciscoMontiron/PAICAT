@@ -29,7 +29,7 @@ class SysacadDataSeeder extends Seeder
         $this->importLocalidades($spreadsheet);
         $this->importEscuelas($spreadsheet);
 
-        // 6. Importar catálogos
+        // Importar catálogos
         $this->importEspecialidades($spreadsheet);
         $this->importTitulosSecundarios($spreadsheet);
         $this->importEstadosCiviles($spreadsheet);
@@ -54,9 +54,7 @@ class SysacadDataSeeder extends Seeder
         foreach ($rows as $row) {
             if (empty($row[0])) continue;
 
-            // Usar el id de la fila (columna A) como id_sysacad
             $idSysacad = (int)$row[1];
-            // Si es 0, usar el id de la fila del Excel
             if ($idSysacad === 0) {
                 $idSysacad = (int)$row[0];
             }
@@ -69,13 +67,14 @@ class SysacadDataSeeder extends Seeder
             ];
 
             if (count($data) >= 100) {
-                DB::connection('sysacad')->table('sysacad_paises')->insert($data);
+                // Cambiado a insertOrIgnore() para evitar errores de duplicados
+                DB::connection('sysacad')->table('sysacad_paises')->insertOrIgnore($data);
                 $data = [];
             }
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_paises')->insert($data);
+            DB::connection('sysacad')->table('sysacad_paises')->insertOrIgnore($data);
         }
 
         $this->command->info(" Países importados: " . DB::connection('sysacad')->table('sysacad_paises')->count());
@@ -111,7 +110,7 @@ class SysacadDataSeeder extends Seeder
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_provincias')->insert($data);
+            DB::connection('sysacad')->table('sysacad_provincias')->insertOrIgnore($data);
         }
 
         $this->command->info(" Provincias importadas: " . DB::connection('sysacad')->table('sysacad_provincias')->count());
@@ -146,7 +145,7 @@ class SysacadDataSeeder extends Seeder
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_partidos')->insert($data);
+            DB::connection('sysacad')->table('sysacad_partidos')->insertOrIgnore($data);
         }
 
         $this->command->info(" Partidos importados: " . DB::connection('sysacad')->table('sysacad_partidos')->count());
@@ -192,16 +191,15 @@ class SysacadDataSeeder extends Seeder
 
             $count++;
 
-            // Insert en chunks de 1000
             if (count($data) >= 1000) {
-                DB::connection('sysacad')->table('sysacad_localidades')->insert($data);
+                DB::connection('sysacad')->table('sysacad_localidades')->insertOrIgnore($data);
                 $this->command->info("  → Procesadas {$count} localidades...");
                 $data = [];
             }
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_localidades')->insert($data);
+            DB::connection('sysacad')->table('sysacad_localidades')->insertOrIgnore($data);
         }
 
         $this->command->info(" Localidades importadas: " . DB::connection('sysacad')->table('sysacad_localidades')->count());
@@ -228,7 +226,6 @@ class SysacadDataSeeder extends Seeder
                 $localidadId = $localidad->id ?? null;
             }
 
-            // Normalizar gestión
             $gestion = strtolower(trim($row[1] ?? 'estatal'));
             if (str_contains($gestion, 'priv')) {
                 $gestion = 'Privado';
@@ -236,7 +233,6 @@ class SysacadDataSeeder extends Seeder
                 $gestion = 'Estatal';
             }
 
-            // Normalizar ámbito
             $ambito = strtolower(trim($row[2] ?? 'urbano'));
             if (str_contains($ambito, 'rur')) {
                 $ambito = 'Rural';
@@ -244,7 +240,6 @@ class SysacadDataSeeder extends Seeder
                 $ambito = 'Urbano';
             }
 
-            // Normalizar técnica
             $tecnica = strtoupper(trim($row[3] ?? 'NO'));
             $tecnica = ($tecnica === '1' || $tecnica === 'SI' || $tecnica === 'S') ? 'SI' : 'NO';
 
@@ -262,16 +257,15 @@ class SysacadDataSeeder extends Seeder
 
             $count++;
 
-            // Insert en chunks de 1000
             if (count($data) >= 1000) {
-                DB::connection('sysacad')->table('sysacad_escuelas')->insert($data);
+                DB::connection('sysacad')->table('sysacad_escuelas')->insertOrIgnore($data);
                 $this->command->info("  → Procesadas {$count} escuelas...");
                 $data = [];
             }
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_escuelas')->insert($data);
+            DB::connection('sysacad')->table('sysacad_escuelas')->insertOrIgnore($data);
         }
 
         $this->command->info(" Escuelas importadas: " . DB::connection('sysacad')->table('sysacad_escuelas')->count());
@@ -350,7 +344,7 @@ class SysacadDataSeeder extends Seeder
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table($tableName)->insert($data);
+            DB::connection('sysacad')->table($tableName)->insertOrIgnore($data);
         }
 
         $this->command->info("✅ {$tableName} importados: " . DB::connection('sysacad')->table($tableName)->count());

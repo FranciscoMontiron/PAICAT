@@ -6,60 +6,37 @@ use App\Models\Comision;
 use App\Models\Asistencia;
 use App\Models\InscripcionComision;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AsistenciaController extends Controller
 {
-    /**
-     * Vista principal de asistencias
-     */
     public function index()
     {
-        return view('asistencias.index');
+        $comisiones = Comision::activas()->withCount(['inscripciones' => fn($q) => $q->where('estado','confirmada')])->get();
+        return view('asistencias.index', compact('comisiones'));
     }
 
-    /**
-     * Mostrar formulario de registro de asistencias
-     */
-    public function mostrarRegistro(Request $request)
+    public function verComision(Comision $comision)
     {
-        $user = Auth::user();
+        $comision->load(['inscripciones' => fn($q) => $q->where('estado','confirmada')->with('academicoDato.user'),'inscripciones.asistencias']);
+        $totalAlumnos = $comision->inscripciones->count();
+        $promedioAsistencia = $comision->inscripciones->avg(fn($i) => $i->calcularPorcentajeAsistencia());
+        $alumnosEnRiesgo = $comision->inscripciones->filter(fn($i) => $i->estaEnRiesgo())->count();
 
-        $comisiones = $user->hasRole('docente')
-            ? Comision::where('docente_id', $user->id)->activas()->with('inscripciones.academicoDato.user')->get()
-            : Comision::activas()->with('inscripciones.academicoDato.user')->get();
-
-        $comisionSeleccionada = null;
-        $inscripciones = collect();
-        $fecha = $request->input('fecha', today()->format('Y-m-d'));
-        $asistenciasExistentes = [];
-
-        if ($request->has('comision_id')) {
-            $comisionSeleccionada = Comision::with('inscripciones.academicoDato.user')->findOrFail($request->comision_id);
-
-            $inscripciones = $comisionSeleccionada->inscripciones()
-                ->where('estado', 'confirmada')
-                ->with('academicoDato.user')
-                ->get();
-
-            $asistenciasExistentes = Asistencia::whereIn('inscripcion_comision_id', $inscripciones->pluck('id'))
-                ->whereDate('fecha', $fecha)
-                ->get()
-                ->keyBy('inscripcion_comision_id');
-        }
-
-        return view('asistencias.registrar', compact(
-            'comisiones', 'comisionSeleccionada', 'inscripciones', 'fecha', 'asistenciasExistentes'
-        ));
+        return view('asistencias.comision', compact('comision','totalAlumnos','promedioAsistencia','alumnosEnRiesgo'));
     }
 
-    /**
-     * Guardar registro de asistencias
-     */
-    public function guardarRegistro(Request $request)
+    public function mostrarRegistro(Request $request, Comision $comision)
+    {
+        $inscripciones = $comision->inscripciones()->where('estado','confirmada')->with('academicoDato.user')->get();
+        $fecha = $request->input('fecha', today()->format('Y-m-d'));
+        $asistenciasExistentes = Asistencia::whereIn('inscripcion_comision_id',$inscripciones->pluck('id'))->whereDate('fecha',$fecha)->get()->keyBy('inscripcion_comision_id');
+
+        return view('asistencias.registrar', compact('comision','inscripciones','fecha','asistenciasExistentes'));
+    }
+
+    public function guardarRegistro(Request $request, Comision $comision)
     {
         $validated = $request->validate([
-            'comision_id' => 'required|exists:comisiones,id',
             'fecha' => 'required|date|before_or_equal:today',
             'asistencias' => 'required|array',
             'asistencias.*.inscripcion_comision_id' => 'required|exists:inscripcion_comisiones,id',
@@ -67,72 +44,72 @@ class AsistenciaController extends Controller
             'asistencias.*.observaciones' => 'nullable|string|max:500',
         ]);
 
-        foreach ($validated['asistencias'] as $asistenciaData) {
+        foreach($validated['asistencias'] as $a){
             Asistencia::updateOrCreate(
-                [
-                    'inscripcion_comision_id' => $asistenciaData['inscripcion_comision_id'],
-                    'fecha' => $validated['fecha'],
-                ],
-                [
-                    'estado' => $asistenciaData['estado'],
-                    'observaciones' => $asistenciaData['observaciones'] ?? null,
-                    'registrado_por' => Auth::id(),
-                ]
+                ['inscripcion_comision_id'=>$a['inscripcion_comision_id'],'fecha'=>$validated['fecha']],
+                ['estado'=>$a['estado'],'observaciones'=>$a['observaciones']??null,'registrado_por'=>auth()->id()]
             );
         }
 
-        return redirect()->route('asistencias.registrar', [
-            'comision_id' => $validated['comision_id'],
-            'fecha' => $validated['fecha']
-        ])->with('success', 'Asistencias registradas correctamente');
+        return redirect()->route('asistencias.registrar',$comision->id)->with('success','Asistencias registradas correctamente');
     }
 
-    /**
-     * Ver historial de asistencias de un alumno
-     */
-    public function historial(InscripcionComision $inscripcionComision)
+    public function mostrarJustificacion(Comision $comision)
     {
-        $inscripcionComision->load([
-            'asistencias' => fn($q) => $q->orderBy('fecha', 'desc'),
-            'academicoDato.user',
-            'comision'
+        $alumnos = $comision->inscripciones()->where('estado','confirmada')->with('academicoDato.user')->get();
+        return view('asistencias.justificar', compact('comision','alumnos'));
+    }
+
+    public function guardarJustificacion(Request $request, Comision $comision)
+    {
+        $validated = $request->validate([
+            'inscripcion_comision_id'=>'required|exists:inscripcion_comisiones,id',
+            'fecha'=>'required|date|before_or_equal:today',
+            'motivo'=>'required|string|max:500',
+            'archivo'=>'nullable|file|max:2048'
         ]);
 
-        $porcentaje = $inscripcionComision->calcularPorcentajeAsistencia();
-        $estaEnRiesgo = $inscripcionComision->estaEnRiesgo();
+        $asistencia = Asistencia::updateOrCreate(
+            ['inscripcion_comision_id'=>$validated['inscripcion_comision_id'],'fecha'=>$validated['fecha']],
+            ['estado'=>'justificado','observaciones'=>$validated['motivo'],'registrado_por'=>auth()->id()]
+        );
 
-        $estadisticas = [
-            'total' => $inscripcionComision->asistencias->count(),
-            'presentes' => $inscripcionComision->asistencias->where('estado', 'presente')->count(),
-            'ausentes' => $inscripcionComision->asistencias->where('estado', 'ausente')->count(),
-            'tardanzas' => $inscripcionComision->asistencias->where('estado', 'tardanza')->count(),
-            'justificadas' => $inscripcionComision->asistencias->where('estado', 'justificado')->count(),
-        ];
+        if($request->hasFile('archivo')){
+            $asistencia->archivo = $request->file('archivo')->store('justificaciones');
+            $asistencia->save();
+        }
 
-        return view('asistencias.historial', compact('inscripcionComision', 'porcentaje', 'estaEnRiesgo', 'estadisticas'));
+        return redirect()->route('asistencias.comision',$comision->id)->with('success','Justificación registrada correctamente');
     }
 
-    /**
-     * Alertas de alumnos en riesgo
-     */
+    public function historial(InscripcionComision $inscripcionComision)
+    {
+        $inscripcionComision->load(['asistencias'=>fn($q)=>$q->orderBy('fecha','desc'),'academicoDato.user','comision']);
+        $porcentaje = $inscripcionComision->calcularPorcentajeAsistencia();
+        $estaEnRiesgo = $inscripcionComision->estaEnRiesgo();
+        $estadisticas = [
+            'total'=>$inscripcionComision->asistencias->count(),
+            'presentes'=>$inscripcionComision->asistencias->where('estado','presente')->count(),
+            'ausentes'=>$inscripcionComision->asistencias->where('estado','ausente')->count(),
+            'tardanzas'=>$inscripcionComision->asistencias->where('estado','tardanza')->count(),
+            'justificadas'=>$inscripcionComision->asistencias->where('estado','justificado')->count(),
+        ];
+
+        return view('asistencias.historial', compact('inscripcionComision','porcentaje','estaEnRiesgo','estadisticas'));
+    }
+
     public function alertas(Request $request)
     {
         $comisionId = $request->input('comision_id');
-
-        $query = InscripcionComision::with(['academicoDato.user', 'comision', 'asistencias'])
-            ->where('estado', 'confirmada');
-
-        if ($comisionId) {
-            $query->where('comision_id', $comisionId);
-        }
+        $query = InscripcionComision::with(['academicoDato.user','comision','asistencias'])->where('estado','confirmada');
+        if($comisionId) $query->where('comision_id',$comisionId);
 
         $inscripciones = $query->get();
-
-        $alumnosEnRiesgo = $inscripciones->filter(fn($i) => $i->asistencias->count() > 0 && $i->estaEnRiesgo())
-            ->sortBy(fn($i) => $i->calcularPorcentajeAsistencia());
+        $alumnosEnRiesgo = $inscripciones->filter(fn($i)=>$i->asistencias->count()>0 && $i->estaEnRiesgo())
+            ->sortBy(fn($i)=>$i->calcularPorcentajeAsistencia());
 
         $comisiones = Comision::activas()->get();
 
-        return view('asistencias.alertas', compact('alumnosEnRiesgo', 'comisiones', 'comisionId'));
+        return view('asistencias.alertas', compact('alumnosEnRiesgo','comisiones','comisionId'));
     }
 }

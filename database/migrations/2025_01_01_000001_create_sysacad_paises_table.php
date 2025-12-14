@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sysacad_paises', function (Blueprint $table) {
+        Schema::connection('sysacad')->create('sysacad_paises', function (Blueprint $table) {
             $table->id();
             $table->integer('id_sysacad')->unique()->comment('ID original de Sysacad');
             $table->string('nombre', 100);
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sysacad_paises');
+        Schema::connection('sysacad')->dropIfExists('sysacad_paises');
     }
 };
