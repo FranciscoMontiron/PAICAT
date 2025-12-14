@@ -1,4 +1,4 @@
-# Script para configurar migraciones de PAICAT (Windows)
+﻿# Script para configurar migraciones de PAICAT (Windows)
 # Ejecutar desde la raíz del proyecto con: .\setup-migrations.ps1
 
 Write-Host ""
