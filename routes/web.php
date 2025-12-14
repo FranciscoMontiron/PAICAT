@@ -19,7 +19,6 @@ use App\Http\Controllers\Auth\AuthController;
 |
 */
 
-
 // Redirigir raíz al login si no está autenticado, al home si está autenticado
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('home') : redirect()->route('login');
@@ -42,7 +41,7 @@ Route::middleware('auth')->group(function () {
     // Ruta de desarrollador (solo en modo debug)
     Route::get('/developer', [App\Http\Controllers\DeveloperController::class, 'index'])->name('developer');
 
-    // Módulo 1: Inscripciones (todos los roles pueden ver)
+    // Módulo 1: Inscripciones
     Route::prefix('inscripciones')->name('inscripciones.')->middleware('permission:inscripciones.ver')->group(function () {
         Route::get('/', [InscripcionController::class, 'index'])->name('index');
         Route::get('/create', [InscripcionController::class, 'create'])->middleware('permission:inscripciones.crear')->name('create');
@@ -60,7 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{inscripcion}', [InscripcionController::class, 'destroy'])->middleware('permission:inscripciones.eliminar')->name('destroy');
     });
 
-    // Módulo 2: Comisiones (Admin, Coordinador, Docente)
+    // Módulo 2: Comisiones
     Route::prefix('comisiones')->name('comisiones.')->middleware('permission:comisiones.ver')->group(function () {
         Route::get('/', [ComisionController::class, 'index'])->name('index');
         Route::get('/create', [ComisionController::class, 'create'])->middleware('permission:comisiones.crear')->name('create');
@@ -73,25 +72,41 @@ Route::middleware('auth')->group(function () {
         Route::post('/{comision}/docente', [ComisionController::class, 'asignarDocente'])->middleware('permission:comisiones.editar')->name('asignarDocente');
     });
 
-    // Módulo 3: Asistencias (todos los roles)
+    // Módulo 3: Asistencias
     Route::prefix('asistencias')->name('asistencias.')->middleware('permission:asistencias.ver')->group(function () {
         Route::get('/', [AsistenciaController::class, 'index'])->name('index');
-        // TODO: Agregar rutas CRUD cuando se implementen con sus respectivos permisos
+
+        // Registrar asistencia
+        Route::get('/registrar', [AsistenciaController::class, 'mostrarRegistro'])
+            ->middleware('permission:asistencias.crear')
+            ->name('registrar');
+        Route::post('/registrar', [AsistenciaController::class, 'guardarRegistro'])
+            ->middleware('permission:asistencias.crear')
+            ->name('guardar');
+
+        // Ver historial de asistencias de un alumno
+        Route::get('/historial/{inscripcionComision}', [AsistenciaController::class, 'historial'])
+            ->name('historial');
+
+        // Alertas de alumnos en riesgo
+        Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
+
+        // Futuras rutas: modificar asistencia y justificar inasistencia
+        // Route::get('/modificar', ...);
+        // Route::post('/justificar', ...);
     });
 
-    // Módulo 4: Evaluaciones y Notas (todos los roles)
+    // Módulo 4: Evaluaciones
     Route::prefix('evaluaciones')->name('evaluaciones.')->middleware('permission:evaluaciones.ver')->group(function () {
         Route::get('/', [EvaluacionController::class, 'index'])->name('index');
-        // TODO: Agregar rutas CRUD cuando se implementen con sus respectivos permisos
     });
 
-    // Módulo 5: Reportes y Estadísticas (Admin, Coordinador, Docente)
+    // Módulo 5: Reportes
     Route::prefix('reportes')->name('reportes.')->middleware('permission:reportes.ver')->group(function () {
         Route::get('/', [ReporteController::class, 'index'])->name('index');
-        // TODO: Agregar rutas para generación de reportes con permission:reportes.generar
     });
 
-    // Módulo 6: Usuarios y Permisos (Admin y Coordinador)
+    // Módulo 6: Usuarios
     Route::prefix('usuarios')->name('usuarios.')->middleware('permission:usuarios.ver')->group(function () {
         Route::get('/', [UsuarioController::class, 'index'])->name('index');
         Route::get('/create', [UsuarioController::class, 'create'])->middleware('permission:usuarios.crear')->name('create');

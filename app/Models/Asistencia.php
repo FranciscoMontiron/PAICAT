@@ -24,14 +24,35 @@ class Asistencia extends Model
         'fecha' => 'date',
     ];
 
+    /**
+     * Relación con la inscripción de comisión
+     */
     public function inscripcionComision(): BelongsTo
     {
         return $this->belongsTo(InscripcionComision::class);
     }
 
+    /**
+     * Usuario que registró la asistencia
+     */
     public function registradoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'registrado_por');
     }
-}
 
+    // Scopes útiles
+    public function scopePresentes($query)
+    {
+        return $query->where('estado', 'presente');
+    }
+
+    public function scopeAusentes($query)
+    {
+        return $query->where('estado', 'ausente');
+    }
+
+    public function scopeFecha($query, $fecha)
+    {
+        return $query->whereDate('fecha', $fecha);
+    }
+}
