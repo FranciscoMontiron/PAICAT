@@ -136,13 +136,23 @@ Route::middleware('auth')->group(function () {
         Route::put('/{evaluacion}', [EvaluacionController::class, 'update'])->middleware('permission:evaluaciones.editar')->name('update');
         Route::delete('/{evaluacion}', [EvaluacionController::class, 'destroy'])->middleware('permission:evaluaciones.eliminar')->name('destroy');
 
-        //NOTAS
-        Route::get('/notas/{comision}', [EvaluacionController::class, 'indexnota'])->name('indexnota');
-        Route::get('/notas/{comision}/create', [EvaluacionController::class, 'createnota'])->middleware('permission:evaluaciones.crear')->name('createnota');
-
-
-       
-        // TODO: Agregar rutas CRUD cuando se implementen con sus respectivos permisos
+        // NOTAS - Gestión de notas por comisión
+        Route::get('/notas/{comision}', [EvaluacionController::class, 'indexNota'])->name('notas.index');
+        Route::get('/notas/{comision}/create', [EvaluacionController::class, 'createNota'])->middleware('permission:evaluaciones.crear')->name('notas.create');
+        Route::post('/notas/{comision}', [EvaluacionController::class, 'storeNota'])->middleware('permission:evaluaciones.crear')->name('notas.store');
+        Route::get('/notas/{comision}/{nota}/edit', [EvaluacionController::class, 'editNota'])->middleware('permission:evaluaciones.editar')->name('notas.edit');
+        Route::put('/notas/{comision}/{nota}', [EvaluacionController::class, 'updateNota'])->middleware('permission:evaluaciones.editar')->name('notas.update');
+        Route::delete('/notas/{comision}/{nota}', [EvaluacionController::class, 'destroyNota'])->middleware('permission:evaluaciones.eliminar')->name('notas.destroy');
+        
+        // NOTAS - Historial por alumno
+        Route::get('/notas/{comision}/alumno/{inscripcion}', [EvaluacionController::class, 'historialAlumno'])->name('notas.historial-alumno');
+        
+        // NOTAS - Recuperatorio
+        Route::get('/notas/{comision}/recuperatorio', [EvaluacionController::class, 'createRecuperatorio'])->middleware('permission:evaluaciones.crear')->name('notas.recuperatorio.create');
+        Route::post('/notas/{comision}/recuperatorio', [EvaluacionController::class, 'storeRecuperatorio'])->middleware('permission:evaluaciones.crear')->name('notas.recuperatorio.store');
+        
+        // NOTAS - Exportar acta
+        Route::get('/notas/{comision}/exportar-acta', [EvaluacionController::class, 'exportarActa'])->name('notas.exportar-acta');
     });
 
     // Módulo 5: Reportes

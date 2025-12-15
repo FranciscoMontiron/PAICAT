@@ -9,13 +9,15 @@
                 <h1 class="text-3xl font-bold text-gray-900">Módulo de Evaluaciones y Notas</h1>
                 <p class="text-gray-600 mt-1">Administra las evaluaciones</p>
             </div>
+            @if(auth()->user()->hasPermission('evaluaciones.crear'))
             <a href="{{ route('evaluaciones.create') }}"
                 class="bg-utn-blue text-white px-6 py-3 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
-                Nuevo Evaluacion
+                Nueva Evaluación
             </a>
+            @endif
     </div>
 
   {{-- Mensajes de éxito --}}
@@ -88,18 +90,26 @@
 
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         @if($evaluacion->trashed())
-                            <form  method="POST" class="inline">
+                            @if(auth()->user()->hasPermission('evaluaciones.eliminar'))
+                            <form method="POST" class="inline">
                                 @csrf
                                 <button type="submit" class="text-green-600 hover:text-green-900">Restaurar</button>
                             </form>
+                            @endif
                         @else
-                            <a  class="text-indigo-600 hover:text-indigo-900 mr-3">Ver</a>
+                            @if($evaluacion->comision_id)
+                            <a href="{{ route('evaluaciones.notas.index', $evaluacion->comision_id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Ver Notas</a>
+                            @endif
+                            @if(auth()->user()->hasPermission('evaluaciones.editar'))
                             <a href="{{ route('evaluaciones.edit', $evaluacion) }}" class="text-blue-600 hover:text-blue-900 mr-3">Editar</a>
-                            <form action="{{ route('evaluaciones.destroy', $evaluacion) }}" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar esta evaluacion?');">
+                            @endif
+                            @if(auth()->user()->hasPermission('evaluaciones.eliminar'))
+                            <form action="{{ route('evaluaciones.destroy', $evaluacion) }}" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar esta evaluación?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:text-red-900">Eliminar</button>
                             </form>
+                            @endif
                         @endif
                     </td>
 
@@ -114,9 +124,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                         </svg>
                         <p class="mt-2">No hay Evaluaciones registradas</p>
-                        <a  class="mt-4 inline-block text-utn-blue hover:text-blue-800">
-                            Crear la primera evaluacion
+                        @if(auth()->user()->hasPermission('evaluaciones.crear'))
+                        <a href="{{ route('evaluaciones.create') }}" class="mt-4 inline-block text-utn-blue hover:text-blue-800">
+                            Crear la primera evaluación
                         </a>
+                        @endif
                     </td>
                 </tr>
                 @endforelse
@@ -150,7 +162,7 @@
             
             <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($comisiones as $comision)
-                    <tr class="{{ $evaluacion->trashed() ? 'bg-gray-100 opacity-60' : '' }}">
+                    <tr class="{{ $comision->trashed() ? 'bg-gray-100 opacity-60' : '' }}">
 
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {{ $comision->nombre }}
@@ -170,7 +182,7 @@
                     </td>
 
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">                      
-                            <a href="{{ route('evaluaciones.indexnota', $comision) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Ver</a>
+                            <a href="{{ route('evaluaciones.notas.index', $comision) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Ver Notas</a>
                     </td>
 
                 </tr>    
@@ -198,18 +210,19 @@
 
 
 
-<div class="border border-gray-200 rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-800 mb-3">Funcionalidades a Desarrollar</h3>
-    <ul class="space-y-2 text-gray-600">
-        <li class="flex items-center"><span class="text-red-500 mr-2">•</span>Crear evaluación-Listo</li>
-        <li class="flex items-center"><span class="text-red-500 mr-2">•</span>Cargar notas de evaluación-Listo</li>
-        <li class="flex items-center"><span class="text-red-500 mr-2">•</span>Modificar nota</li>
-        <li class="flex items-center"><span class="text-red-500 mr-2">•</span>Calcular promedio ponderado</li>
-        <li class="flex items-center"><span class="text-red-500 mr-2">•</span>Determinar condición final (Aprobado/Desaprobado)</li>
-        <li class="flex items-center"><span class="text-red-500 mr-2">•</span>Registrar recuperatorio</li>
-        <li class="flex items-center"><span class="text-red-500 mr-2">•</span>Ver historial de notas por alumno</li>
-        <li class="flex items-center"><span class="text-red-500 mr-2">•</span>Exportar acta de notas</li>
+<div class="border border-green-200 rounded-lg p-6 bg-green-50">
+    <h3 class="text-lg font-semibold text-green-800 mb-3">✅ Funcionalidades Implementadas</h3>
+    <ul class="space-y-2 text-green-700">
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Crear evaluación</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Cargar notas de evaluación</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Modificar nota</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Calcular promedio ponderado</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Determinar condición final (Promocionado/Regular/Desaprobado)</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Registrar recuperatorio</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Ver historial de notas por alumno</li>
+        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Exportar acta de notas (Excel)</li>
     </ul>
+    <p class="mt-3 text-sm text-green-600">Selecciona una comisión de la tabla para acceder a estas funcionalidades.</p>
 </div>
 
 
