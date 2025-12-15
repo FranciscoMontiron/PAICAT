@@ -204,32 +204,6 @@
 
         </table>
     </div>
-
-
-
-
-
-
-<div class="border border-green-200 rounded-lg p-6 bg-green-50">
-    <h3 class="text-lg font-semibold text-green-800 mb-3">✅ Funcionalidades Implementadas</h3>
-    <ul class="space-y-2 text-green-700">
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Crear evaluación</li>
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Cargar notas de evaluación</li>
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Modificar nota</li>
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Calcular promedio ponderado</li>
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Determinar condición final (Promocionado/Regular/Desaprobado)</li>
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Registrar recuperatorio</li>
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Ver historial de notas por alumno</li>
-        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span>Exportar acta de notas (Excel)</li>
-    </ul>
-    <p class="mt-3 text-sm text-green-600">Selecciona una comisión de la tabla para acceder a estas funcionalidades.</p>
-</div>
-
-
-    
-
-
-
 </div>
 
  

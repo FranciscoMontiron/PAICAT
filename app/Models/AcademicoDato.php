@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class AcademicoDato extends Model
 {
@@ -47,6 +48,36 @@ class AcademicoDato extends Model
     public function inscripcionesComisiones(): HasMany
     {
         return $this->hasMany(InscripcionComision::class, 'academico_dato_id');
+    }
+
+    /**
+     * Obtener el nombre de la especialidad desde sysacad
+     */
+    public function getEspecialidadNombreAttribute(): ?string
+    {
+        if (!$this->especialidad_id) {
+            return null;
+        }
+
+        $especialidad = DB::table('sysacad_especialidades')
+            ->where('id', $this->especialidad_id)
+            ->first();
+
+        return $especialidad?->nombre;
+    }
+
+    /**
+     * Accessor para acceder a la especialidad como objeto
+     */
+    public function getEspecialidadAttribute()
+    {
+        if (!$this->especialidad_id) {
+            return null;
+        }
+
+        return DB::table('sysacad_especialidades')
+            ->where('id', $this->especialidad_id)
+            ->first();
     }
 }
 

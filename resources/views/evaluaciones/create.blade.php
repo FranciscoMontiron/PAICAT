@@ -78,9 +78,16 @@
 
                   {{-- Comision --}}
                 <div>
-                    <label for="comision" class="block text-sm font-medium text-gray-700 mb-2">Comision</label>
-                    <input type="number" name="comision" id="comision" value="{{ old('comision') }}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('comision') border-red-500 @enderror">
+                    <label for="comision" class="block text-sm font-medium text-gray-700 mb-2">Comisión</label>
+                    <select name="comision" id="comision"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('comision') border-red-500 @enderror">
+                        <option value="">Seleccione una comisión...</option>
+                        @foreach ($comisiones as $comision)
+                            <option value="{{ $comision->id }}" {{ old('comision') == $comision->id ? 'selected' : '' }}>
+                                {{ $comision->nombre }} - {{ $comision->turno ?? '' }} ({{ $comision->anio ?? '' }})
+                            </option>
+                        @endforeach
+                    </select>
                     @error('comision')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror

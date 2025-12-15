@@ -47,10 +47,26 @@
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('inscripcion_comision_id') border-red-500 @enderror">
                         <option value="">Seleccione un alumno...</option>
                         @foreach ($inscripciones as $inscripcion)
+                            @php
+                                // Obtener datos del alumno desde inscripcion o academico_dato
+                                if ($inscripcion->inscripcion) {
+                                    $person = $inscripcion->inscripcion->getPerson();
+                                    $nombre = $person?->nombre ?? 'Sin nombre';
+                                    $apellido = $person?->apellido ?? '';
+                                    $dni = $person?->documento ?? 'N/A';
+                                } elseif ($inscripcion->academicoDato) {
+                                    $nombre = $inscripcion->academicoDato->nombre ?? 'Sin nombre';
+                                    $apellido = $inscripcion->academicoDato->apellido ?? '';
+                                    $dni = $inscripcion->academicoDato->dni ?? 'N/A';
+                                } else {
+                                    $nombre = 'Sin nombre';
+                                    $apellido = '';
+                                    $dni = 'N/A';
+                                }
+                            @endphp
                             <option value="{{ $inscripcion->id }}"
                                 {{ old('inscripcion_comision_id') == $inscripcion->id ? 'selected' : '' }}>
-                                {{ $inscripcion->academicoDato->apellido ?? '' }}, {{ $inscripcion->academicoDato->nombre ?? '' }} 
-                                (DNI: {{ $inscripcion->academicoDato->dni ?? 'N/A' }})
+                                {{ $apellido }}, {{ $nombre }} (DNI: {{ $dni }})
                             </option>
                         @endforeach
                     </select>

@@ -78,9 +78,15 @@
     {{-- Resumen por alumno con promedio y condición --}}
     @php
         $inscripciones = \App\Models\InscripcionComision::where('comision_id', $comision->id)
-            ->with(['academicoDato', 'notas.evaluacion'])
+            ->with(['academicoDato', 'inscripcion', 'notas.evaluacion'])
             ->get()
-            ->sortBy(fn($i) => $i->academicoDato->apellido ?? '');
+            ->sortBy(function($i) {
+                if ($i->inscripcion) {
+                    $person = $i->inscripcion->getPerson();
+                    return $person ? $person->apellido : '';
+                }
+                return $i->academicoDato->apellido ?? '';
+            });
     @endphp
     
     <div class="bg-white shadow-md rounded-lg overflow-hidden mb-8">
@@ -107,20 +113,36 @@
                         $asistencia = $inscripcion->calcularPorcentajeAsistencia();
                         $condicion = $inscripcion->determinarCondicion();
                         $cantNotas = $inscripcion->notas->count();
+
+                        // Obtener datos del alumno desde inscripcion o academico_dato
+                        if ($inscripcion->inscripcion) {
+                            $person = $inscripcion->inscripcion->getPerson();
+                            $nombre = $person?->nombre ?? 'Sin nombre';
+                            $apellido = $person?->apellido ?? '';
+                            $dni = $person?->documento ?? 'N/A';
+                        } elseif ($inscripcion->academicoDato) {
+                            $nombre = $inscripcion->academicoDato->nombre ?? 'Sin nombre';
+                            $apellido = $inscripcion->academicoDato->apellido ?? '';
+                            $dni = $inscripcion->academicoDato->documento ?? 'N/A';
+                        } else {
+                            $nombre = 'Sin nombre';
+                            $apellido = '';
+                            $dni = 'N/A';
+                        }
                     @endphp
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 rounded-full bg-utn-blue flex items-center justify-center">
                                     <span class="text-white font-semibold text-sm">
-                                        {{ strtoupper(substr($inscripcion->academicoDato->nombre ?? '', 0, 1)) }}{{ strtoupper(substr($inscripcion->academicoDato->apellido ?? '', 0, 1)) }}
+                                        {{ strtoupper(substr($nombre, 0, 1)) }}{{ strtoupper(substr($apellido, 0, 1)) }}
                                     </span>
                                 </div>
                                 <div class="ml-4">
                                     <div class="text-sm font-medium text-gray-900">
-                                        {{ $inscripcion->academicoDato->apellido ?? '' }}, {{ $inscripcion->academicoDato->nombre ?? 'Sin nombre' }}
+                                        {{ $apellido }}, {{ $nombre }}
                                     </div>
-                                    <div class="text-xs text-gray-500">DNI: {{ $inscripcion->academicoDato->documento ?? 'N/A' }}</div>
+                                    <div class="text-xs text-gray-500">DNI: {{ $dni }}</div>
                                 </div>
                             </div>
                         </td>
@@ -199,10 +221,21 @@
             
             <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($notas as $nota)
+                    @php
+                        // Obtener datos del alumno desde inscripcion o academico_dato
+                        $inscripcionComision = $nota->inscripcionComision;
+                        if ($inscripcionComision->inscripcion) {
+                            $person = $inscripcionComision->inscripcion->getPerson();
+                            $nombreCompleto = $person ? $person->apellido . ', ' . $person->nombre : 'Sin nombre';
+                        } elseif ($inscripcionComision->academicoDato) {
+                            $nombreCompleto = ($inscripcionComision->academicoDato->apellido ?? '') . ', ' . ($inscripcionComision->academicoDato->nombre ?? 'Sin nombre');
+                        } else {
+                            $nombreCompleto = 'Sin datos';
+                        }
+                    @endphp
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $nota->inscripcionComision->academicoDato->apellido ?? '' }}, 
-                            {{ $nota->inscripcionComision->academicoDato->nombre ?? '' }}
+                            {{ $nombreCompleto }}
                         </td>
 
                         <td class="px-6 py-4 whitespace-nowrap">

@@ -16,8 +16,20 @@
 
     <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-900">Editar Nota</h1>
+        @php
+            // Obtener datos del alumno desde inscripcion o academico_dato
+            $inscripcionComision = $nota->inscripcionComision;
+            if ($inscripcionComision->inscripcion) {
+                $person = $inscripcionComision->inscripcion->getPerson();
+                $nombreCompleto = $person ? $person->apellido . ', ' . $person->nombre : 'Sin nombre';
+            } elseif ($inscripcionComision->academicoDato) {
+                $nombreCompleto = ($inscripcionComision->academicoDato->apellido ?? '') . ', ' . ($inscripcionComision->academicoDato->nombre ?? 'Sin nombre');
+            } else {
+                $nombreCompleto = 'Sin datos';
+            }
+        @endphp
         <p class="text-gray-600 mt-1">
-            Alumno: <strong>{{ $nota->inscripcionComision->academicoDato->apellido ?? '' }}, {{ $nota->inscripcionComision->academicoDato->nombre ?? '' }}</strong>
+            Alumno: <strong>{{ $nombreCompleto }}</strong>
         </p>
         <p class="text-gray-600">
             Evaluación: <strong>{{ $nota->evaluacion->nombre ?? 'N/A' }}</strong>

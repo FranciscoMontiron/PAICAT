@@ -164,13 +164,15 @@
                         <h2 class="text-xl font-bold text-gray-800">Alumnos Inscritos</h2>
                         <span class="text-sm text-gray-600">{{ $comision->inscripciones->count() }} alumnos</span>
                     </div>
-                    @if(auth()->user()->hasPermission('comisiones.editar'))
-                    <button onclick="alert('Funcionalidad en desarrollo')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center text-sm">
+                    @if(auth()->user()->hasPermission('comisiones.editar') && $comision->cupos_disponibles > 0)
+                    <button onclick="document.getElementById('modal-agregar-alumno').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center text-sm">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
                         </svg>
                         Agregar Alumno
                     </button>
+                    @elseif(auth()->user()->hasPermission('comisiones.editar') && $comision->cupos_disponibles <= 0)
+                    <span class="text-sm text-red-600 font-medium">Sin cupos disponibles</span>
                     @endif
                 </div>
                 <div class="p-6">
@@ -183,25 +185,55 @@
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fecha Inscripción</th>
+                                    @if(auth()->user()->hasPermission('comisiones.editar'))
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
-                                @foreach($comision->inscripciones as $inscripcion)
+                                @foreach($comision->inscripciones as $inscripcionComision)
+                                @php
+                                    // Obtener datos del alumno desde inscripcion o academico_dato
+                                    if ($inscripcionComision->inscripcion) {
+                                        $person = $inscripcionComision->inscripcion->getPerson();
+                                        $nombreCompleto = $person ? $person->nombre . ' ' . $person->apellido : 'Sin nombre';
+                                        $email = $person?->email ?? 'Sin email';
+                                    } elseif ($inscripcionComision->academicoDato && $inscripcionComision->academicoDato->user) {
+                                        $nombreCompleto = $inscripcionComision->academicoDato->user->nombre_completo ?? $inscripcionComision->academicoDato->user->name;
+                                        $email = $inscripcionComision->academicoDato->user->email;
+                                    } else {
+                                        $nombreCompleto = 'Sin datos';
+                                        $email = 'Sin email';
+                                    }
+                                @endphp
                                 <tr>
                                     <td class="px-4 py-3 text-sm text-gray-900">
-                                        {{ $inscripcion->academicoDato->user->nombre_completo }}
+                                        {{ $nombreCompleto }}
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-600">
-                                        {{ $inscripcion->academicoDato->user->email }}
+                                        {{ $email }}
                                     </td>
                                     <td class="px-4 py-3 text-sm">
                                         <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                            {{ ucfirst($inscripcion->estado) }}
+                                            {{ ucfirst($inscripcionComision->estado) }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-600">
-                                        {{ $inscripcion->fecha_inscripcion->format('d/m/Y H:i') }}
+                                        {{ $inscripcionComision->fecha_inscripcion->format('d/m/Y H:i') }}
                                     </td>
+                                    @if(auth()->user()->hasPermission('comisiones.editar'))
+                                    <td class="px-4 py-3 text-sm text-center">
+                                        <form action="{{ route('comisiones.desinscribirAlumno', [$comision, $inscripcionComision]) }}" method="POST" class="inline" onsubmit="return confirm('¿Está seguro de desinscribir a este alumno?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:text-red-800" title="Desinscribir">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </td>
+                                    @endif
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -317,5 +349,112 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Agregar Alumno -->
+@if(auth()->user()->hasPermission('comisiones.editar'))
+<div id="modal-agregar-alumno" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900">Agregar Alumno a la Comisión</h3>
+            <button onclick="document.getElementById('modal-agregar-alumno').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Buscador -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Buscar alumno</label>
+            <input type="text" id="buscar-alumno-input" placeholder="Buscar por nombre, apellido, email o DNI..." 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                   onkeyup="buscarAlumnos(this.value)">
+        </div>
+
+        <!-- Resultados -->
+        <div id="resultados-alumnos" class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
+            <div class="p-4 text-center text-gray-500">
+                Escribe al menos 2 caracteres para buscar alumnos disponibles.
+            </div>
+        </div>
+
+        <!-- Mensaje de cupos -->
+        <div class="mt-4 text-sm text-gray-600">
+            <span class="font-medium">Cupos disponibles:</span> {{ $comision->cupos_disponibles }} de {{ $comision->cupo_maximo }}
+        </div>
+    </div>
+</div>
+
+<script>
+    let timeoutId = null;
+    
+    function buscarAlumnos(search) {
+        clearTimeout(timeoutId);
+        
+        if (search.length < 2) {
+            document.getElementById('resultados-alumnos').innerHTML = `
+                <div class="p-4 text-center text-gray-500">
+                    Escribe al menos 2 caracteres para buscar alumnos disponibles.
+                </div>
+            `;
+            return;
+        }
+        
+        document.getElementById('resultados-alumnos').innerHTML = `
+            <div class="p-4 text-center text-gray-500">
+                <svg class="animate-spin h-5 w-5 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-2">Buscando...</p>
+            </div>
+        `;
+        
+        timeoutId = setTimeout(() => {
+            fetch(`{{ route('comisiones.alumnosDisponibles', $comision) }}?search=${encodeURIComponent(search)}`)
+                .then(response => response.json())
+                .then(alumnos => {
+                    if (alumnos.length === 0) {
+                        document.getElementById('resultados-alumnos').innerHTML = `
+                            <div class="p-4 text-center text-gray-500">
+                                No se encontraron alumnos disponibles.
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let html = '<div class="divide-y divide-gray-200">';
+                    alumnos.forEach(alumno => {
+                        html += `
+                            <div class="p-3 hover:bg-gray-50 flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium text-gray-900">${alumno.nombre}</p>
+                                    <p class="text-sm text-gray-600">${alumno.email} • DNI: ${alumno.dni}</p>
+                                    <p class="text-xs text-gray-500">${alumno.especialidad}</p>
+                                </div>
+                                <form action="{{ route('comisiones.inscribirAlumno', $comision) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="inscripcion_id" value="${alumno.id}">
+                                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                                        Inscribir
+                                    </button>
+                                </form>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    document.getElementById('resultados-alumnos').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('resultados-alumnos').innerHTML = `
+                        <div class="p-4 text-center text-red-500">
+                            Error al buscar alumnos. Intente nuevamente.
+                        </div>
+                    `;
+                });
+        }, 300);
+    }
+</script>
+@endif
 @endsection
 

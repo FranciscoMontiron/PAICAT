@@ -36,8 +36,9 @@ class EvaluacionController extends Controller
      */
         public function create(): View
         {
+            $comisiones = Comision::orderBy('nombre', 'asc')->get();
     
-            return view('evaluaciones.create');
+            return view('evaluaciones.create', compact('comisiones'));
         }
 
     /**
@@ -53,8 +54,7 @@ class EvaluacionController extends Controller
                 'tipo' => $data['tipo'],
                 'fecha' => $data['fecha'],
                 'peso_porcentual' => $data['porcentual'] ,
-                'comision' => $data['comision'],
-                #'comision_id' => $data['comision'],
+                'comision_id' => $data['comision'] ?: null,
                 'anio' => $data['anio'],
             ]);
 
@@ -69,8 +69,9 @@ class EvaluacionController extends Controller
      */
         public function edit(Evaluacion $evaluacion): View
         {
+            $comisiones = Comision::orderBy('nombre', 'asc')->get();
         
-            return view('evaluaciones.edit',compact('evaluacion'));
+            return view('evaluaciones.edit', compact('evaluacion', 'comisiones'));
 
         }
 
@@ -127,7 +128,7 @@ class EvaluacionController extends Controller
 
         // Notas de esa comisión con relaciones
         $notas = Nota::whereIn('inscripcion_comision_id', $inscripcionesIds)
-            ->with(['evaluacion', 'inscripcionComision.academicoDato', 'cargadoPor'])
+            ->with(['evaluacion', 'inscripcionComision.academicoDato', 'inscripcionComision.inscripcion', 'cargadoPor'])
             ->orderBy('created_at', 'desc')
             ->paginate(25);
 
@@ -145,10 +146,10 @@ class EvaluacionController extends Controller
      */
     public function createNota(Comision $comision): View
     {
-        // Inscripciones confirmadas de la comisión
+        // Inscripciones activas de la comisión (inscripto o confirmado)
         $inscripciones = InscripcionComision::where('comision_id', $comision->id)
-            ->where('estado', 'confirmado')
-            ->with('academicoDato')
+            ->whereIn('estado', ['inscripto', 'confirmado'])
+            ->with(['academicoDato', 'inscripcion'])
             ->get();
 
         // Evaluaciones disponibles
@@ -203,6 +204,9 @@ class EvaluacionController extends Controller
      */
     public function editNota(Comision $comision, Nota $nota): View
     {
+        // Cargar relaciones necesarias
+        $nota->load(['inscripcionComision.inscripcion', 'inscripcionComision.academicoDato', 'evaluacion']);
+
         $evaluaciones = Evaluacion::where('comision_id', $comision->id)
             ->orWhereNull('comision_id')
             ->orderBy('fecha', 'desc')

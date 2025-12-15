@@ -62,8 +62,8 @@ class AsistenciaController extends Controller
     public function alertas(Request $request)
     {
         $comisionId = $request->input('comision_id');
-        $query = InscripcionComision::with(['alumno', 'comision', 'asistencias'])
-            ->where('estado', 'activo');
+        $query = InscripcionComision::with(['inscripcion', 'academicoDato', 'comision', 'asistencias'])
+            ->whereIn('estado', ['inscripto', 'confirmado']);
 
         if ($comisionId) {
             $query->where('comision_id', $comisionId);
@@ -117,10 +117,10 @@ class AsistenciaController extends Controller
 
         // Obtener alumnos inscritos con su asistencia del día (si existe)
         $inscripciones = $comision->inscripciones()
-            ->with(['alumno', 'asistencias' => function ($query) use ($fecha) {
+            ->with(['inscripcion', 'academicoDato', 'asistencias' => function ($query) use ($fecha) {
                 $query->where('fecha', $fecha);
             }])
-            ->where('estado', 'activo')
+            ->whereIn('estado', ['inscripto', 'confirmado'])
             ->orderBy('id')
             ->get();
 
@@ -189,10 +189,10 @@ class AsistenciaController extends Controller
 
         // Obtener inscripciones con todas sus asistencias
         $inscripciones = $comision->inscripciones()
-            ->with(['alumno', 'asistencias' => function ($query) {
+            ->with(['inscripcion', 'academicoDato', 'asistencias' => function ($query) {
                 $query->orderBy('fecha', 'desc');
             }])
-            ->where('estado', 'activo')
+            ->whereIn('estado', ['inscripto', 'confirmado'])
             ->get();
 
         // Calcular estadísticas por alumno
@@ -240,10 +240,10 @@ class AsistenciaController extends Controller
 
         // Obtener alumnos inscritos con su asistencia del día
         $inscripciones = $comision->inscripciones()
-            ->with(['alumno', 'asistencias' => function ($query) use ($fecha) {
+            ->with(['inscripcion', 'academicoDato', 'asistencias' => function ($query) use ($fecha) {
                 $query->where('fecha', $fecha);
             }])
-            ->where('estado', 'activo')
+            ->whereIn('estado', ['inscripto', 'confirmado'])
             ->orderBy('id')
             ->get();
 
@@ -316,16 +316,18 @@ class AsistenciaController extends Controller
 
         // Obtener solo alumnos con ausencias sin justificar
         $inscripciones = $comision->inscripciones()
-            ->with(['alumno', 'asistencias' => function ($query) {
+            ->with(['inscripcion', 'academicoDato', 'asistencias' => function ($query) {
                 $query->where('estado', 'ausente');
             }])
-            ->where('estado', 'activo')
+            ->whereIn('estado', ['inscripto', 'confirmado'])
             ->get()
             ->filter(function ($inscripcion) {
                 // Filtrar solo los que tienen ausencias
                 return $inscripcion->asistencias->count() > 0;
             })
-            ->sortBy('alumno.name');
+            ->sortBy(function($inscripcion) {
+                return $inscripcion->alumno->name ?? '';
+            });
 
         return view('asistencias.seleccionar-alumno', compact('comision', 'inscripciones'));
     }

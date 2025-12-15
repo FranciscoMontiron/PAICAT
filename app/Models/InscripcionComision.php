@@ -15,6 +15,7 @@ class InscripcionComision extends Model
     protected $table = 'inscripcion_comisiones';
 
     protected $fillable = [
+        'inscripcion_id',
         'academico_dato_id',
         'comision_id',
         'fecha_inscripcion',
@@ -27,7 +28,15 @@ class InscripcionComision extends Model
     ];
 
     /**
-     * Datos académicos del alumno
+     * Inscripción al curso de ingreso
+     */
+    public function inscripcion(): BelongsTo
+    {
+        return $this->belongsTo(Inscripcion::class, 'inscripcion_id');
+    }
+
+    /**
+     * Datos académicos del alumno (opcional, puede ser null)
      */
     public function academicoDato(): BelongsTo
     {
@@ -203,9 +212,20 @@ class InscripcionComision extends Model
 
     /**
      * Acceso rápido al usuario del alumno
+     * Intenta obtenerlo desde academicoDato, si no desde inscripcion->person
      */
     public function getAlumnoAttribute()
     {
-        return $this->academicoDato->user ?? null;
+        // Primero intentar desde academico_dato
+        if ($this->academicoDato && $this->academicoDato->user) {
+            return $this->academicoDato->user;
+        }
+
+        // Si no, obtener desde inscripcion->person
+        if ($this->inscripcion) {
+            return $this->inscripcion->getPerson();
+        }
+
+        return null;
     }
 }

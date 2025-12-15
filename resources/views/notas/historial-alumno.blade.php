@@ -1,6 +1,24 @@
 @extends('layouts.app')
 
-@section('title', 'Historial de Notas - ' . ($inscripcion->academicoDato->apellido ?? 'Alumno'))
+@php
+    // Obtener datos del alumno desde inscripcion o academico_dato
+    if ($inscripcion->inscripcion) {
+        $person = $inscripcion->inscripcion->getPerson();
+        $nombre = $person?->nombre ?? 'Sin nombre';
+        $apellido = $person?->apellido ?? 'Alumno';
+        $dni = $person?->documento ?? 'N/A';
+    } elseif ($inscripcion->academicoDato) {
+        $nombre = $inscripcion->academicoDato->nombre ?? 'Sin nombre';
+        $apellido = $inscripcion->academicoDato->apellido ?? 'Alumno';
+        $dni = $inscripcion->academicoDato->documento ?? 'N/A';
+    } else {
+        $nombre = 'Sin nombre';
+        $apellido = 'Alumno';
+        $dni = 'N/A';
+    }
+@endphp
+
+@section('title', 'Historial de Notas - ' . $apellido)
 
 @section('content')
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -21,14 +39,14 @@
             <div class="flex items-center gap-4">
                 <div class="h-16 w-16 rounded-full bg-utn-blue flex items-center justify-center">
                     <span class="text-white text-xl font-bold">
-                        {{ strtoupper(substr($inscripcion->academicoDato->nombre ?? '', 0, 1)) }}{{ strtoupper(substr($inscripcion->academicoDato->apellido ?? '', 0, 1)) }}
+                        {{ strtoupper(substr($nombre, 0, 1)) }}{{ strtoupper(substr($apellido, 0, 1)) }}
                     </span>
                 </div>
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">
-                        {{ $inscripcion->academicoDato->apellido ?? '' }}, {{ $inscripcion->academicoDato->nombre ?? 'Alumno' }}
+                        {{ $apellido }}, {{ $nombre }}
                     </h1>
-                    <p class="text-gray-600">DNI: {{ $inscripcion->academicoDato->documento ?? 'N/A' }}</p>
+                    <p class="text-gray-600">DNI: {{ $dni }}</p>
                     <p class="text-gray-500 text-sm">Comisión: {{ $comision->codigo }} - {{ $comision->nombre }}</p>
                 </div>
             </div>

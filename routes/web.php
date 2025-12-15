@@ -70,6 +70,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{comision}', [ComisionController::class, 'destroy'])->middleware('permission:comisiones.eliminar')->name('destroy');
         Route::post('/{comision}/estado', [ComisionController::class, 'cambiarEstado'])->middleware('permission:comisiones.editar')->name('cambiarEstado');
         Route::post('/{comision}/docente', [ComisionController::class, 'asignarDocente'])->middleware('permission:comisiones.editar')->name('asignarDocente');
+        // Gestión de alumnos en comisiones
+        Route::get('/{comision}/alumnos-disponibles', [ComisionController::class, 'alumnosDisponibles'])->middleware('permission:comisiones.editar')->name('alumnosDisponibles');
+        Route::post('/{comision}/inscribir-alumno', [ComisionController::class, 'inscribirAlumno'])->middleware('permission:comisiones.editar')->name('inscribirAlumno');
+        Route::delete('/{comision}/inscripcion/{inscripcion}', [ComisionController::class, 'desinscribirAlumno'])->middleware('permission:comisiones.editar')->name('desinscribirAlumno');
     });
 
     // Módulo 3: Asistencias
