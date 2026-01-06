@@ -64,6 +64,62 @@ else
     docker-compose ps
 fi
 
+# Importar base de datos si existe el archivo SQL
+if [ -f "./datos_paicat_completo.sql" ]; then
+    echo ""
+    echo " Importando base de datos..."
+    
+    # Esperar a que MariaDB esté listo
+    echo "   Esperando a que MariaDB esté listo..."
+    max_retries=30
+    retry=0
+    while [ $retry -lt $max_retries ]; do
+        healthy=$(docker inspect --format="{{.State.Health.Status}}" paicat_mariadb 2>/dev/null)
+        if [ "$healthy" = "healthy" ]; then
+            break
+        fi
+        sleep 2
+        retry=$((retry + 1))
+    done
+    
+    if [ "$healthy" = "healthy" ]; then
+        # Convertir encoding si es necesario (remover BOM y convertir a UTF-8)
+        echo "   Preparando archivo SQL..."
+        
+        # Detectar si es UTF-16 y convertir
+        if file "./datos_paicat_completo.sql" | grep -q "UTF-16"; then
+            echo "   Convirtiendo de UTF-16 a UTF-8..."
+            iconv -f UTF-16LE -t UTF-8 "./datos_paicat_completo.sql" > "./datos_paicat_utf8_temp.sql"
+        else
+            # Remover BOM si existe
+            sed '1s/^\xEF\xBB\xBF//' "./datos_paicat_completo.sql" > "./datos_paicat_utf8_temp.sql"
+        fi
+        
+        # Copiar al contenedor
+        docker cp "./datos_paicat_utf8_temp.sql" paicat_mariadb:/tmp/datos.sql
+        
+        # Importar
+        echo "   Ejecutando importación (puede tomar unos minutos)..."
+        if docker exec paicat_mariadb sh -c "mariadb -uroot -proot < /tmp/datos.sql" 2>/dev/null; then
+            echo " Base de datos importada correctamente"
+        else
+            echo " Error al importar la base de datos"
+            echo "   Intenta manualmente: docker exec paicat_mariadb sh -c 'mariadb -uroot -proot < /tmp/datos.sql'"
+        fi
+        
+        # Limpiar archivo temporal
+        rm -f "./datos_paicat_utf8_temp.sql"
+    else
+        echo " MariaDB no está listo, importa la base de datos manualmente"
+    fi
+else
+    echo ""
+    echo " Archivo datos_paicat_completo.sql no encontrado"
+    echo "   Coloca el archivo en la carpeta PAICAT y ejecuta:"
+    echo "   docker cp datos_paicat_completo.sql paicat_mariadb:/tmp/"
+    echo "   docker exec paicat_mariadb sh -c 'mariadb -uroot -proot < /tmp/datos_paicat_completo.sql'"
+fi
+
 echo ""
 echo " ¡Instalación completada!"
 echo ""

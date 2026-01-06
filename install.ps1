@@ -57,6 +57,57 @@ if (Test-Path ".\monitor-startup.ps1") {
     docker-compose ps
 }
 
+# Importar base de datos si existe el archivo SQL
+if (Test-Path ".\datos_paicat_completo.sql") {
+    Write-Host ""
+    Write-Host " Importando base de datos..." -ForegroundColor Cyan
+    
+    # Esperar a que MariaDB este listo
+    Write-Host "   Esperando a que MariaDB este listo..." -ForegroundColor Yellow
+    $maxRetries = 30
+    $retry = 0
+    do {
+        $healthy = docker inspect --format="{{.State.Health.Status}}" paicat_mariadb 2>$null
+        if ($healthy -ne "healthy") {
+            Start-Sleep -Seconds 2
+            $retry++
+        }
+    } while ($healthy -ne "healthy" -and $retry -lt $maxRetries)
+    
+    if ($healthy -eq "healthy") {
+        # Convertir a UTF-8 si es necesario (Windows puede guardar en UTF-16)
+        Write-Host "   Convirtiendo encoding del archivo SQL..." -ForegroundColor Yellow
+        $sqlContent = Get-Content ".\datos_paicat_completo.sql" -Raw
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText(".\datos_paicat_utf8_temp.sql", $sqlContent, $utf8NoBom)
+        
+        # Copiar al contenedor
+        docker cp ".\datos_paicat_utf8_temp.sql" paicat_mariadb:/tmp/datos.sql
+        
+        # Importar
+        Write-Host "   Ejecutando importacion (puede tomar unos minutos)..." -ForegroundColor Yellow
+        docker exec paicat_mariadb sh -c "mariadb -uroot -proot < /tmp/datos.sql" 2>$null
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host " Base de datos importada correctamente" -ForegroundColor Green
+        } else {
+            Write-Host " Error al importar la base de datos" -ForegroundColor Red
+            Write-Host "   Intenta manualmente: docker exec paicat_mariadb sh -c 'mariadb -uroot -proot < /tmp/datos.sql'" -ForegroundColor Yellow
+        }
+        
+        # Limpiar archivo temporal
+        Remove-Item ".\datos_paicat_utf8_temp.sql" -ErrorAction SilentlyContinue
+    } else {
+        Write-Host " MariaDB no esta listo, importa la base de datos manualmente" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host ""
+    Write-Host " Archivo datos_paicat_completo.sql no encontrado" -ForegroundColor Yellow
+    Write-Host "   Coloca el archivo en la carpeta PAICAT y ejecuta:" -ForegroundColor Yellow
+    Write-Host "   docker cp datos_paicat_completo.sql paicat_mariadb:/tmp/" -ForegroundColor White
+    Write-Host "   docker exec paicat_mariadb sh -c 'mariadb -uroot -proot < /tmp/datos_paicat_completo.sql'" -ForegroundColor White
+}
+
 Write-Host ""
 Write-Host " Instalacion completada!" -ForegroundColor Green
 Write-Host ""
