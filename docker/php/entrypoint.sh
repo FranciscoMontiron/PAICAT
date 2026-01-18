@@ -44,8 +44,8 @@ $pdo->exec(
 '
 echo " Base de datos verificada/creada"
 
-# Instalar dependencias de Composer si no existen
-if [ ! -d "vendor" ]; then
+# Instalar dependencias de Composer si no existen o están incompletas
+if [ ! -f "vendor/autoload.php" ]; then
     echo " Instalando dependencias de Composer..."
     composer install --no-interaction --optimize-autoloader --no-dev
     echo " Generating optimized autoload files"
