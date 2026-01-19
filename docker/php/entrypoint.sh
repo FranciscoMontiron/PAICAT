@@ -14,35 +14,9 @@ if [ ! -f ".env" ]; then
     echo " Archivo .env creado exitosamente"
 fi
 
-# Esperar a que MariaDB esté listo
-echo " Esperando a que MariaDB esté disponible..."
-until php -r '
-new PDO(
-  "mysql:host=".$_SERVER["DB_HOST"].";port=".$_SERVER["DB_PORT"],
-  $_SERVER["DB_USERNAME"],
-  $_SERVER["DB_PASSWORD"]
-);
-' 2>/dev/null; do
-  echo "   MariaDB no está listo - esperando..."
-  sleep 2
-done
-
-echo " MariaDB está listo!"
-
-# Verificar si la base de datos existe, si no, crearla
-echo " Verificando base de datos..."
-php -r '
-$pdo = new PDO(
-  "mysql:host=".$_SERVER["DB_HOST"].";port=".$_SERVER["DB_PORT"],
-  $_SERVER["DB_USERNAME"],
-  $_SERVER["DB_PASSWORD"]
-);
-$pdo->exec(
-  "CREATE DATABASE IF NOT EXISTS ".$_SERVER["DB_DATABASE"]."
-   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-);
-'
-echo " Base de datos verificada/creada"
+# Esperar a que MariaDB esté listo y verificar/crear base de datos
+# Usa script PHP externo para evitar problemas de sintaxis en diferentes versiones de Docker
+php /usr/local/bin/wait-for-db.php
 
 # Instalar dependencias de Composer si no existen o están incompletas
 if [ ! -f "vendor/autoload.php" ]; then

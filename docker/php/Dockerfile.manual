@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     libicu-dev \
+    default-mysql-client \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl
 
 # Instalar Redis extension
@@ -31,16 +32,8 @@ WORKDIR /var/www/html
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/zz-custom.conf
 
-# Copiar script de espera de DB (evita problemas de PHP inline en shell)
-COPY docker/php/scripts/wait-for-db.php /usr/local/bin/wait-for-db.php
-
-# Copiar script de entrypoint y convertir line endings a Unix (LF): VER si soluciona problema de demian
-COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
-
 # Exponer puerto 9000 para PHP-FPM
 EXPOSE 9000
 
-# Usar entrypoint personalizado
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Sin entrypoint - inicia PHP-FPM directamente
 CMD ["php-fpm"]
