@@ -49,6 +49,7 @@ datos_paicat_completo.sql
 
 # Archivo de datos para instalación (compartir por Drive)
 paicat-data.zip
+bases_externas/seed_datos.sql
 
 # Temporales
 *.swp
