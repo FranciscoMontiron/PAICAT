@@ -39,8 +39,13 @@ WORKDIR /var/www/html
 # Copiar configuración PHP personalizada
 COPY php.ini /usr/local/etc/php/conf.d/custom.ini
 
+# Copiar y configurar entrypoint para permisos automáticos
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Exponer puerto 80
 EXPOSE 80
 
-# Comando por defecto
+# Usar entrypoint para configurar permisos antes de iniciar Apache
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["apache2-foreground"]
