@@ -68,16 +68,16 @@ class SysacadDataSeeder extends Seeder
 
             if (count($data) >= 100) {
                 // Cambiado a insertOrIgnore() para evitar errores de duplicados
-                DB::connection('sysacad')->table('sysacad_paises')->insertOrIgnore($data);
+                DB::table('sysacad_paises')->insertOrIgnore($data);
                 $data = [];
             }
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_paises')->insertOrIgnore($data);
+            DB::table('sysacad_paises')->insertOrIgnore($data);
         }
 
-        $this->command->info(" Países importados: " . DB::connection('sysacad')->table('sysacad_paises')->count());
+        $this->command->info(" Países importados: " . DB::table('sysacad_paises')->count());
     }
 
     protected function importProvincias($spreadsheet): void
@@ -93,7 +93,7 @@ class SysacadDataSeeder extends Seeder
 
             $paisId = null;
             if (!empty($row[4])) {
-                $pais = DB::connection('sysacad')->table('sysacad_paises')
+                $pais = DB::table('sysacad_paises')
                     ->where('id_sysacad', (int)$row[4])
                     ->first();
                 $paisId = $pais->id ?? null;
@@ -110,10 +110,10 @@ class SysacadDataSeeder extends Seeder
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_provincias')->insertOrIgnore($data);
+            DB::table('sysacad_provincias')->insertOrIgnore($data);
         }
 
-        $this->command->info(" Provincias importadas: " . DB::connection('sysacad')->table('sysacad_provincias')->count());
+        $this->command->info(" Provincias importadas: " . DB::table('sysacad_provincias')->count());
     }
 
     protected function importPartidos($spreadsheet): void
@@ -129,7 +129,7 @@ class SysacadDataSeeder extends Seeder
 
             $provinciaId = null;
             if (!empty($row[3])) {
-                $provincia = DB::connection('sysacad')->table('sysacad_provincias')
+                $provincia = DB::table('sysacad_provincias')
                     ->where('id_sysacad', (int)$row[3])
                     ->first();
                 $provinciaId = $provincia->id ?? null;
@@ -145,10 +145,10 @@ class SysacadDataSeeder extends Seeder
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_partidos')->insertOrIgnore($data);
+            DB::table('sysacad_partidos')->insertOrIgnore($data);
         }
 
-        $this->command->info(" Partidos importados: " . DB::connection('sysacad')->table('sysacad_partidos')->count());
+        $this->command->info(" Partidos importados: " . DB::table('sysacad_partidos')->count());
     }
 
     protected function importLocalidades($spreadsheet): void
@@ -166,7 +166,7 @@ class SysacadDataSeeder extends Seeder
 
             $provinciaId = null;
             if (!empty($row[3])) {
-                $provincia = DB::connection('sysacad')->table('sysacad_provincias')
+                $provincia = DB::table('sysacad_provincias')
                     ->where('id_sysacad', (int)$row[3])
                     ->first();
                 $provinciaId = $provincia->id ?? null;
@@ -174,7 +174,7 @@ class SysacadDataSeeder extends Seeder
 
             $partidoId = null;
             if (!empty($row[4])) {
-                $partido = DB::connection('sysacad')->table('sysacad_partidos')
+                $partido = DB::table('sysacad_partidos')
                     ->where('id', (int)$row[4])
                     ->first();
                 $partidoId = $partido->id ?? null;
@@ -192,17 +192,17 @@ class SysacadDataSeeder extends Seeder
             $count++;
 
             if (count($data) >= 1000) {
-                DB::connection('sysacad')->table('sysacad_localidades')->insertOrIgnore($data);
+                DB::table('sysacad_localidades')->insertOrIgnore($data);
                 $this->command->info("  → Procesadas {$count} localidades...");
                 $data = [];
             }
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_localidades')->insertOrIgnore($data);
+            DB::table('sysacad_localidades')->insertOrIgnore($data);
         }
 
-        $this->command->info(" Localidades importadas: " . DB::connection('sysacad')->table('sysacad_localidades')->count());
+        $this->command->info(" Localidades importadas: " . DB::table('sysacad_localidades')->count());
     }
 
     protected function importEscuelas($spreadsheet): void
@@ -220,7 +220,7 @@ class SysacadDataSeeder extends Seeder
 
             $localidadId = null;
             if (!empty($row[6])) {
-                $localidad = DB::connection('sysacad')->table('sysacad_localidades')
+                $localidad = DB::table('sysacad_localidades')
                     ->where('id', (int)$row[6])
                     ->first();
                 $localidadId = $localidad->id ?? null;
@@ -258,17 +258,17 @@ class SysacadDataSeeder extends Seeder
             $count++;
 
             if (count($data) >= 1000) {
-                DB::connection('sysacad')->table('sysacad_escuelas')->insertOrIgnore($data);
+                DB::table('sysacad_escuelas')->insertOrIgnore($data);
                 $this->command->info("  → Procesadas {$count} escuelas...");
                 $data = [];
             }
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table('sysacad_escuelas')->insertOrIgnore($data);
+            DB::table('sysacad_escuelas')->insertOrIgnore($data);
         }
 
-        $this->command->info(" Escuelas importadas: " . DB::connection('sysacad')->table('sysacad_escuelas')->count());
+        $this->command->info(" Escuelas importadas: " . DB::table('sysacad_escuelas')->count());
     }
 
     protected function importEspecialidades($spreadsheet): void
@@ -344,9 +344,9 @@ class SysacadDataSeeder extends Seeder
         }
 
         if (!empty($data)) {
-            DB::connection('sysacad')->table($tableName)->insertOrIgnore($data);
+            DB::table($tableName)->insertOrIgnore($data);
         }
 
-        $this->command->info("✅ {$tableName} importados: " . DB::connection('sysacad')->table($tableName)->count());
+        $this->command->info("✅ {$tableName} importados: " . DB::table($tableName)->count());
     }
 }
