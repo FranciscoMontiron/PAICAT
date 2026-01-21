@@ -31,9 +31,9 @@ class InscripcionController extends Controller
             $personIds = Person::on('alumnos_utn')
                 ->where(function ($q) use ($termino) {
                     $q->where('nombre', 'like', "%{$termino}%")
-                      ->orWhere('apellido', 'like', "%{$termino}%")
-                      ->orWhere('documento', 'like', "%{$termino}%")
-                      ->orWhere('email', 'like', "%{$termino}%");
+                        ->orWhere('apellido', 'like', "%{$termino}%")
+                        ->orWhere('documento', 'like', "%{$termino}%")
+                        ->orWhere('email', 'like', "%{$termino}%");
                 })
                 ->pluck('id')
                 ->toArray();
@@ -343,9 +343,9 @@ class InscripcionController extends Controller
         $personas = Person::on('alumnos_utn')
             ->where(function ($query) use ($termino) {
                 $query->where('nombre', 'like', "%{$termino}%")
-                      ->orWhere('apellido', 'like', "%{$termino}%")
-                      ->orWhere('documento', 'like', "%{$termino}%")
-                      ->orWhere('email', 'like', "%{$termino}%");
+                    ->orWhere('apellido', 'like', "%{$termino}%")
+                    ->orWhere('documento', 'like', "%{$termino}%")
+                    ->orWhere('email', 'like', "%{$termino}%");
             })
             ->with(['formularioDato'])
             ->limit(20)
@@ -397,8 +397,8 @@ class InscripcionController extends Controller
             $termino = $request->input('buscar');
             $query->where(function ($q) use ($termino) {
                 $q->where('nombre', 'like', "%{$termino}%")
-                  ->orWhere('apellido', 'like', "%{$termino}%")
-                  ->orWhere('documento', 'like', "%{$termino}%");
+                    ->orWhere('apellido', 'like', "%{$termino}%")
+                    ->orWhere('documento', 'like', "%{$termino}%");
             });
         }
 
@@ -408,9 +408,10 @@ class InscripcionController extends Controller
             ->orderBy('nombre')
             ->paginate(25);
 
+        // Cargar especialidades indexadas por id_sysacad para mostrar nombres en la tabla
         $especialidades = DB::connection('sysacad')->table('sysacad_especialidades')
-            ->orderBy('nombre')
-            ->get();
+            ->get()
+            ->keyBy('id_sysacad');
 
         return view('inscripciones.importar', compact(
             'alumnosDisponibles',
@@ -427,21 +428,16 @@ class InscripcionController extends Controller
         $request->validate([
             'person_ids' => 'required|array|min:1',
             'person_ids.*' => 'integer',
-            'anio_ingreso' => 'required|integer',
-            'especialidad_id_sysacad' => 'required|integer',
-            'modalidad' => 'required|string',
-            'tipo_ingreso' => 'required|string',
+            'anio_ingreso' => 'required|integer|min:2020|max:2100',
         ]);
 
         $personIds = $request->input('person_ids');
         $anioIngreso = $request->input('anio_ingreso');
-        $especialidadId = $request->input('especialidad_id_sysacad');
-        $modalidad = $request->input('modalidad');
-        $tipoIngreso = $request->input('tipo_ingreso');
 
         $importados = 0;
         $errores = 0;
         $duplicados = 0;
+        $sinDatosAcademicos = 0;
 
         DB::beginTransaction();
 
@@ -453,20 +449,31 @@ class InscripcionController extends Controller
                     continue;
                 }
 
-                // Verificar que el alumno existe
-                $persona = Person::on('alumnos_utn')->find($personId);
+                // Verificar que el alumno existe y cargar sus datos académicos
+                $persona = Person::on('alumnos_utn')
+                    ->with('academicoDatos')
+                    ->find($personId);
+
                 if (!$persona) {
                     $errores++;
                     continue;
                 }
 
-                // Crear inscripción
+                // Obtener datos académicos del alumno (primer registro)
+                $datosAcademicos = $persona->academicoDatos->first();
+                if (!$datosAcademicos) {
+                    $sinDatosAcademicos++;
+                    continue;
+                }
+
+                // Crear inscripción con datos del alumno
                 Inscripcion::create([
                     'person_id' => $personId,
                     'anio_ingreso' => $anioIngreso,
-                    'especialidad_id_sysacad' => $especialidadId,
-                    'modalidad' => $modalidad,
-                    'tipo_ingreso' => $tipoIngreso,
+                    'especialidad_id_sysacad' => $datosAcademicos->especialidad_id,
+                    'especialidad_alternativa_id_sysacad' => $datosAcademicos->especialidad_alternativa_id,
+                    'modalidad' => $datosAcademicos->modalidad ?? 'presencial',
+                    'tipo_ingreso' => $datosAcademicos->tipo_ingreso ?? 'extensivo',
                     'estado' => Inscripcion::ESTADO_PENDIENTE,
                     'usuario_registro_id' => auth()->id(),
                 ]);
@@ -480,6 +487,9 @@ class InscripcionController extends Controller
             if ($duplicados > 0) {
                 $mensaje .= " {$duplicados} duplicados omitidos.";
             }
+            if ($sinDatosAcademicos > 0) {
+                $mensaje .= " {$sinDatosAcademicos} sin datos académicos.";
+            }
             if ($errores > 0) {
                 $mensaje .= " {$errores} errores.";
             }
@@ -487,7 +497,6 @@ class InscripcionController extends Controller
             return redirect()
                 ->route('inscripciones.index')
                 ->with('success', $mensaje);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -575,7 +584,7 @@ class InscripcionController extends Controller
         // Generar archivo CSV con BOM para UTF-8 correcto en Excel
         $filename = 'inscripciones_' . date('Y-m-d_His') . '.csv';
         $handle = fopen('php://temp', 'r+');
-        
+
         // Agregar BOM para que Excel reconozca UTF-8
         fwrite($handle, "\xEF\xBB\xBF");
 
