@@ -344,7 +344,7 @@ class ComisionController extends Controller
         $inscripcion->delete();
 
         // Actualizar cupo actual
-        $comision->decrement('cupo_actual');
+        $comision->decrementarCupo();
 
         return redirect()->back()
             ->with('success', 'Alumno desinscripto exitosamente.');

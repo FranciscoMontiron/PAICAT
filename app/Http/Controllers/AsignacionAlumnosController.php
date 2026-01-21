@@ -129,26 +129,22 @@ class AsignacionAlumnosController extends Controller
     }
 
     /**
-     * Filtrar alumnos elegibles por restricción de especialidad
+     * Filtrar alumnos elegibles por requisitos (Modalidad)
+     * Ignora especialidad según reglas de ingreso.
      */
-    private function filtrarPorEspecialidad($inscripciones, Comision $comision)
+    private function filtrarPorRequisitos($inscripciones, Comision $comision)
     {
-        // Obtener especialidades de las materias de la comisión
-        $especialidades = $comision->materias
-            ->pluck('especialidad_id_sysacad')
-            ->filter() // Eliminar nulls
-            ->unique()
-            ->values();
+        return $inscripciones->filter(function ($inscripcion) use ($comision) {
+            // Regla 1: La modalidad debe coincidir (Presencial/Virtual)
+            if ($inscripcion->modalidad !== $comision->modalidad) {
+                return false;
+            }
 
-        // Si no hay restricción de especialidad (materias comunes), todos son elegibles
-        if ($especialidades->isEmpty()) {
-            return $inscripciones;
-        }
+            // Regla 2: Ignorar especialidad (cualquiera puede ir a cualquier comisión de su modalidad)
 
-        // Filtrar por especialidad (OR: coincide con principal O alternativa)
-        return $inscripciones->filter(function ($inscripcion) use ($especialidades) {
-            return $especialidades->contains($inscripcion->especialidad_id_sysacad) ||
-                $especialidades->contains($inscripcion->especialidad_alternativa_id_sysacad);
+            // Regla 3: Turno (Opcional, por ahora ignorado hasta confirmar formato)
+
+            return true;
         });
     }
 
@@ -166,11 +162,11 @@ class AsignacionAlumnosController extends Controller
         // Preparar pool por comisión
         $poolPorComision = [];
         foreach ($comisiones as $comision) {
-            $elegibles = $this->filtrarPorEspecialidad($alumnosSinAsignar, $comision);
+            $elegibles = $this->filtrarPorRequisitos($alumnosSinAsignar, $comision);
             $poolPorComision[$comision->id] = [
                 'comision' => $comision,
                 'elegibles' => $elegibles->shuffle(),
-                'cuposDisponibles' => $comision->cupos_disponibles,
+                'cuposDisponibles' => max(0, $comision->cupo_maximo - max(0, $comision->cupo_actual)),
                 'asignados' => collect(),
             ];
         }
@@ -226,11 +222,11 @@ class AsignacionAlumnosController extends Controller
         // Preparar pool por comisión
         $poolPorComision = [];
         foreach ($comisiones as $comision) {
-            $elegibles = $this->filtrarPorEspecialidad($alumnosSinAsignar, $comision);
+            $elegibles = $this->filtrarPorRequisitos($alumnosSinAsignar, $comision);
             $poolPorComision[$comision->id] = [
                 'comision' => $comision,
                 'elegibles' => $elegibles->shuffle(),
-                'cuposDisponibles' => $comision->cupos_disponibles,
+                'cuposDisponibles' => max(0, $comision->cupo_maximo - max(0, $comision->cupo_actual)),
                 'asignados' => collect(),
             ];
         }
