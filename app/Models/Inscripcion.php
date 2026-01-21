@@ -6,6 +6,7 @@ use App\Models\AlumnosUtn\AcademicoDato;
 use App\Models\AlumnosUtn\Person;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
@@ -144,6 +145,62 @@ class Inscripcion extends Model
     }
 
     /**
+     * Trayectorias del estudiante
+     */
+    public function trayectorias(): HasMany
+    {
+        return $this->hasMany(Trayectoria::class);
+    }
+
+    /**
+     * Trayectoria actual (la más reciente sin fecha_fin)
+     */
+    public function trayectoriaActual()
+    {
+        return $this->hasOne(Trayectoria::class)->whereNull('fecha_fin')->latest();
+    }
+
+    /**
+     * Solicitudes de cambio
+     */
+    public function solicitudesCambio(): HasMany
+    {
+        return $this->hasMany(SolicitudCambio::class);
+    }
+
+    /**
+     * Condiciones particulares
+     */
+    public function condicionesParticulares(): HasMany
+    {
+        return $this->hasMany(CondicionParticular::class);
+    }
+
+    /**
+     * Asistencias del estudiante (desacopladas de comisión)
+     */
+    public function asistencias(): HasMany
+    {
+        return $this->hasMany(Asistencia::class);
+    }
+
+    /**
+     * Notas del estudiante (desacopladas de comisión)
+     */
+    public function notas(): HasMany
+    {
+        return $this->hasMany(Nota::class);
+    }
+
+    /**
+     * Inscripciones a comisiones
+     */
+    public function inscripcionesComision(): HasMany
+    {
+        return $this->hasMany(InscripcionComision::class);
+    }
+
+    /**
      * Obtener el nombre de la especialidad desde sysacad
      */
     public function getEspecialidadNombreAttribute(): ?string
@@ -230,8 +287,8 @@ class Inscripcion extends Model
     public function documentacionCompleta(): bool
     {
         return $this->doc_dni_validado &&
-               $this->doc_titulo_validado &&
-               $this->doc_analitico_validado;
+            $this->doc_titulo_validado &&
+            $this->doc_analitico_validado;
     }
 
     /**
