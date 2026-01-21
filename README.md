@@ -32,7 +32,7 @@ bases_externas/alumnos.sql
 # Copiar configuración
 cp .env.example .env
 
-# Levantar contenedores
+# Levantar contenedores (Esperar luego de que termine la inicialización de la base de datos 2m aproximadamente, antes de seguir con los demas comandos)
 docker compose up -d --build
 
 # Instalar dependencias
@@ -73,6 +73,12 @@ Abrir en el navegador: **http://localhost**
 ```bash
 # Acceder al contenedor
 docker compose exec app bash
+
+# Limpiar cache
+docker compose exec app php artisan cache:clear
+
+# Limpiar cache, routes y config
+docker compose exec app php artisan optimize:clear
 
 # Resetear base de datos completamente
 docker compose exec app php artisan paicat:setup --fresh --seed
