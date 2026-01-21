@@ -68,5 +68,6 @@ bases_externas/seed_datos.sql
 !README.md
 !.env.example
 !.env.testing
+!docker/init-db.sql
 
 
