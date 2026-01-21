@@ -50,7 +50,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nota</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comision</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materias</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materia</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anio</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -86,17 +86,12 @@
                     </td>
 
                     <td class="px-6 py-4 text-sm text-gray-500">
-                        @if($evaluacion->comision && $evaluacion->comision->materias->count() > 0)
-                        @foreach($evaluacion->comision->materias->take(2) as $materia)
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1 mb-1">
-                            {{ Str::limit($materia->nombre, 12) }}
+                        @if($evaluacion->materia)
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            {{ $evaluacion->materia->nombre }}
                         </span>
-                        @endforeach
-                        @if($evaluacion->comision->materias->count() > 2)
-                        <span class="text-xs text-gray-400">+{{ $evaluacion->comision->materias->count() - 2 }}</span>
-                        @endif
                         @else
-                        <span class="text-gray-400">-</span>
+                        <span class="text-gray-400">Generla / Sin Materia</span>
                         @endif
                     </td>
 
@@ -114,6 +109,12 @@
                         @endif
                         @else
                         @if($evaluacion->comision_id)
+                        <a href="{{ route('evaluaciones.carga-masiva', $evaluacion) }}" class="text-green-600 hover:text-green-900 mr-3" title="Carga Masiva de Notas">
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path> <!-- Icono temporal, mejor tabla -->
+                            </svg>
+                            Grilla
+                        </a>
                         <a href="{{ route('evaluaciones.notas.index', $evaluacion->comision_id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Ver Notas</a>
                         @endif
                         @if(auth()->user()->hasPermission('evaluaciones.editar'))

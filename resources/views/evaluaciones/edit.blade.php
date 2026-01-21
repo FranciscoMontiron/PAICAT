@@ -8,7 +8,7 @@
     </div>
 
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
-        <form action="{{ route('evaluaciones.update', $evaluacion) }}"  method="POST" class="p-6">
+        <form action="{{ route('evaluaciones.update', $evaluacion) }}" method="POST" class="p-6">
             @csrf
             @method('PUT')
 
@@ -17,9 +17,9 @@
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Nombre *</label>
                     <input type="text" name="name" id="name" value="{{ old('name', $evaluacion->nombre) }}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('name') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('name') border-red-500 @enderror">
                     @error('name')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -27,9 +27,9 @@
                 <div>
                     <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-2">Descripcion</label>
                     <input type="text" name="descripcion" id="descripcion" value="{{ old('descripcion', $evaluacion->descripcion) }}"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('descripcion') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('descripcion') border-red-500 @enderror">
                     @error('descripcion')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -38,81 +38,93 @@
                 <div>
                     <label for="tipo" class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
                     <select name="tipo" id="tipo" required value="{{ old('tipo', $evaluacion->tipo) }}"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('tipo') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('tipo') border-red-500 @enderror">
                         <option value="">Seleccione una opción...</option>
                         @php
-                            $tipos = ['parcial', 'recuperatorio', 'examen_final', 'otro'];
+                        $tipos = ['parcial', 'recuperatorio', 'examen_final', 'otro'];
                         @endphp
                         @foreach ($tipos as $t)
-                            <option value="{{ $t }}"
-                                {{ old('tipo', $evaluacion->tipo ?? '') === $t ? 'selected' : '' }}>
-                                {{ ucfirst(str_replace('_', ' ', $t)) }}
-                            </option>
+                        <option value="{{ $t }}"
+                            {{ old('tipo', $evaluacion->tipo ?? '') === $t ? 'selected' : '' }}>
+                            {{ ucfirst(str_replace('_', ' ', $t)) }}
+                        </option>
                         @endforeach
                     </select>
 
                     @error('tipo')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                 {{-- Fecha --}}
+                {{-- Fecha --}}
                 <div>
                     <label for="fecha" class="block text-sm font-medium text-gray-700 mb-2">Fecha *</label>
                     <input type="date" name="fecha" id="fecha" value="{{ old('fecha', optional($evaluacion->fecha)->format('Y-m-d')) }}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('fecha') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('fecha') border-red-500 @enderror">
                     @error('fecha')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                  {{-- Peso porcentual --}}
+                {{-- Peso porcentual --}}
                 <div>
                     <label for="porcentual" class="block text-sm font-medium text-gray-700 mb-2">Peso porcentual *</label>
                     <input type="number" name="porcentual" id="porcentual" value="{{ old('porcentual', $evaluacion->peso_porcentual) }}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('porcentual') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('porcentual') border-red-500 @enderror">
                     @error('porcentual')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                  {{-- Comision --}}
+                {{-- Comision --}}
                 <div>
                     <label for="comision" class="block text-sm font-medium text-gray-700 mb-2">Comisión</label>
                     <select name="comision" id="comision"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('comision') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('comision') border-red-500 @enderror">
                         <option value="">Seleccione una comisión...</option>
                         @foreach ($comisiones as $comision)
-                            <option value="{{ $comision->id }}" {{ old('comision', $evaluacion->comision_id) == $comision->id ? 'selected' : '' }}>
-                                {{ $comision->nombre }} - {{ $comision->turno ?? '' }} ({{ $comision->anio ?? '' }})
-                            </option>
+                        <option value="{{ $comision->id }}" {{ old('comision', $evaluacion->comision_id) == $comision->id ? 'selected' : '' }}>
+                            {{ $comision->nombre }} - {{ $comision->turno ?? '' }} ({{ $comision->anio ?? '' }})
+                        </option>
                         @endforeach
                     </select>
                     @error('comision')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                   {{-- Año --}}
+                {{-- Materia (Dinámico) --}}
+                <div>
+                    <label for="materia_id" class="block text-sm font-medium text-gray-700 mb-2">Materia *</label>
+                    <select name="materia_id" id="materia_id" required disabled
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent bg-gray-100">
+                        <option value="">Cargando...</option>
+                    </select>
+                    @error('materia_id')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Año --}}
                 <div>
                     <label for="anio" class="block text-sm font-medium text-gray-700 mb-2">Año</label>
                     <input type="number" name="anio" id="anio" value="{{ old('anio', $evaluacion->anio) }}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('anio') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('anio') border-red-500 @enderror">
                     @error('anio')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
             </div>
 
-             {{-- Botones --}}
+            {{-- Botones --}}
             <div class="mt-8 flex justify-end gap-4">
                 <a href="{{ route('evaluaciones.index') }}"
-                   class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200">
                     Cancelar
                 </a>
                 <button type="submit"
-                        class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors duration-200">
+                    class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors duration-200">
                     Editar Evaluacion
                 </button>
             </div>
@@ -124,3 +136,70 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const comisionSelect = document.getElementById('comision');
+        const materiaSelect = document.getElementById('materia_id');
+        const materiaPreseleccionada = "{{ old('materia_id', $evaluacion->materia_id) }}";
+
+        // Función para cargar materias
+        function cargarMaterias(comisionId, selectedId = null) {
+            if (!comisionId) {
+                materiaSelect.innerHTML = '<option value="">Seleccione primero una comisión...</option>';
+                materiaSelect.disabled = true;
+                materiaSelect.classList.add('bg-gray-100');
+                return;
+            }
+
+            // Habilitar y mostrar loading
+            materiaSelect.disabled = true;
+            materiaSelect.innerHTML = '<option value="">Cargando materias...</option>';
+            materiaSelect.classList.remove('bg-gray-100');
+
+            fetch(`{{ url('evaluaciones/getMaterias') }}/${comisionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    materiaSelect.innerHTML = '<option value="">Seleccione una materia...</option>';
+
+                    if (data.length === 0) {
+                        materiaSelect.innerHTML = '<option value="">La comisión no tiene materias asignadas</option>';
+                    } else {
+                        data.forEach(materia => {
+                            const option = document.createElement('option');
+                            option.value = materia.id;
+                            option.textContent = materia.nombre;
+
+                            if (selectedId && materia.id == selectedId) {
+                                option.selected = true;
+                            }
+
+                            materiaSelect.appendChild(option);
+                        });
+                        materiaSelect.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar materias:', error);
+                    materiaSelect.innerHTML = '<option value="">Error al cargar materias</option>';
+                    materiaSelect.disabled = true;
+                    materiaSelect.classList.add('bg-gray-100');
+                });
+        }
+
+        // Evento change
+        comisionSelect.addEventListener('change', function() {
+            // Al cambiar la comisión, reseteamos la selección (sin preselección)
+            cargarMaterias(this.value, null);
+        });
+
+        // Carga inicial
+        if (comisionSelect.value) {
+            cargarMaterias(comisionSelect.value, materiaPreseleccionada);
+        } else {
+            materiaSelect.innerHTML = '<option value="">Seleccione primero una comisión...</option>';
+        }
+    });
+</script>
+@endpush

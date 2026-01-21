@@ -157,6 +157,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/notas/{comision}', [EvaluacionController::class, 'indexNota'])->name('notas.index');
         Route::get('/notas/{comision}/create', [EvaluacionController::class, 'createNota'])->middleware('permission:evaluaciones.crear')->name('notas.create');
         Route::post('/notas/{comision}', [EvaluacionController::class, 'storeNota'])->middleware('permission:evaluaciones.crear')->name('notas.store');
+        Route::post('/notasMatrix/{comision}', [EvaluacionController::class, 'storeMatrix'])->middleware('permission:evaluaciones.crear')->name('notas.store-matrix');
         Route::get('/notas/{comision}/{nota}/edit', [EvaluacionController::class, 'editNota'])->middleware('permission:evaluaciones.editar')->name('notas.edit');
         Route::put('/notas/{comision}/{nota}', [EvaluacionController::class, 'updateNota'])->middleware('permission:evaluaciones.editar')->name('notas.update');
         Route::delete('/notas/{comision}/{nota}', [EvaluacionController::class, 'destroyNota'])->middleware('permission:evaluaciones.eliminar')->name('notas.destroy');
@@ -170,6 +171,12 @@ Route::middleware('auth')->group(function () {
 
         // NOTAS - Exportar acta
         Route::get('/notas/{comision}/exportar-acta', [EvaluacionController::class, 'exportarActa'])->name('notas.exportar-acta');
+
+        // AJAX - Obtener materias
+        Route::get('/getMaterias/{comision}', [EvaluacionController::class, 'getMaterias'])->name('getMaterias');
+        // Carga Masiva
+        Route::get('/{evaluacion}/carga-masiva', [EvaluacionController::class, 'cargaMasiva'])->name('carga-masiva');
+        Route::post('/{evaluacion}/carga-masiva', [EvaluacionController::class, 'storeCargaMasiva'])->name('store-carga-masiva');
     });
 
     // Módulo 5: Reportes
