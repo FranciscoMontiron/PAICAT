@@ -2,32 +2,52 @@
 
 Plataforma de Administración del Ingreso - UTN FRLP
 
-Sistema de gestión para el Curso de Ingreso de la Universidad Tecnológica Nacional - Facultad Regional La Plata. Desarrollado con Laravel 11 + Tailwind CSS.
+Sistema de gestión para el Curso de Ingreso de la Universidad Tecnológica Nacional - Facultad Regional La Plata.
 
 ## Requisitos
 
 - Docker 20.10+
 - Docker Compose 2.0+
 
-## Instalación Rápida
+## Instalación
+
+### 1. Clonar repositorio
 
 ```bash
-# 1. Clonar repositorio
 git clone https://github.com/tu-usuario/paicat.git
 cd paicat
-
-# 2. Copiar configuración
-cp .env.example .env
-
-# 3. Levantar contenedores
-docker compose up -d
-
-# 4. Configurar aplicación (migraciones + seeders)
-docker compose exec app composer install
-docker compose exec app php artisan paicat:setup --seed
 ```
 
-Acceder en: **http://localhost**
+### 2. Descargar archivo de alumnos
+
+Descargar el archivo `alumnos.sql` desde el Drive del proyecto y colocarlo en:
+
+```
+bases_externas/alumnos.sql
+```
+
+### 3. Configurar e iniciar
+
+```bash
+# Copiar configuración
+cp .env.example .env
+
+# Levantar contenedores
+docker compose up -d --build
+
+# Instalar dependencias
+docker compose exec app composer install
+
+# Configurar base de datos (migraciones + seeders)
+docker compose exec app php artisan paicat:setup --fresh --seed
+
+# Importar alumnos desde archivo SQL
+docker compose exec app php artisan paicat:import-alumnos
+```
+
+### 4. Acceder
+
+Abrir en el navegador: **http://localhost**
 
 ## Credenciales
 
@@ -38,38 +58,15 @@ Acceder en: **http://localhost**
 | Email    | `admin@paicat.utn.edu.ar` |
 | Password | `admin123`                |
 
-### Base de Datos (Workbench/DBeaver/etc)
+### Base de Datos
 
-| Campo         | Valor           |
-| ------------- | --------------- |
-| Host          | `localhost`     |
-| Puerto        | `3306`          |
-| Base de datos | `paicat`        |
-| Usuario       | `paicat`        |
-| Password      | `paicat`        |
-| Usuario root  | `root` / `root` |
-
-## Estructura Docker
-
-### Desarrollo (docker-compose.yml)
-
-```bash
-docker compose up -d
-```
-
-| Servicio    | Puerto | Descripción            |
-| ----------- | ------ | ---------------------- |
-| **app**     | 80     | Laravel + Apache       |
-| **mariadb** | 3306   | Base de datos          |
-| **vite**    | 5173   | Hot Module Replacement |
-
-### Producción (docker-compose.prod.yml)
-
-```bash
-docker compose -f docker-compose.prod.yml up -d
-```
-
-Solo incluye `app` y `mariadb`. Configurar variables en `.env` antes de usar.
+| Campo    | Valor       |
+| -------- | ----------- |
+| Host     | `localhost` |
+| Puerto   | `3307`      |
+| Database | `paicat`    |
+| Usuario  | `paicat`    |
+| Password | `paicat`    |
 
 ## Comandos Útiles
 
@@ -77,38 +74,27 @@ Solo incluye `app` y `mariadb`. Configurar variables en `.env` antes de usar.
 # Acceder al contenedor
 docker compose exec app bash
 
-# Ejecutar setup (migraciones + seeders + cache)
-docker compose exec app php artisan paicat:setup --seed
-
-# Resetear base de datos
+# Resetear base de datos completamente
 docker compose exec app php artisan paicat:setup --fresh --seed
+
+# Re-importar alumnos
+docker compose exec app php artisan paicat:import-alumnos
 
 # Ver logs
 docker compose logs -f app
 
-# Compilar assets para producción
-docker compose exec vite npm run build
+# Detener contenedores
+docker compose down
 ```
 
-## Desarrollo
+## Estructura de Contenedores
 
-El contenedor `vite` se levanta automáticamente con Hot Module Replacement. Los cambios en CSS/JS se reflejan instantáneamente sin necesidad de refrescar.
-
-Para detener Vite (si solo trabajas en backend):
-
-```bash
-docker compose stop vite
-```
-
-## Roles
-
-| Rol             | Acceso                         |
-| --------------- | ------------------------------ |
-| **Admin**       | Completo                       |
-| **Coordinador** | Comisiones, docentes, reportes |
-| **Docente**     | Asistencias, calificaciones    |
-| **Alumno**      | Datos personales               |
+| Servicio    | Puerto | Descripción            |
+| ----------- | ------ | ---------------------- |
+| **app**     | 80     | Laravel + Apache       |
+| **mariadb** | 3307   | MariaDB 11             |
+| **vite**    | 5173   | Hot Module Replacement |
 
 ## Licencia
 
-MIT
+TODO
