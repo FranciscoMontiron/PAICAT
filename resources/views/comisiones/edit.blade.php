@@ -22,6 +22,25 @@
             @method('PUT')
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Materia -->
+                <div class="md:col-span-2">
+                    <label for="materia_id" class="block text-sm font-medium text-gray-700 mb-1">
+                        Materia <span class="text-red-500">*</span>
+                    </label>
+                    <select name="materia_id" id="materia_id" required
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('materia_id') border-red-500 @enderror">
+                        <option value="">Seleccionar materia...</option>
+                        @foreach($materias as $materia)
+                        <option value="{{ $materia->id }}" {{ old('materia_id', $comision->materia_id) == $materia->id ? 'selected' : '' }}>
+                            [{{ $materia->codigo }}] {{ $materia->nombre }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('materia_id')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Nombre -->
                 <div class="md:col-span-2">
                     <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">
@@ -30,7 +49,7 @@
                     <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $comision->nombre) }}" required
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('nombre') border-red-500 @enderror">
                     @error('nombre')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -42,7 +61,7 @@
                     <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $comision->codigo) }}" required
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('codigo') border-red-500 @enderror">
                     @error('codigo')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -56,10 +75,10 @@
                         <option value="">Seleccionar...</option>
                         @for($year = date('Y') - 2; $year <= date('Y') + 2; $year++)
                             <option value="{{ $year }}" {{ old('anio', $comision->anio) == $year ? 'selected' : '' }}>{{ $year }}</option>
-                        @endfor
+                            @endfor
                     </select>
                     @error('anio')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -76,7 +95,7 @@
                         <option value="Anual" {{ old('periodo', $comision->periodo) == 'Anual' ? 'selected' : '' }}>Anual</option>
                     </select>
                     @error('periodo')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -93,7 +112,7 @@
                         <option value="Noche" {{ old('turno', $comision->turno) == 'Noche' ? 'selected' : '' }}>Noche</option>
                     </select>
                     @error('turno')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -110,7 +129,7 @@
                         <option value="Semipresencial" {{ old('modalidad', $comision->modalidad) == 'Semipresencial' ? 'selected' : '' }}>Semipresencial</option>
                     </select>
                     @error('modalidad')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -127,7 +146,7 @@
                         <option value="cancelada" {{ old('estado', $comision->estado) == 'cancelada' ? 'selected' : '' }}>Cancelada</option>
                     </select>
                     @error('estado')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -140,7 +159,7 @@
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('cupo_maximo') border-red-500 @enderror">
                     <p class="mt-1 text-xs text-gray-500">Cupo actual: {{ $comision->cupo_actual }} inscriptos (mínimo: {{ $comision->cupo_actual }}, máximo: 200)</p>
                     @error('cupo_maximo')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -153,13 +172,13 @@
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('docente_id') border-red-500 @enderror">
                         <option value="">Sin asignar</option>
                         @foreach($docentes as $docente)
-                            <option value="{{ $docente->id }}" {{ old('docente_id', $comision->docente_id) == $docente->id ? 'selected' : '' }}>
-                                {{ $docente->nombre_completo }}
-                            </option>
+                        <option value="{{ $docente->id }}" {{ old('docente_id', $comision->docente_id) == $docente->id ? 'selected' : '' }}>
+                            {{ $docente->nombre_completo }}
+                        </option>
                         @endforeach
                     </select>
                     @error('docente_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -171,7 +190,7 @@
                     <input type="date" name="fecha_inicio" id="fecha_inicio" value="{{ old('fecha_inicio', $comision->fecha_inicio?->format('Y-m-d')) }}"
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('fecha_inicio') border-red-500 @enderror">
                     @error('fecha_inicio')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -183,7 +202,7 @@
                     <input type="date" name="fecha_fin" id="fecha_fin" value="{{ old('fecha_fin', $comision->fecha_fin?->format('Y-m-d')) }}"
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('fecha_fin') border-red-500 @enderror">
                     @error('fecha_fin')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -195,7 +214,7 @@
                     <textarea name="descripcion" id="descripcion" rows="3"
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('descripcion') border-red-500 @enderror">{{ old('descripcion', $comision->descripcion) }}</textarea>
                     @error('descripcion')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -207,7 +226,7 @@
                     <textarea name="observaciones" id="observaciones" rows="2"
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('observaciones') border-red-500 @enderror">{{ old('observaciones', $comision->observaciones) }}</textarea>
                     @error('observaciones')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
@@ -225,4 +244,3 @@
     </div>
 </div>
 @endsection
-

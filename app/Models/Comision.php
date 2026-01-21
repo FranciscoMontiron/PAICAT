@@ -15,6 +15,7 @@ class Comision extends Model
     protected $table = 'comisiones';
 
     protected $fillable = [
+        'materia_id',
         'nombre',
         'codigo',
         'descripcion',
@@ -38,6 +39,14 @@ class Comision extends Model
         'cupo_maximo' => 'integer',
         'cupo_actual' => 'integer',
     ];
+
+    /**
+     * Relación con la materia
+     */
+    public function materia(): BelongsTo
+    {
+        return $this->belongsTo(Materia::class);
+    }
 
     /**
      * Relación con el docente asignado
@@ -174,4 +183,3 @@ class Comision extends Model
         return $query->whereRaw('cupo_actual < cupo_maximo');
     }
 }
-

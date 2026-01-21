@@ -6,6 +6,7 @@ use App\Models\AcademicoDato;
 use App\Models\Comision;
 use App\Models\Inscripcion;
 use App\Models\InscripcionComision;
+use App\Models\Materia;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -68,7 +69,9 @@ class ComisionController extends Controller
             $query->where('slug', 'docente');
         })->orderBy('name')->get();
 
-        return view('comisiones.create', compact('docentes'));
+        $materias = Materia::activas()->orderBy('codigo')->get();
+
+        return view('comisiones.create', compact('docentes', 'materias'));
     }
 
     /**
@@ -77,6 +80,7 @@ class ComisionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'materia_id' => 'required|exists:materias,id',
             'nombre' => 'required|string|max:100',
             'codigo' => 'required|string|max:20|unique:comisiones,codigo',
             'descripcion' => 'nullable|string',
@@ -126,7 +130,9 @@ class ComisionController extends Controller
             $query->where('slug', 'docente');
         })->orderBy('name')->get();
 
-        return view('comisiones.edit', compact('comision', 'docentes'));
+        $materias = Materia::activas()->orderBy('codigo')->get();
+
+        return view('comisiones.edit', compact('comision', 'docentes', 'materias'));
     }
 
     /**
@@ -135,6 +141,7 @@ class ComisionController extends Controller
     public function update(Request $request, Comision $comision)
     {
         $validated = $request->validate([
+            'materia_id' => 'required|exists:materias,id',
             'nombre' => 'required|string|max:100',
             'codigo' => 'required|string|max:20|unique:comisiones,codigo,' . $comision->id,
             'descripcion' => 'nullable|string',
