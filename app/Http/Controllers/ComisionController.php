@@ -38,15 +38,15 @@ class ComisionController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('nombre', 'like', "%{$search}%")
-                  ->orWhere('codigo', 'like', "%{$search}%");
+                    ->orWhere('codigo', 'like', "%{$search}%");
             });
         }
 
         $comisiones = $query->orderBy('anio', 'desc')
-                           ->orderBy('nombre')
-                           ->paginate(15);
+            ->orderBy('nombre')
+            ->paginate(15);
 
         // Estadísticas
         $stats = [
@@ -64,8 +64,8 @@ class ComisionController extends Controller
      */
     public function create()
     {
-        $docentes = User::whereHas('roles', function($query) {
-            $query->whereIn('slug', ['admin', 'coordinador', 'docente']);
+        $docentes = User::whereHas('roles', function ($query) {
+            $query->where('slug', 'docente');
         })->orderBy('name')->get();
 
         return view('comisiones.create', compact('docentes'));
@@ -97,7 +97,7 @@ class ComisionController extends Controller
         $comision = Comision::create($validated);
 
         return redirect()->route('comisiones.show', $comision)
-                        ->with('success', 'Comisión creada exitosamente.');
+            ->with('success', 'Comisión creada exitosamente.');
     }
 
     /**
@@ -122,8 +122,8 @@ class ComisionController extends Controller
      */
     public function edit(Comision $comision)
     {
-        $docentes = User::whereHas('roles', function($query) {
-            $query->whereIn('slug', ['admin', 'coordinador', 'docente']);
+        $docentes = User::whereHas('roles', function ($query) {
+            $query->where('slug', 'docente');
         })->orderBy('name')->get();
 
         return view('comisiones.edit', compact('comision', 'docentes'));
@@ -153,7 +153,7 @@ class ComisionController extends Controller
         $comision->update($validated);
 
         return redirect()->route('comisiones.show', $comision)
-                        ->with('success', 'Comisión actualizada exitosamente.');
+            ->with('success', 'Comisión actualizada exitosamente.');
     }
 
     /**
@@ -164,13 +164,13 @@ class ComisionController extends Controller
         // Verificar que no tenga inscripciones activas
         if ($comision->inscripciones()->whereIn('estado', ['inscripto', 'confirmado'])->exists()) {
             return redirect()->back()
-                           ->with('error', 'No se puede eliminar una comisión con inscripciones activas.');
+                ->with('error', 'No se puede eliminar una comisión con inscripciones activas.');
         }
 
         $comision->delete();
 
         return redirect()->route('comisiones.index')
-                        ->with('success', 'Comisión eliminada exitosamente.');
+            ->with('success', 'Comisión eliminada exitosamente.');
     }
 
     /**
@@ -185,7 +185,7 @@ class ComisionController extends Controller
         $comision->update(['estado' => $validated['estado']]);
 
         return redirect()->back()
-                        ->with('success', 'Estado de la comisión actualizado.');
+            ->with('success', 'Estado de la comisión actualizado.');
     }
 
     /**
@@ -201,13 +201,13 @@ class ComisionController extends Controller
         $docente = User::findOrFail($validated['docente_id']);
         if (!$docente->hasAnyRole(['admin', 'coordinador', 'docente'])) {
             return redirect()->back()
-                           ->with('error', 'El usuario seleccionado no tiene permisos de docente.');
+                ->with('error', 'El usuario seleccionado no tiene permisos de docente.');
         }
 
         $comision->update(['docente_id' => $validated['docente_id']]);
 
         return redirect()->back()
-                        ->with('success', 'Docente asignado exitosamente.');
+            ->with('success', 'Docente asignado exitosamente.');
     }
 
     /**
@@ -224,9 +224,9 @@ class ComisionController extends Controller
         // Buscar inscripciones activas que no estén ya asignadas a esta comisión
         // Se incluyen: pendiente, documentacion_ok, confirmado (excluye cancelado y baja)
         $query = Inscripcion::whereNotIn('estado', [
-                Inscripcion::ESTADO_CANCELADO,
-                Inscripcion::ESTADO_BAJA
-            ])
+            Inscripcion::ESTADO_CANCELADO,
+            Inscripcion::ESTADO_BAJA
+        ])
             ->whereNotIn('id', $inscripcionesYaAsignadas);
 
         // Filtrar por búsqueda si se proporciona
@@ -237,9 +237,9 @@ class ComisionController extends Controller
             $personIds = \App\Models\AlumnosUtn\Person::on('alumnos_utn')
                 ->where(function ($q) use ($search) {
                     $q->where('nombre', 'like', "%{$search}%")
-                      ->orWhere('apellido', 'like', "%{$search}%")
-                      ->orWhere('documento', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('apellido', 'like', "%{$search}%")
+                        ->orWhere('documento', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
                 })
                 ->pluck('id')
                 ->toArray();
@@ -249,7 +249,7 @@ class ComisionController extends Controller
 
         $inscripciones = $query->limit(50)->get();
 
-        $alumnos = $inscripciones->map(function($inscripcion) {
+        $alumnos = $inscripciones->map(function ($inscripcion) {
             $person = $inscripcion->getPerson();
 
             if (!$person) {
@@ -283,7 +283,7 @@ class ComisionController extends Controller
         // Verificar que la comisión tenga cupo disponible
         if ($comision->cupos_disponibles <= 0) {
             return redirect()->back()
-                           ->with('error', 'La comisión no tiene cupos disponibles.');
+                ->with('error', 'La comisión no tiene cupos disponibles.');
         }
 
         // Verificar que el alumno no esté ya inscripto
@@ -293,7 +293,7 @@ class ComisionController extends Controller
 
         if ($yaInscripto) {
             return redirect()->back()
-                           ->with('error', 'El alumno ya está inscripto en esta comisión.');
+                ->with('error', 'El alumno ya está inscripto en esta comisión.');
         }
 
         // Crear la inscripción a la comisión
@@ -309,7 +309,7 @@ class ComisionController extends Controller
         $comision->increment('cupo_actual');
 
         return redirect()->back()
-                        ->with('success', 'Alumno inscripto exitosamente.');
+            ->with('success', 'Alumno inscripto exitosamente.');
     }
 
     /**
@@ -320,7 +320,7 @@ class ComisionController extends Controller
         // Verificar que la inscripción pertenezca a esta comisión
         if ($inscripcion->comision_id !== $comision->id) {
             return redirect()->back()
-                           ->with('error', 'La inscripción no pertenece a esta comisión.');
+                ->with('error', 'La inscripción no pertenece a esta comisión.');
         }
 
         // Eliminar la inscripción (soft delete)
@@ -330,6 +330,6 @@ class ComisionController extends Controller
         $comision->decrement('cupo_actual');
 
         return redirect()->back()
-                        ->with('success', 'Alumno desinscripto exitosamente.');
+            ->with('success', 'Alumno desinscripto exitosamente.');
     }
 }
