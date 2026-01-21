@@ -37,27 +37,27 @@
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {{-- Materia --}}
+                    {{-- Materias (selección múltiple) --}}
                     <div class="md:col-span-2">
-                        <label for="materia_id" class="block text-sm font-medium text-gray-700 mb-1.5">
-                            Materia <span class="text-red-500">*</span>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                            Materias <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 font-normal ml-1">(Seleccione una o más materias)</span>
                         </label>
-                        <select name="materia_id" id="materia_id" required
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow @error('materia_id') border-red-500 @enderror">
-                            <option value="">Seleccionar materia...</option>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-48 overflow-y-auto">
                             @foreach($materias as $materia)
-                            <option value="{{ $materia->id }}" {{ old('materia_id') == $materia->id ? 'selected' : '' }}>
-                                [{{ $materia->codigo }}] {{ $materia->nombre }}
-                            </option>
+                            <label class="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition-colors">
+                                <input type="checkbox" name="materias[]" value="{{ $materia->id }}"
+                                    {{ in_array($materia->id, old('materias', [])) ? 'checked' : '' }}
+                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-900">{{ $materia->nombre }}</span>
+                                    <span class="text-xs text-gray-500 ml-1">[{{ $materia->codigo }}]</span>
+                                </div>
+                            </label>
                             @endforeach
-                        </select>
-                        @error('materia_id')
-                        <p class="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                            {{ $message }}
-                        </p>
+                        </div>
+                        @error('materias')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\AsistenciaController;
 use App\Http\Controllers\EvaluacionController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\AsignacionAlumnosController;
 use App\Http\Controllers\Auth\AuthController;
 
 /*
@@ -76,6 +77,13 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{comision}/inscripcion/{inscripcion}', [ComisionController::class, 'desinscribirAlumno'])->middleware('permission:comisiones.editar')->name('desinscribirAlumno');
     });
 
+    // Módulo 2.5: Asignación Aleatoria de Alumnos (RF10)
+    Route::prefix('asignacion-alumnos')->name('asignacion-alumnos.')->middleware('permission:comisiones.editar')->group(function () {
+        Route::get('/', [AsignacionAlumnosController::class, 'index'])->name('index');
+        Route::post('/preview', [AsignacionAlumnosController::class, 'preview'])->name('preview');
+        Route::post('/ejecutar', [AsignacionAlumnosController::class, 'ejecutar'])->name('ejecutar');
+    });
+
     // Módulo 3: Asistencias
     Route::prefix('asistencias')->name('asistencias.')->middleware('permission:asistencias.ver')->group(function () {
 
@@ -89,6 +97,11 @@ Route::middleware('auth')->group(function () {
 
         // Alertas de alumnos en riesgo
         Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
+
+        // Seleccionar materia antes de pasar asistencia
+        Route::get('/{comision}/seleccionar-materia', [AsistenciaController::class, 'seleccionarMateria'])
+            ->middleware('permission:asistencias.crear')
+            ->name('seleccionar-materia');
 
         // Pasar asistencia (crear/modificar del día)
         Route::get('/{comision}/pasar-asistencia', [AsistenciaController::class, 'create'])
@@ -162,6 +175,17 @@ Route::middleware('auth')->group(function () {
     // Módulo 5: Reportes
     Route::prefix('reportes')->name('reportes.')->middleware('permission:reportes.ver')->group(function () {
         Route::get('/', [ReporteController::class, 'index'])->name('index');
+    });
+
+    // Módulo: Materias (ABM)
+    Route::prefix('materias')->name('materias.')->middleware('permission:comisiones.ver')->group(function () {
+        Route::get('/', [App\Http\Controllers\MateriaController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\MateriaController::class, 'create'])->middleware('permission:comisiones.crear')->name('create');
+        Route::post('/', [App\Http\Controllers\MateriaController::class, 'store'])->middleware('permission:comisiones.crear')->name('store');
+        Route::get('/{materia}', [App\Http\Controllers\MateriaController::class, 'show'])->name('show');
+        Route::get('/{materia}/edit', [App\Http\Controllers\MateriaController::class, 'edit'])->middleware('permission:comisiones.editar')->name('edit');
+        Route::put('/{materia}', [App\Http\Controllers\MateriaController::class, 'update'])->middleware('permission:comisiones.editar')->name('update');
+        Route::delete('/{materia}', [App\Http\Controllers\MateriaController::class, 'destroy'])->middleware('permission:comisiones.eliminar')->name('destroy');
     });
 
     // Módulo 6: Usuarios

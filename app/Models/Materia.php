@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
@@ -48,11 +49,11 @@ class Materia extends Model
     ];
 
     /**
-     * Comisiones de esta materia
+     * Relación N:M con comisiones (una materia puede estar en varias comisiones)
      */
-    public function comisiones(): HasMany
+    public function comisiones(): BelongsToMany
     {
-        return $this->hasMany(Comision::class, 'materia_id');
+        return $this->belongsToMany(Comision::class, 'comision_materia')->withTimestamps();
     }
 
     /**

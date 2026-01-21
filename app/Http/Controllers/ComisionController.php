@@ -18,7 +18,7 @@ class ComisionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Comision::with('docente');
+        $query = Comision::with(['docente', 'materias']);
 
         // Filtros
         if ($request->filled('anio')) {
@@ -80,7 +80,8 @@ class ComisionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'materia_id' => 'required|exists:materias,id',
+            'materias' => 'required|array|min:1',
+            'materias.*' => 'exists:materias,id',
             'nombre' => 'required|string|max:100',
             'codigo' => 'required|string|max:20|unique:comisiones,codigo',
             'descripcion' => 'nullable|string',
@@ -95,10 +96,14 @@ class ComisionController extends Controller
             'observaciones' => 'nullable|string',
         ]);
 
+        $materiasIds = $validated['materias'];
+        unset($validated['materias']);
+
         $validated['cupo_actual'] = 0;
         $validated['estado'] = 'activa';
 
         $comision = Comision::create($validated);
+        $comision->materias()->sync($materiasIds);
 
         return redirect()->route('comisiones.show', $comision)
             ->with('success', 'Comisión creada exitosamente.');
@@ -141,7 +146,8 @@ class ComisionController extends Controller
     public function update(Request $request, Comision $comision)
     {
         $validated = $request->validate([
-            'materia_id' => 'required|exists:materias,id',
+            'materias' => 'required|array|min:1',
+            'materias.*' => 'exists:materias,id',
             'nombre' => 'required|string|max:100',
             'codigo' => 'required|string|max:20|unique:comisiones,codigo,' . $comision->id,
             'descripcion' => 'nullable|string',
@@ -157,7 +163,11 @@ class ComisionController extends Controller
             'observaciones' => 'nullable|string',
         ]);
 
+        $materiasIds = $validated['materias'];
+        unset($validated['materias']);
+
         $comision->update($validated);
+        $comision->materias()->sync($materiasIds);
 
         return redirect()->route('comisiones.show', $comision)
             ->with('success', 'Comisión actualizada exitosamente.');

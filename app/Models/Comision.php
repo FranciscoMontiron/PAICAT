@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -15,7 +16,6 @@ class Comision extends Model
     protected $table = 'comisiones';
 
     protected $fillable = [
-        'materia_id',
         'nombre',
         'codigo',
         'descripcion',
@@ -41,11 +41,11 @@ class Comision extends Model
     ];
 
     /**
-     * Relación con la materia
+     * Relación N:M con materias (una comisión tiene varias materias)
      */
-    public function materia(): BelongsTo
+    public function materias(): BelongsToMany
     {
-        return $this->belongsTo(Materia::class);
+        return $this->belongsToMany(Materia::class, 'comision_materia')->withTimestamps();
     }
 
     /**
