@@ -182,6 +182,8 @@ Route::middleware('auth')->group(function () {
     // Módulo 5: Reportes
     Route::prefix('reportes')->name('reportes.')->middleware('permission:reportes.ver')->group(function () {
         Route::get('/', [ReporteController::class, 'index'])->name('index');
+        Route::get('/reportes/asistencias', [ReporteController::class, 'reporteasistenciascomision'])->name('reporteasistenciascomision');
+
     });
 
     // Módulo: Materias (ABM)
