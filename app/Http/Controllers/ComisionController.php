@@ -71,7 +71,16 @@ class ComisionController extends Controller
 
         $materias = Materia::activas()->orderBy('codigo')->get();
 
-        return view('comisiones.create', compact('docentes', 'materias'));
+        // Turnos disponibles
+        $turnos = Comision::TURNOS;
+
+        // Tipos de periodo (Intensivo/Extensivo)
+        $tiposIngreso = Comision::TIPOS_INGRESO;
+
+        // Modalidades
+        $modalidades = Comision::MODALIDADES;
+
+        return view('comisiones.create', compact('docentes', 'materias', 'turnos', 'tiposIngreso', 'modalidades'));
     }
 
     /**
@@ -86,24 +95,39 @@ class ComisionController extends Controller
             'codigo' => 'required|string|max:20|unique:comisiones,codigo',
             'descripcion' => 'nullable|string',
             'anio' => 'required|integer|min:2020|max:2100',
-            'periodo' => 'required|in:Verano,Invierno,Anual',
-            'turno' => 'required|in:Mañana,Tarde,Noche',
+            'periodo' => 'required|in:Intensivo,Extensivo',
+            'turno' => 'required|string|max:50',
             'modalidad' => 'required|in:Presencial,Virtual,Semipresencial',
             'cupo_maximo' => 'required|integer|min:1|max:200',
-            'docente_id' => 'nullable|exists:users,id',
-            'fecha_inicio' => 'nullable|date',
-            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'docentes' => 'nullable|array',
+            'docentes.*' => 'exists:users,id',
             'observaciones' => 'nullable|string',
         ]);
 
         $materiasIds = $validated['materias'];
-        unset($validated['materias']);
+        $docentesIds = $validated['docentes'] ?? [];
+        unset($validated['materias'], $validated['docentes']);
 
         $validated['cupo_actual'] = 0;
         $validated['estado'] = 'activa';
 
+        // Si hay docentes, asignar el primero como docente_id (compatibilidad)
+        if (!empty($docentesIds)) {
+            $validated['docente_id'] = $docentesIds[0];
+        }
+
         $comision = Comision::create($validated);
         $comision->materias()->sync($materiasIds);
+
+        // Agregar docentes a la tabla pivot
+        foreach ($docentesIds as $docenteId) {
+            \App\Models\ComisionDocente::create([
+                'comision_id' => $comision->id,
+                'user_id' => $docenteId,
+                'activo' => true,
+                'fecha_asignacion' => now(),
+            ]);
+        }
 
         return redirect()->route('comisiones.show', $comision)
             ->with('success', 'Comisión creada exitosamente.');
@@ -137,7 +161,17 @@ class ComisionController extends Controller
 
         $materias = Materia::activas()->orderBy('codigo')->get();
 
-        return view('comisiones.edit', compact('comision', 'docentes', 'materias'));
+        // Turnos disponibles
+        $turnos = Comision::TURNOS;
+
+        // Tipos de periodo y modalidades
+        $tiposIngreso = Comision::TIPOS_INGRESO;
+        $modalidades = Comision::MODALIDADES;
+
+        // Cargar asignaciones de docentes
+        $comision->load(['docentesActivos.docente', 'historialDocentes.docente']);
+
+        return view('comisiones.edit', compact('comision', 'docentes', 'materias', 'turnos', 'tiposIngreso', 'modalidades'));
     }
 
     /**
@@ -152,13 +186,10 @@ class ComisionController extends Controller
             'codigo' => 'required|string|max:20|unique:comisiones,codigo,' . $comision->id,
             'descripcion' => 'nullable|string',
             'anio' => 'required|integer|min:2020|max:2100',
-            'periodo' => 'required|in:Verano,Invierno,Anual',
-            'turno' => 'required|in:Mañana,Tarde,Noche',
+            'periodo' => 'required|in:Intensivo,Extensivo',
+            'turno' => 'required|string|max:50',
             'modalidad' => 'required|in:Presencial,Virtual,Semipresencial',
             'cupo_maximo' => 'required|integer|min:' . $comision->cupo_actual . '|max:200',
-            'docente_id' => 'nullable|exists:users,id',
-            'fecha_inicio' => 'nullable|date',
-            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'estado' => 'required|in:activa,cerrada,finalizada,cancelada',
             'observaciones' => 'nullable|string',
         ]);

@@ -62,56 +62,88 @@
     <div class="bg-white shadow-md rounded-lg p-6 mb-6">
         <div class="flex items-center gap-3 mb-4">
             <span class="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold text-sm">1</span>
-            <h2 class="text-lg font-semibold text-gray-800">Filtrar Alumnos por Fecha de Registro</h2>
+            <h2 class="text-lg font-semibold text-gray-800">Filtrar Alumnos</h2>
         </div>
-        <p class="text-sm text-gray-500 mb-4 ml-11">Filtra los alumnos por el período en que completaron su preinscripción online.</p>
+        <p class="text-sm text-gray-500 mb-4 ml-11">Filtra los alumnos por sus datos de preinscripción.</p>
 
         <form action="{{ route('inscripciones.importar.show') }}" method="GET" class="ml-11">
-            <div class="flex flex-wrap items-end gap-4">
-                <div class="flex-1 min-w-[180px]">
-                    <label for="fecha_desde" class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
-                    <input type="date" name="fecha_desde" id="fecha_desde" value="{{ request('fecha_desde') }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
-                </div>
-                <div class="flex-1 min-w-[180px]">
-                    <label for="fecha_hasta" class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
-                    <input type="date" name="fecha_hasta" id="fecha_hasta" value="{{ request('fecha_hasta') }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
-                </div>
-                <div class="flex-1 min-w-[200px]">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+                <div class="lg:col-span-2">
                     <label for="buscar" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
                     <input type="text" name="buscar" id="buscar" value="{{ request('buscar') }}" placeholder="Nombre o DNI..."
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                </div>
+                <div>
+                    <label for="modalidad" class="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
+                    <select name="modalidad" id="modalidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                        <option value="">Todas</option>
+                        @foreach($modalidades as $modalidad)
+                            <option value="{{ $modalidad }}" {{ request('modalidad') == $modalidad ? 'selected' : '' }}>{{ $modalidad }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="turno_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Turno</label>
+                    <select name="turno_ingreso" id="turno_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                        <option value="">Todos</option>
+                        @foreach($turnos as $turno)
+                            <option value="{{ $turno }}" {{ request('turno_ingreso') == $turno ? 'selected' : '' }}>{{ $turno }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="anio_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Año Ingreso</label>
+                    <select name="anio_ingreso" id="anio_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                        <option value="">Todos</option>
+                        @foreach($aniosDisponibles as $anio)
+                            <option value="{{ $anio }}" {{ request('anio_ingreso') == $anio ? 'selected' : '' }}>{{ $anio }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="flex gap-2">
                     <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
                         Filtrar
                     </button>
-                    @if(request()->hasAny(['fecha_desde', 'fecha_hasta', 'buscar']))
+                    @if(request()->hasAny(['buscar', 'modalidad', 'turno_ingreso', 'anio_ingreso', 'incluir_incompletos']))
                     <a href="{{ route('inscripciones.importar.show') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
                         Limpiar
                     </a>
                     @endif
                 </div>
             </div>
+
+            {{-- Checkbox para incluir incompletos --}}
+            <div class="mt-4">
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="incluir_incompletos" value="1" {{ request('incluir_incompletos') ? 'checked' : '' }}
+                        class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        onchange="this.form.submit()">
+                    <span class="ml-2 text-sm text-gray-700">Incluir alumnos con formulario incompleto</span>
+                </label>
+            </div>
         </form>
 
-        @if(request()->hasAny(['fecha_desde', 'fecha_hasta', 'buscar']))
+        @if(request()->hasAny(['buscar', 'modalidad', 'turno_ingreso', 'anio_ingreso']))
         <div class="mt-3 ml-11 flex flex-wrap gap-2 items-center">
-            <span class="text-xs text-gray-500">Filtros:</span>
-            @if(request('fecha_desde'))
-            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
-                Desde: {{ \Carbon\Carbon::parse(request('fecha_desde'))->format('d/m/Y') }}
-            </span>
-            @endif
-            @if(request('fecha_hasta'))
-            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
-                Hasta: {{ \Carbon\Carbon::parse(request('fecha_hasta'))->format('d/m/Y') }}
-            </span>
-            @endif
+            <span class="text-xs text-gray-500">Filtros activos:</span>
             @if(request('buscar'))
             <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
                 "{{ request('buscar') }}"
+            </span>
+            @endif
+            @if(request('modalidad'))
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
+                {{ request('modalidad') }}
+            </span>
+            @endif
+            @if(request('turno_ingreso'))
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
+                Turno: {{ request('turno_ingreso') }}
+            </span>
+            @endif
+            @if(request('anio_ingreso'))
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
+                Año: {{ request('anio_ingreso') }}
             </span>
             @endif
         </div>
@@ -122,29 +154,12 @@
     <form action="{{ route('inscripciones.importar') }}" method="POST" id="form-importar">
         @csrf
 
-        {{-- PASO 2: Configuración de inscripción --}}
-        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
-            <div class="flex items-center gap-3 mb-4">
-                <span class="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold text-sm">2</span>
-                <h2 class="text-lg font-semibold text-gray-800">Año de Ingreso</h2>
-            </div>
-            <p class="text-sm text-gray-500 mb-4 ml-11">La especialidad, modalidad y tipo de ingreso se tomarán automáticamente de los datos de cada alumno.</p>
-
-            <div class="ml-11 max-w-xs">
-                <label for="anio_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Año de Ingreso <span class="text-red-500">*</span></label>
-                <input type="number" name="anio_ingreso" id="anio_ingreso" required
-                    value="{{ $anioActual + 1 }}"
-                    min="2020" max="2100" step="1"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
-            </div>
-        </div>
-
-        {{-- PASO 3: Seleccionar alumnos --}}
+        {{-- PASO 2: Seleccionar alumnos --}}
         <div class="bg-white shadow-md rounded-lg overflow-hidden">
             <div class="p-4 border-b bg-gray-50">
                 <div class="flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center gap-3">
-                        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold text-sm">3</span>
+                        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold text-sm">2</span>
                         <div>
                             <h2 class="text-lg font-semibold text-gray-800">Seleccionar Alumnos</h2>
                             <p class="text-sm text-gray-500">
@@ -175,6 +190,8 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Especialidad</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modalidad</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turno Ingreso</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Año Ingreso</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                         </tr>
                     </thead>
@@ -220,6 +237,14 @@
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                                 {{ $acadDatos?->modalidad ?? '-' }}
                             </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                {{ $acadDatos?->turno_ingreso ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-semibold rounded bg-indigo-100 text-indigo-800">
+                                    {{ $acadDatos?->ingreso_carrera ?? '-' }}
+                                </span>
+                            </td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs font-medium rounded-full {{ $alumno->formularioDato?->estado === 'Completo' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
                                     {{ $alumno->formularioDato?->estado ?? 'Sin datos' }}
@@ -228,7 +253,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-12 text-center text-gray-500">
+                            <td colspan="8" class="px-4 py-12 text-center text-gray-500">
                                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                 </svg>
@@ -301,11 +326,8 @@
                         </p>
                     </div>
                     <div class="mt-3 bg-gray-50 rounded-lg p-3">
-                        <p class="text-xs text-gray-600">
-                            <strong>Año de ingreso:</strong> <span id="modal-anio" class="text-gray-800">-</span>
-                        </p>
-                        <p class="text-xs text-gray-500 mt-1">
-                            La especialidad, modalidad y tipo de ingreso se tomarán de los datos de cada alumno.
+                        <p class="text-xs text-gray-500">
+                            Todos los datos (especialidad, modalidad, turnos, año de ingreso) se tomarán automáticamente de la preinscripción de cada alumno.
                         </p>
                     </div>
                 </div>
@@ -441,13 +463,6 @@
         // Evento del botón importar - validar y abrir modal
         btnImportar.addEventListener('click', function() {
             var seleccionados = document.querySelectorAll('.checkbox-alumno:checked').length;
-            var anioIngreso = document.getElementById('anio_ingreso');
-
-            // Validar año de ingreso
-            if (!anioIngreso.value || anioIngreso.value < 2020 || anioIngreso.value > 2100) {
-                mostrarErrorCampo(anioIngreso, 'Ingresa un año válido (2020-2100)');
-                return;
-            }
 
             // Validar selección de alumnos
             if (seleccionados === 0) {
@@ -476,7 +491,6 @@
 
             // Todo válido - actualizar información en el modal
             modalCantidad.textContent = seleccionados;
-            document.getElementById('modal-anio').textContent = anioIngreso.value;
 
             abrirModal();
         });

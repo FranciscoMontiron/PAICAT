@@ -15,6 +15,31 @@ class Comision extends Model
 
     protected $table = 'comisiones';
 
+    /**
+     * Tipos de periodo disponibles (igual que tipo_ingreso en Inscripcion)
+     */
+    const TIPOS_INGRESO = [
+        'Intensivo' => 'Intensivo',
+        'Extensivo' => 'Extensivo',
+    ];
+
+    /**
+     * Turnos disponibles (valores de la BD de alumnos)
+     */
+    const TURNOS = [
+        'mañana' => 'Mañana',
+        'tardenoche' => 'TardeNoche',
+    ];
+
+    /**
+     * Modalidades disponibles
+     */
+    const MODALIDADES = [
+        'Presencial' => 'Presencial',
+        'Virtual' => 'Virtual',
+        'Semipresencial' => 'Semipresencial',
+    ];
+
     protected $fillable = [
         'nombre',
         'codigo',
@@ -26,15 +51,11 @@ class Comision extends Model
         'cupo_maximo',
         'cupo_actual',
         'docente_id',
-        'fecha_inicio',
-        'fecha_fin',
         'estado',
         'observaciones',
     ];
 
     protected $casts = [
-        'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
         'anio' => 'integer',
         'cupo_maximo' => 'integer',
         'cupo_actual' => 'integer',
@@ -49,11 +70,45 @@ class Comision extends Model
     }
 
     /**
-     * Relación con el docente asignado
+     * Relación con el docente asignado (legacy, para compatibilidad)
      */
     public function docente(): BelongsTo
     {
         return $this->belongsTo(User::class, 'docente_id');
+    }
+
+    /**
+     * Todas las asignaciones de docentes (activos e inactivos)
+     */
+    public function asignacionesDocentes(): HasMany
+    {
+        return $this->hasMany(ComisionDocente::class);
+    }
+
+    /**
+     * Docentes actualmente asignados (solo activos)
+     */
+    public function docentesActivos(): HasMany
+    {
+        return $this->hasMany(ComisionDocente::class)->where('activo', true);
+    }
+
+    /**
+     * Historial de docentes (solo inactivos)
+     */
+    public function historialDocentes(): HasMany
+    {
+        return $this->hasMany(ComisionDocente::class)->where('activo', false);
+    }
+
+    /**
+     * Relación N:M con usuarios docentes (para acceso directo)
+     */
+    public function docentes(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'comision_docente')
+            ->withPivot(['activo', 'fecha_asignacion', 'fecha_baja', 'observaciones'])
+            ->withTimestamps();
     }
 
     /**

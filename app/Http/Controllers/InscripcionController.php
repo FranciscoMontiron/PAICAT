@@ -61,6 +61,10 @@ class InscripcionController extends Controller
             $query->where('tipo_ingreso', $request->input('tipo_ingreso'));
         }
 
+        if ($request->filled('turno_ingreso')) {
+            $query->where('turno_ingreso', $request->input('turno_ingreso'));
+        }
+
         $inscripciones = $query->paginate(25)->withQueryString();
 
         // Cargar datos de personas para cada inscripción
@@ -74,6 +78,20 @@ class InscripcionController extends Controller
         $especialidades = DB::connection('sysacad')->table('sysacad_especialidades')
             ->orderBy('nombre')
             ->get();
+
+        // Obtener turnos únicos desde inscripciones (valores reales)
+        $turnos = Inscripcion::select('turno_ingreso')
+            ->distinct()
+            ->whereNotNull('turno_ingreso')
+            ->orderBy('turno_ingreso')
+            ->pluck('turno_ingreso');
+
+        // Obtener modalidades únicas desde inscripciones (valores reales)
+        $modalidades = Inscripcion::select('modalidad')
+            ->distinct()
+            ->whereNotNull('modalidad')
+            ->orderBy('modalidad')
+            ->pluck('modalidad');
 
         // Años disponibles para el filtro
         $aniosDisponibles = Inscripcion::select('anio_ingreso')
@@ -89,6 +107,8 @@ class InscripcionController extends Controller
             'inscripciones',
             'personas',
             'especialidades',
+            'turnos',
+            'modalidades',
             'aniosDisponibles'
         ));
     }
@@ -369,27 +389,23 @@ class InscripcionController extends Controller
     public function showImportar(Request $request): View
     {
         // Obtener alumnos de alumnos_utn que no tienen inscripción activa
-        $anioActual = date('Y');
-
         $inscripcionesActivas = Inscripcion::activas()
-            ->where('anio_ingreso', $anioActual)
             ->pluck('person_id')
             ->toArray();
 
         $query = Person::on('alumnos_utn')
             ->with(['academicoDatos', 'formularioDato'])
-            ->whereNotIn('id', $inscripcionesActivas)
-            ->whereHas('formularioDato', function ($q) {
+            ->whereNotIn('id', $inscripcionesActivas);
+
+        // Filtro por estado del formulario (por defecto solo Completo)
+        if ($request->boolean('incluir_incompletos')) {
+            // Mostrar todos (Completo e Incompleto)
+            $query->whereHas('formularioDato');
+        } else {
+            // Solo mostrar Completo
+            $query->whereHas('formularioDato', function ($q) {
                 $q->where('estado', 'Completo');
             });
-
-        // Filtro por rango de fechas de registro
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('created_at', '>=', $request->input('fecha_desde'));
-        }
-
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('created_at', '<=', $request->input('fecha_hasta'));
         }
 
         // Filtro por búsqueda de nombre/DNI
@@ -402,8 +418,31 @@ class InscripcionController extends Controller
             });
         }
 
+        // Filtro por modalidad (en academico_datos)
+        if ($request->filled('modalidad')) {
+            $modalidad = $request->input('modalidad');
+            $query->whereHas('academicoDatos', function ($q) use ($modalidad) {
+                $q->where('modalidad', $modalidad);
+            });
+        }
+
+        // Filtro por turno de ingreso (en academico_datos)
+        if ($request->filled('turno_ingreso')) {
+            $turno = $request->input('turno_ingreso');
+            $query->whereHas('academicoDatos', function ($q) use ($turno) {
+                $q->where('turno_ingreso', $turno);
+            });
+        }
+
+        // Filtro por año de ingreso (en academico_datos)
+        if ($request->filled('anio_ingreso')) {
+            $anio = $request->input('anio_ingreso');
+            $query->whereHas('academicoDatos', function ($q) use ($anio) {
+                $q->where('ingreso_carrera', $anio);
+            });
+        }
+
         $alumnosDisponibles = $query
-            ->orderBy('created_at', 'desc')
             ->orderBy('apellido')
             ->orderBy('nombre')
             ->paginate(25);
@@ -413,10 +452,38 @@ class InscripcionController extends Controller
             ->get()
             ->keyBy('id_sysacad');
 
+        // Obtener turnos únicos desde academico_datos (valores reales)
+        $turnos = DB::connection('alumnos_utn')
+            ->table('academico_datos')
+            ->select('turno_ingreso')
+            ->distinct()
+            ->whereNotNull('turno_ingreso')
+            ->orderBy('turno_ingreso')
+            ->pluck('turno_ingreso');
+
+        // Obtener modalidades únicas desde academico_datos (valores reales)
+        $modalidades = DB::connection('alumnos_utn')
+            ->table('academico_datos')
+            ->select('modalidad')
+            ->distinct()
+            ->whereNotNull('modalidad')
+            ->orderBy('modalidad')
+            ->pluck('modalidad');
+
+        // Años de ingreso disponibles en alumnos_utn
+        $aniosDisponibles = DB::connection('alumnos_utn')
+            ->table('academico_datos')
+            ->select('ingreso_carrera')
+            ->distinct()
+            ->orderBy('ingreso_carrera', 'desc')
+            ->pluck('ingreso_carrera');
+
         return view('inscripciones.importar', compact(
             'alumnosDisponibles',
             'especialidades',
-            'anioActual'
+            'turnos',
+            'modalidades',
+            'aniosDisponibles'
         ));
     }
 
@@ -428,11 +495,9 @@ class InscripcionController extends Controller
         $request->validate([
             'person_ids' => 'required|array|min:1',
             'person_ids.*' => 'integer',
-            'anio_ingreso' => 'required|integer|min:2020|max:2100',
         ]);
 
         $personIds = $request->input('person_ids');
-        $anioIngreso = $request->input('anio_ingreso');
 
         $importados = 0;
         $errores = 0;
@@ -443,12 +508,6 @@ class InscripcionController extends Controller
 
         try {
             foreach ($personIds as $personId) {
-                // Verificar duplicado
-                if (Inscripcion::esDuplicado($personId, $anioIngreso)) {
-                    $duplicados++;
-                    continue;
-                }
-
                 // Verificar que el alumno existe y cargar sus datos académicos
                 $persona = Person::on('alumnos_utn')
                     ->with('academicoDatos')
@@ -466,14 +525,25 @@ class InscripcionController extends Controller
                     continue;
                 }
 
-                // Crear inscripción con datos del alumno
+                // El año de ingreso se toma de los datos académicos del alumno
+                $anioIngreso = $datosAcademicos->ingreso_carrera;
+
+                // Verificar duplicado con el año de ingreso del alumno
+                if (Inscripcion::esDuplicado($personId, $anioIngreso)) {
+                    $duplicados++;
+                    continue;
+                }
+
+                // Crear inscripción con TODOS los datos del alumno desde alumnos_utn
                 Inscripcion::create([
                     'person_id' => $personId,
                     'anio_ingreso' => $anioIngreso,
                     'especialidad_id_sysacad' => $datosAcademicos->especialidad_id,
                     'especialidad_alternativa_id_sysacad' => $datosAcademicos->especialidad_alternativa_id,
-                    'modalidad' => $datosAcademicos->modalidad ?? 'presencial',
-                    'tipo_ingreso' => $datosAcademicos->tipo_ingreso ?? 'extensivo',
+                    'modalidad' => $datosAcademicos->modalidad ?? 'Presencial',
+                    'turno_ingreso' => $datosAcademicos->turno_ingreso,
+                    'turno_carrera' => $datosAcademicos->turno_carrera,
+                    'tipo_ingreso' => $datosAcademicos->tipo_ingreso ?? 'Extensivo',
                     'estado' => Inscripcion::ESTADO_PENDIENTE,
                     'usuario_registro_id' => auth()->id(),
                 ]);

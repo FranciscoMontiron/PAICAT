@@ -70,55 +70,77 @@
 
     {{-- Filtros --}}
     <div class="bg-white shadow-md rounded-lg p-4 mb-6">
-        <form action="{{ route('inscripciones.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div class="md:col-span-2">
-                <label for="buscar" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-                <input type="text" name="buscar" id="buscar" value="{{ request('buscar') }}"
-                       placeholder="Nombre, DNI o email..."
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-            </div>
+        <form action="{{ route('inscripciones.index') }}" method="GET">
+            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                <div class="md:col-span-2">
+                    <label for="buscar" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                    <input type="text" name="buscar" id="buscar" value="{{ request('buscar') }}"
+                           placeholder="Nombre, DNI o email..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                </div>
 
-            <div>
-                <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select name="estado" id="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                    <option value="">Todos</option>
-                    @foreach(\App\Models\Inscripcion::ESTADOS as $key => $value)
-                        <option value="{{ $key }}" {{ request('estado') == $key ? 'selected' : '' }}>{{ $value }}</option>
-                    @endforeach
-                </select>
-            </div>
+                <div>
+                    <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                    <select name="estado" id="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                        <option value="">Todos</option>
+                        @foreach(\App\Models\Inscripcion::ESTADOS as $key => $value)
+                            <option value="{{ $key }}" {{ request('estado') == $key ? 'selected' : '' }}>{{ $value }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div>
-                <label for="anio_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Año</label>
-                <select name="anio_ingreso" id="anio_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                    <option value="">Todos</option>
-                    @foreach($aniosDisponibles as $anio)
-                        <option value="{{ $anio }}" {{ request('anio_ingreso') == $anio ? 'selected' : '' }}>{{ $anio }}</option>
-                    @endforeach
-                </select>
-            </div>
+                <div>
+                    <label for="anio_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Año</label>
+                    <select name="anio_ingreso" id="anio_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                        <option value="">Todos</option>
+                        @foreach($aniosDisponibles as $anio)
+                            <option value="{{ $anio }}" {{ request('anio_ingreso') == $anio ? 'selected' : '' }}>{{ $anio }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div>
-                <label for="especialidad" class="block text-sm font-medium text-gray-700 mb-1">Especialidad</label>
-                <select name="especialidad" id="especialidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                    <option value="">Todas</option>
-                    @foreach($especialidades as $esp)
-                        <option value="{{ $esp->id_sysacad }}" {{ request('especialidad') == $esp->id_sysacad ? 'selected' : '' }}>{{ $esp->nombre }}</option>
-                    @endforeach
-                </select>
-            </div>
+                <div>
+                    <label for="modalidad" class="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
+                    <select name="modalidad" id="modalidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                        <option value="">Todas</option>
+                        @foreach($modalidades as $modalidad)
+                            <option value="{{ $modalidad }}" {{ request('modalidad') == $modalidad ? 'selected' : '' }}>{{ $modalidad }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div class="flex items-end gap-2">
-                <button type="submit" class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-200">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </button>
-                <a href="{{ route('inscripciones.index') }}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors duration-200">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </a>
+                <div>
+                    <label for="turno_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Turno Ingreso</label>
+                    <select name="turno_ingreso" id="turno_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                        <option value="">Todos</option>
+                        @foreach($turnos as $turno)
+                            <option value="{{ $turno }}" {{ request('turno_ingreso') == $turno ? 'selected' : '' }}>{{ $turno }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label for="especialidad" class="block text-sm font-medium text-gray-700 mb-1">Especialidad</label>
+                    <select name="especialidad" id="especialidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                        <option value="">Todas</option>
+                        @foreach($especialidades as $esp)
+                            <option value="{{ $esp->id_sysacad }}" {{ request('especialidad') == $esp->id_sysacad ? 'selected' : '' }}>{{ $esp->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                    <a href="{{ route('inscripciones.index') }}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </a>
+                </div>
             </div>
         </form>
     </div>
@@ -130,6 +152,7 @@
                 <tr>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Alumno</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Especialidad</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-28">Turno</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-20">Año</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-32">Estado</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-12" title="DNI / Título / Analítico">Docs</th>
@@ -163,6 +186,10 @@
                     <td class="px-4 py-3">
                         <div class="text-sm text-gray-900">{{ $inscripcion->especialidad_nombre ?? 'N/A' }}</div>
                         <div class="text-xs text-gray-500">{{ $inscripcion->modalidad }}</div>
+                    </td>
+                    {{-- Turno --}}
+                    <td class="px-4 py-3 text-center">
+                        <span class="text-xs text-gray-600">{{ $inscripcion->turno_ingreso ?? '-' }}</span>
                     </td>
                     {{-- Año --}}
                     <td class="px-4 py-3 text-center">
@@ -222,7 +249,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 py-10 text-center text-gray-500">
+                    <td colspan="7" class="px-4 py-10 text-center text-gray-500">
                         <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>

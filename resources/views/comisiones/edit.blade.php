@@ -114,16 +114,16 @@
                         <select name="periodo" id="periodo" required
                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('periodo') border-red-500 @enderror">
                             <option value="">Seleccionar...</option>
-                            <option value="Verano" {{ old('periodo', $comision->periodo) == 'Verano' ? 'selected' : '' }}>Verano</option>
-                            <option value="Invierno" {{ old('periodo', $comision->periodo) == 'Invierno' ? 'selected' : '' }}>Invierno</option>
-                            <option value="Anual" {{ old('periodo', $comision->periodo) == 'Anual' ? 'selected' : '' }}>Anual</option>
+                            @foreach($tiposIngreso as $key => $value)
+                            <option value="{{ $key }}" {{ old('periodo', $comision->periodo) == $key ? 'selected' : '' }}>{{ $value }}</option>
+                            @endforeach
                         </select>
                         @error('periodo')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <!-- Turno -->
+                    <!-- Turno (dinámico desde sysacad) -->
                     <div>
                         <label for="turno" class="block text-sm font-medium text-gray-700 mb-1">
                             Turno <span class="text-red-500">*</span>
@@ -131,9 +131,9 @@
                         <select name="turno" id="turno" required
                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('turno') border-red-500 @enderror">
                             <option value="">Seleccionar...</option>
-                            <option value="Mañana" {{ old('turno', $comision->turno) == 'Mañana' ? 'selected' : '' }}>Mañana</option>
-                            <option value="Tarde" {{ old('turno', $comision->turno) == 'Tarde' ? 'selected' : '' }}>Tarde</option>
-                            <option value="Noche" {{ old('turno', $comision->turno) == 'Noche' ? 'selected' : '' }}>Noche</option>
+                            @foreach($turnos as $key => $value)
+                            <option value="{{ $key }}" {{ old('turno', $comision->turno) == $key ? 'selected' : '' }}>{{ $value }}</option>
+                            @endforeach
                         </select>
                         @error('turno')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -148,9 +148,9 @@
                         <select name="modalidad" id="modalidad" required
                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('modalidad') border-red-500 @enderror">
                             <option value="">Seleccionar...</option>
-                            <option value="Presencial" {{ old('modalidad', $comision->modalidad) == 'Presencial' ? 'selected' : '' }}>Presencial</option>
-                            <option value="Virtual" {{ old('modalidad', $comision->modalidad) == 'Virtual' ? 'selected' : '' }}>Virtual</option>
-                            <option value="Semipresencial" {{ old('modalidad', $comision->modalidad) == 'Semipresencial' ? 'selected' : '' }}>Semipresencial</option>
+                            @foreach($modalidades as $key => $value)
+                            <option value="{{ $key }}" {{ old('modalidad', $comision->modalidad) == $key ? 'selected' : '' }}>{{ $value }}</option>
+                            @endforeach
                         </select>
                         @error('modalidad')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -183,49 +183,6 @@
                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('cupo_maximo') border-red-500 @enderror">
                         <p class="mt-1 text-xs text-gray-500">Cupo actual: {{ $comision->cupo_actual }} inscriptos (mínimo: {{ $comision->cupo_actual }}, máximo: 200)</p>
                         @error('cupo_maximo')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Docente -->
-                    <div>
-                        <label for="docente_id" class="block text-sm font-medium text-gray-700 mb-1">
-                            Docente Asignado
-                        </label>
-                        <select name="docente_id" id="docente_id"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('docente_id') border-red-500 @enderror">
-                            <option value="">Sin asignar</option>
-                            @foreach($docentes as $docente)
-                            <option value="{{ $docente->id }}" {{ old('docente_id', $comision->docente_id) == $docente->id ? 'selected' : '' }}>
-                                {{ $docente->nombre_completo }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @error('docente_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Fecha Inicio -->
-                    <div>
-                        <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-1">
-                            Fecha de Inicio
-                        </label>
-                        <input type="date" name="fecha_inicio" id="fecha_inicio" value="{{ old('fecha_inicio', $comision->fecha_inicio?->format('Y-m-d')) }}"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('fecha_inicio') border-red-500 @enderror">
-                        @error('fecha_inicio')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Fecha Fin -->
-                    <div>
-                        <label for="fecha_fin" class="block text-sm font-medium text-gray-700 mb-1">
-                            Fecha de Fin
-                        </label>
-                        <input type="date" name="fecha_fin" id="fecha_fin" value="{{ old('fecha_fin', $comision->fecha_fin?->format('Y-m-d')) }}"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 @error('fecha_fin') border-red-500 @enderror">
-                        @error('fecha_fin')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
