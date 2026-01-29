@@ -25,6 +25,22 @@
             <div>
                 <h2 class="text-2xl font-bold">{{ $totalAsignar }} alumnos serán asignados</h2>
                 <p class="opacity-90">a {{ count($simulacion) }} comisiones</p>
+                @if(isset($distribuirPorCarrera) && $distribuirPorCarrera)
+                <p class="mt-2 text-sm bg-white/20 inline-block px-3 py-1 rounded-full">
+                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Distribución equitativa por carrera activada
+                </p>
+                @endif
+                @if(isset($filtrarEspecialidad) && $filtrarEspecialidad && isset($especialidades[$filtrarEspecialidad]))
+                <p class="mt-2 text-sm bg-white/20 inline-block px-3 py-1 rounded-full">
+                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    Filtrado por: {{ $especialidades[$filtrarEspecialidad] }}
+                </p>
+                @endif
             </div>
             <div class="bg-white/20 p-4 rounded-full">
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,6 +56,12 @@
         @foreach($comisionesIds as $id)
         <input type="hidden" name="comisiones[]" value="{{ $id }}">
         @endforeach
+        @if(isset($distribuirPorCarrera) && $distribuirPorCarrera)
+        <input type="hidden" name="distribuir_por_carrera" value="1">
+        @endif
+        @if(isset($filtrarEspecialidad) && $filtrarEspecialidad)
+        <input type="hidden" name="filtrar_especialidad" value="{{ $filtrarEspecialidad }}">
+        @endif
 
         <!-- Detalle por comisión -->
         <div class="space-y-6 mb-6">
@@ -64,6 +86,16 @@
                             <span class="text-gray-500">/ {{ $item['cuposDisponibles'] }} cupos</span>
                         </div>
                     </div>
+                    @if(isset($item['distribucionPorCarrera']) && $item['distribucionPorCarrera']->count() > 0 && isset($distribuirPorCarrera) && $distribuirPorCarrera)
+                    <div class="mt-3 pt-3 border-t border-gray-200">
+                        <span class="text-xs font-medium text-gray-500 mr-2">Distribución por carrera:</span>
+                        @foreach($item['distribucionPorCarrera'] as $espId => $cantidad)
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 mr-1">
+                            {{ isset($especialidades[$espId]) ? Str::limit($especialidades[$espId], 20) : 'Sin carrera' }}: {{ $cantidad }}
+                        </span>
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
 
                 @if($item['asignados']->count() > 0)

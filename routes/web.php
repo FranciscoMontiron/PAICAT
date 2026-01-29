@@ -10,6 +10,8 @@ use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\AsignacionAlumnosController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\MunicipioController;
+use App\Http\Controllers\AulaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,6 +99,9 @@ Route::middleware('auth')->group(function () {
 
         // Alertas de alumnos en riesgo
         Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
+
+        // Listado de asistencia por materia
+        Route::get('/por-materia', [AsistenciaController::class, 'porMateria'])->name('por-materia');
 
         // Seleccionar materia antes de pasar asistencia
         Route::get('/{comision}/seleccionar-materia', [AsistenciaController::class, 'seleccionarMateria'])
@@ -193,6 +198,47 @@ Route::middleware('auth')->group(function () {
         Route::get('/{materia}/edit', [App\Http\Controllers\MateriaController::class, 'edit'])->middleware('permission:comisiones.editar')->name('edit');
         Route::put('/{materia}', [App\Http\Controllers\MateriaController::class, 'update'])->middleware('permission:comisiones.editar')->name('update');
         Route::delete('/{materia}', [App\Http\Controllers\MateriaController::class, 'destroy'])->middleware('permission:comisiones.eliminar')->name('destroy');
+    });
+
+    // Módulo: Municipios (ABM)
+    Route::prefix('municipios')->name('municipios.')->middleware('permission:comisiones.ver')->group(function () {
+        Route::get('/', [MunicipioController::class, 'index'])->name('index');
+        Route::get('/create', [MunicipioController::class, 'create'])->middleware('permission:comisiones.crear')->name('create');
+        Route::post('/', [MunicipioController::class, 'store'])->middleware('permission:comisiones.crear')->name('store');
+        Route::get('/{municipio}', [MunicipioController::class, 'show'])->name('show');
+        Route::get('/{municipio}/edit', [MunicipioController::class, 'edit'])->middleware('permission:comisiones.editar')->name('edit');
+        Route::put('/{municipio}', [MunicipioController::class, 'update'])->middleware('permission:comisiones.editar')->name('update');
+        Route::patch('/{municipio}/toggle-activo', [MunicipioController::class, 'toggleActivo'])->middleware('permission:comisiones.editar')->name('toggle-activo');
+        Route::delete('/{municipio}', [MunicipioController::class, 'destroy'])->middleware('permission:comisiones.eliminar')->name('destroy');
+    });
+
+    // Módulo: Aulas (ABM)
+    Route::prefix('aulas')->name('aulas.')->middleware('permission:comisiones.ver')->group(function () {
+        Route::get('/', [AulaController::class, 'index'])->name('index');
+        Route::get('/create', [AulaController::class, 'create'])->middleware('permission:comisiones.crear')->name('create');
+        Route::post('/', [AulaController::class, 'store'])->middleware('permission:comisiones.crear')->name('store');
+        Route::get('/{aula}', [AulaController::class, 'show'])->name('show');
+        Route::get('/{aula}/edit', [AulaController::class, 'edit'])->middleware('permission:comisiones.editar')->name('edit');
+        Route::put('/{aula}', [AulaController::class, 'update'])->middleware('permission:comisiones.editar')->name('update');
+        Route::patch('/{aula}/toggle-activa', [AulaController::class, 'toggleActiva'])->middleware('permission:comisiones.editar')->name('toggle-activa');
+        Route::delete('/{aula}', [AulaController::class, 'destroy'])->middleware('permission:comisiones.eliminar')->name('destroy');
+        // API: Obtener aulas por municipio (para AJAX)
+        Route::get('/por-municipio/{municipio}', [AulaController::class, 'porMunicipio'])->name('por-municipio');
+    });
+
+    // Módulo: Cursadas (gestión de cursadas por comisión)
+    Route::prefix('cursadas')->name('cursadas.')->middleware('permission:comisiones.ver')->group(function () {
+        // Vista global de todas las cursadas
+        Route::get('/', [App\Http\Controllers\CursadaController::class, 'indexGlobal'])->name('global');
+
+        // Rutas anidadas por comisión
+        Route::get('/comision/{comision}', [App\Http\Controllers\CursadaController::class, 'index'])->name('index');
+        Route::get('/comision/{comision}/{cursada}', [App\Http\Controllers\CursadaController::class, 'show'])->name('show');
+        Route::get('/comision/{comision}/{cursada}/edit', [App\Http\Controllers\CursadaController::class, 'edit'])->middleware('permission:comisiones.editar')->name('edit');
+        Route::put('/comision/{comision}/{cursada}', [App\Http\Controllers\CursadaController::class, 'update'])->middleware('permission:comisiones.editar')->name('update');
+        Route::post('/comision/{comision}/{cursada}/cambiar-estado', [App\Http\Controllers\CursadaController::class, 'cambiarEstado'])->middleware('permission:comisiones.editar')->name('cambiar-estado');
+        Route::post('/comision/{comision}/{cursada}/recalcular-nota', [App\Http\Controllers\CursadaController::class, 'recalcularNota'])->middleware('permission:comisiones.editar')->name('recalcular-nota');
+        Route::post('/comision/{comision}/sincronizar', [App\Http\Controllers\CursadaController::class, 'sincronizarConComision'])->middleware('permission:comisiones.editar')->name('sincronizar');
     });
 
     // Módulo 6: Usuarios

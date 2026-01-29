@@ -26,12 +26,14 @@ class StoreEvaluacionRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'descripcion' => 'nullable|string|max:255',
-            'tipo' => 'required|in:parcial,recuperatorio,examen_final,trabajo_practico',
+            'tipo' => 'required|in:parcial,recuperatorio,examen_final,trabajo_practico,integrador,otro',
+            'instancia' => 'nullable|integer|min:1|max:3',
             'fecha' => 'required|date',
             'porcentual' => 'required|numeric|min:0|max:100',
             'comision' => 'nullable|exists:comisiones,id',
             'materia_id' => 'required|exists:materias,id',
             'anio' => 'required|integer|min:1900|max:2100',
+            'cuenta_promedio' => 'nullable|boolean',
         ];
     }
 

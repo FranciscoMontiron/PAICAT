@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Asistencia;
 use App\Models\Comision;
 use App\Models\InscripcionComision;
+use App\Models\Materia;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -99,6 +100,119 @@ class AsistenciaController extends Controller
         $comisiones = Comision::where('estado', 'activa')->orderBy('codigo')->get();
 
         return view('asistencias.alertas', compact('alumnosEnRiesgo', 'comisiones', 'comisionId'));
+    }
+
+    /**
+     * Listado de asistencia filtrado por materia
+     */
+    public function porMateria(Request $request)
+    {
+        $user = auth()->user();
+
+        // Obtener materias disponibles
+        $materiasQuery = Materia::with('comisiones')->where('activa', true);
+
+        // Si es docente, solo mostrar materias de sus comisiones
+        if ($user->hasRole('Docente')) {
+            $materiasQuery->whereHas('comisiones', function ($q) use ($user) {
+                $q->where('docente_id', $user->id);
+            });
+        }
+
+        $materias = $materiasQuery->orderBy('nombre')->get();
+
+        $materiaId = $request->input('materia_id');
+        $comisionId = $request->input('comision_id');
+        $fechaDesde = $request->input('fecha_desde');
+        $fechaHasta = $request->input('fecha_hasta');
+
+        $asistencias = collect();
+        $estadisticasPorAlumno = collect();
+        $materiaSeleccionada = null;
+        $comisionSeleccionada = null;
+        $comisionesMateria = collect();
+
+        if ($materiaId) {
+            $materiaSeleccionada = Materia::find($materiaId);
+
+            if ($materiaSeleccionada) {
+                // Obtener comisiones de esta materia
+                $comisionesQuery = $materiaSeleccionada->comisiones()
+                    ->where('estado', 'activa');
+
+                if ($user->hasRole('Docente')) {
+                    $comisionesQuery->where('docente_id', $user->id);
+                }
+
+                $comisionesMateria = $comisionesQuery->orderBy('codigo')->get();
+
+                // Construir query de asistencias
+                $query = Asistencia::with(['inscripcion', 'inscripcionComision.comision', 'registradoPor'])
+                    ->where('materia_id', $materiaId);
+
+                if ($comisionId) {
+                    $comisionSeleccionada = Comision::find($comisionId);
+                    $query->whereHas('inscripcionComision', function ($q) use ($comisionId) {
+                        $q->where('comision_id', $comisionId);
+                    });
+                }
+
+                if ($fechaDesde) {
+                    $query->where('fecha', '>=', $fechaDesde);
+                }
+
+                if ($fechaHasta) {
+                    $query->where('fecha', '<=', $fechaHasta);
+                }
+
+                $asistencias = $query->orderBy('fecha', 'desc')->get();
+
+                // Calcular estadísticas por alumno
+                $estadisticasPorAlumno = $asistencias->groupBy('inscripcion_comision_id')
+                    ->map(function ($asistenciasAlumno) {
+                        $inscripcionComision = $asistenciasAlumno->first()->inscripcionComision;
+                        $total = $asistenciasAlumno->count();
+                        $presentes = $asistenciasAlumno->where('estado', 'presente')->count();
+                        $tardanzas = $asistenciasAlumno->where('estado', 'tardanza')->count();
+                        $ausentes = $asistenciasAlumno->where('estado', 'ausente')->count();
+                        $justificados = $asistenciasAlumno->where('estado', 'justificado')->count();
+
+                        $asistio = $presentes + $tardanzas + $justificados;
+                        $porcentaje = $total > 0 ? round(($asistio / $total) * 100, 2) : 0;
+
+                        // Obtener datos del alumno desde alumnos_utn
+                        $person = $inscripcionComision?->inscripcion?->getPerson();
+
+                        return [
+                            'inscripcion_comision' => $inscripcionComision,
+                            'alumno_nombre' => $person ? "{$person->nombre} {$person->apellido}" : 'N/A',
+                            'alumno_documento' => $person?->documento ?? 'N/A',
+                            'comision' => $inscripcionComision?->comision?->nombre ?? 'N/A',
+                            'total' => $total,
+                            'presentes' => $presentes,
+                            'tardanzas' => $tardanzas,
+                            'ausentes' => $ausentes,
+                            'justificados' => $justificados,
+                            'porcentaje' => $porcentaje,
+                            'en_riesgo' => $porcentaje < config('paicat.asistencia_minima', 75),
+                        ];
+                    })
+                    ->sortBy('alumno_nombre');
+            }
+        }
+
+        return view('asistencias.por-materia', compact(
+            'materias',
+            'materiaSeleccionada',
+            'comisionesMateria',
+            'comisionSeleccionada',
+            'asistencias',
+            'estadisticasPorAlumno',
+            'materiaId',
+            'comisionId',
+            'fechaDesde',
+            'fechaHasta'
+        ));
     }
 
     /**
@@ -297,24 +411,91 @@ class AsistenciaController extends Controller
             abort(403);
         }
 
+        $materiaId = request('materia_id');
+        $materia = $materiaId ? Materia::find($materiaId) : null;
+
         // Obtener alumnos inscritos con su asistencia del día
         $inscripciones = $comision->inscripciones()
-            ->with(['inscripcion', 'academicoDato', 'asistencias' => function ($query) use ($fecha) {
+            ->with(['inscripcion', 'academicoDato', 'asistencias' => function ($query) use ($fecha, $materiaId) {
                 $query->where('fecha', $fecha);
+                if ($materiaId) {
+                    $query->where('materia_id', $materiaId);
+                }
             }])
             ->whereIn('estado', ['inscripto', 'confirmado'])
             ->orderBy('id')
             ->get();
 
-        return view('asistencias.edit', compact('comision', 'inscripciones', 'fecha'));
+        return view('asistencias.edit', compact('comision', 'inscripciones', 'fecha', 'materia'));
     }
 
     /**
-     * Actualizar asistencias (reutiliza store)
+     * Actualizar asistencias
      */
     public function update(Request $request, Comision $comision, $fecha)
     {
-        return $this->store($request, $comision);
+        $user = auth()->user();
+
+        // Verificar permisos
+        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
+            abort(403, 'No tienes permiso para editar asistencia en esta comisión.');
+        }
+
+        $validated = $request->validate([
+            'fecha' => 'required|date',
+            'materia_id' => 'nullable|exists:materias,id',
+            'asistencias' => 'required|array',
+            'asistencias.*.inscripcion_id' => 'required|exists:inscripcion_comisiones,id',
+            'asistencias.*.estado' => 'required|in:presente,ausente,tardanza,justificado',
+            'asistencias.*.observaciones' => 'nullable|string|max:255',
+        ]);
+
+        $nuevaFecha = $validated['fecha'];
+        $materiaId = $validated['materia_id'] ?? null;
+
+        DB::beginTransaction();
+        try {
+            // Si la fecha cambió, eliminar las asistencias de la fecha anterior
+            if ($fecha !== $nuevaFecha) {
+                Asistencia::where('fecha', $fecha)
+                    ->whereHas('inscripcionComision', function ($q) use ($comision) {
+                        $q->where('comision_id', $comision->id);
+                    })
+                    ->when($materiaId, function ($q) use ($materiaId) {
+                        $q->where('materia_id', $materiaId);
+                    })
+                    ->delete();
+            }
+
+            // Crear/actualizar asistencias con la nueva fecha
+            foreach ($validated['asistencias'] as $asistenciaData) {
+                Asistencia::updateOrCreate(
+                    [
+                        'inscripcion_comision_id' => $asistenciaData['inscripcion_id'],
+                        'fecha' => $nuevaFecha,
+                        'materia_id' => $materiaId,
+                    ],
+                    [
+                        'estado' => $asistenciaData['estado'],
+                        'observaciones' => $asistenciaData['observaciones'] ?? null,
+                        'registrado_por' => $user->id,
+                    ]
+                );
+            }
+
+            DB::commit();
+
+            $mensaje = $fecha !== $nuevaFecha
+                ? 'Asistencia actualizada y movida a la nueva fecha exitosamente.'
+                : 'Asistencia actualizada exitosamente.';
+
+            return redirect()
+                ->route('asistencias.historial', $comision)
+                ->with('success', $mensaje);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error al actualizar asistencia: ' . $e->getMessage());
+        }
     }
 
     /**

@@ -80,11 +80,21 @@
                 </div>
 
                 <div>
-                    <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                    <select name="estado" id="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                    <label for="estado_documentacion" class="block text-sm font-medium text-gray-700 mb-1">Documentación</label>
+                    <select name="estado_documentacion" id="estado_documentacion" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
                         <option value="">Todos</option>
-                        @foreach(\App\Models\Inscripcion::ESTADOS as $key => $value)
-                            <option value="{{ $key }}" {{ request('estado') == $key ? 'selected' : '' }}>{{ $value }}</option>
+                        @foreach(\App\Models\Inscripcion::ESTADOS_DOCUMENTACION as $key => $value)
+                            <option value="{{ $key }}" {{ request('estado_documentacion') == $key ? 'selected' : '' }}>{{ $value }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label for="estado_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Estado Ingreso</label>
+                    <select name="estado_ingreso" id="estado_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                        <option value="">Todos</option>
+                        @foreach(\App\Models\Inscripcion::ESTADOS_INGRESO as $key => $value)
+                            <option value="{{ $key }}" {{ request('estado_ingreso') == $key ? 'selected' : '' }}>{{ $value }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -141,6 +151,21 @@
                         </svg>
                     </a>
                 </div>
+                {{-- Filtro asignación a comisiones --}}
+                <div class="md:col-span-2 lg:col-span-4 flex flex-wrap gap-4 mt-2 pt-2 border-t border-gray-200">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="sin_comision" value="1" {{ request('sin_comision') === '1' ? 'checked' : '' }}
+                            class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                            onchange="document.getElementById('con_comision').checked = false; this.form.submit();">
+                        <span class="ml-2 text-sm text-gray-700">Solo sin comisión asignada</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="con_comision" id="con_comision" value="1" {{ request('con_comision') === '1' ? 'checked' : '' }}
+                            class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                            onchange="document.querySelector('[name=sin_comision]').checked = false; this.form.submit();">
+                        <span class="ml-2 text-sm text-gray-700">Solo con comisión asignada</span>
+                    </label>
+                </div>
             </div>
         </form>
     </div>
@@ -154,8 +179,9 @@
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Especialidad</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-28">Turno</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-20">Año</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-32">Estado</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-12" title="DNI / Título / Analítico">Docs</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-28">Documentación</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-28">Estado</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-28">Acciones</th>
                 </tr>
             </thead>
@@ -195,18 +221,6 @@
                     <td class="px-4 py-3 text-center">
                         <span class="text-sm font-semibold text-gray-700">{{ $inscripcion->anio_ingreso }}</span>
                     </td>
-                    {{-- Estado --}}
-                    <td class="px-4 py-3 text-center">
-                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
-                            @if($inscripcion->estado === 'pendiente') bg-yellow-100 text-yellow-800
-                            @elseif($inscripcion->estado === 'documentacion_ok') bg-blue-100 text-blue-800
-                            @elseif($inscripcion->estado === 'confirmado') bg-green-100 text-green-800
-                            @elseif($inscripcion->estado === 'cancelado') bg-red-100 text-red-800
-                            @else bg-gray-100 text-gray-800
-                            @endif">
-                            {{ \App\Models\Inscripcion::ESTADOS[$inscripcion->estado] ?? $inscripcion->estado }}
-                        </span>
-                    </td>
                     {{-- Documentación: 3 puntitos verticales --}}
                     <td class="px-4 py-3">
                         <div class="flex flex-col items-center gap-1" title="DNI: {{ $inscripcion->dni_validado ? 'OK' : 'Pendiente' }} | Título: {{ $inscripcion->titulo_validado ? 'OK' : 'Pendiente' }} | Analítico: {{ $inscripcion->analitico_validado ? 'OK' : 'Pendiente' }}">
@@ -214,6 +228,33 @@
                             <span class="w-2.5 h-2.5 rounded-full {{ $inscripcion->titulo_validado ? 'bg-green-500' : 'bg-gray-300' }}" title="Título"></span>
                             <span class="w-2.5 h-2.5 rounded-full {{ $inscripcion->analitico_validado ? 'bg-green-500' : 'bg-gray-300' }}" title="Analítico"></span>
                         </div>
+                    </td>
+                    {{-- Estado Documentación --}}
+                    <td class="px-4 py-3 text-center">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                            @if($inscripcion->estado_documentacion === 'pendiente') bg-yellow-100 text-yellow-800
+                            @elseif($inscripcion->estado_documentacion === 'validada') bg-green-100 text-green-800
+                            @elseif($inscripcion->estado_documentacion === 'incompleta') bg-orange-100 text-orange-800
+                            @elseif($inscripcion->estado_documentacion === 'rechazada') bg-red-100 text-red-800
+                            @else bg-gray-100 text-gray-800
+                            @endif">
+                            {{ \App\Models\Inscripcion::ESTADOS_DOCUMENTACION[$inscripcion->estado_documentacion] ?? $inscripcion->estado_documentacion ?? 'N/A' }}
+                        </span>
+                    </td>
+                    {{-- Estado Ingreso --}}
+                    <td class="px-4 py-3 text-center">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                            @if($inscripcion->estado_ingreso === 'inscripto') bg-blue-100 text-blue-800
+                            @elseif($inscripcion->estado_ingreso === 'cursando') bg-indigo-100 text-indigo-800
+                            @elseif($inscripcion->estado_ingreso === 'aprobado') bg-green-100 text-green-800
+                            @elseif($inscripcion->estado_ingreso === 'desaprobado') bg-red-100 text-red-800
+                            @elseif($inscripcion->estado_ingreso === 'libre') bg-orange-100 text-orange-800
+                            @elseif($inscripcion->estado_ingreso === 'baja') bg-gray-100 text-gray-800
+                            @elseif($inscripcion->estado_ingreso === 'cancelado') bg-red-100 text-red-800
+                            @else bg-gray-100 text-gray-800
+                            @endif">
+                            {{ \App\Models\Inscripcion::ESTADOS_INGRESO[$inscripcion->estado_ingreso] ?? $inscripcion->estado_ingreso ?? 'N/A' }}
+                        </span>
                     </td>
                     {{-- Acciones --}}
                     <td class="px-4 py-3">
@@ -235,9 +276,9 @@
                                 </svg>
                             </a>
                             @endif
-                            @if($inscripcion->estado === 'pendiente' || $inscripcion->estado === 'documentacion_ok')
-                            <a href="{{ route('inscripciones.show', $inscripcion) }}#documentacion" 
-                               class="p-1.5 rounded bg-green-100 text-green-600 hover:bg-green-200 transition-colors" 
+                            @if($inscripcion->estado_documentacion !== 'validada')
+                            <a href="{{ route('inscripciones.show', $inscripcion) }}#documentacion"
+                               class="p-1.5 rounded bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
                                title="Validar documentación">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -249,7 +290,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-4 py-10 text-center text-gray-500">
+                    <td colspan="8" class="px-4 py-10 text-center text-gray-500">
                         <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>

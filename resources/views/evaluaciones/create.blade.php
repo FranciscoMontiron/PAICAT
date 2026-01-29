@@ -40,18 +40,31 @@
                     <select name="tipo" id="tipo" required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('tipo') border-red-500 @enderror">
                         <option value="">Seleccione una opción...</option>
-                        @php
-                        $tipos = ['parcial', 'recuperatorio', 'examen_final', 'otro'];
-                        @endphp
-                        @foreach ($tipos as $t)
-                        <option value="{{ $t }}"
-                            {{ old('tipo', $instancia->tipo ?? '') === $t ? 'selected' : '' }}>
-                            {{ ucfirst(str_replace('_', ' ', $t)) }}
+                        @foreach (\App\Models\Evaluacion::tiposDisponibles() as $key => $label)
+                        <option value="{{ $key }}" {{ old('tipo') === $key ? 'selected' : '' }}>
+                            {{ $label }}
                         </option>
                         @endforeach
                     </select>
-
                     @error('tipo')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Instancia (solo para parciales) --}}
+                <div id="instancia-container">
+                    <label for="instancia" class="block text-sm font-medium text-gray-700 mb-2">Instancia</label>
+                    <select name="instancia" id="instancia"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('instancia') border-red-500 @enderror">
+                        <option value="">Sin instancia</option>
+                        @foreach (\App\Models\Evaluacion::instanciasDisponibles() as $key => $label)
+                        <option value="{{ $key }}" {{ old('instancia') == $key ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">Para parciales: 1ra, 2da o 3ra instancia</p>
+                    @error('instancia')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -107,12 +120,24 @@
 
                 {{-- Año --}}
                 <div>
-                    <label for="anio" class="block text-sm font-medium text-gray-700 mb-2">Año</label>
-                    <input type="number" name="anio" id="anio" value="{{ old('anio') }}" required
+                    <label for="anio" class="block text-sm font-medium text-gray-700 mb-2">Año *</label>
+                    <input type="number" name="anio" id="anio" value="{{ old('anio', date('Y')) }}" required
+                        min="2020" max="2100"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('anio') border-red-500 @enderror">
                     @error('anio')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
+                </div>
+
+                {{-- Cuenta para promedio --}}
+                <div class="md:col-span-2">
+                    <label class="flex items-center gap-3">
+                        <input type="checkbox" name="cuenta_promedio" id="cuenta_promedio" value="1"
+                            {{ old('cuenta_promedio', true) ? 'checked' : '' }}
+                            class="h-5 w-5 text-utn-blue border-gray-300 rounded focus:ring-utn-blue">
+                        <span class="text-sm font-medium text-gray-700">Cuenta para el promedio final</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500 ml-8">Si está marcado, esta evaluación se incluirá en el cálculo del promedio del estudiante</p>
                 </div>
 
             </div>

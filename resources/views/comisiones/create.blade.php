@@ -159,23 +159,6 @@
                         @enderror
                     </div>
 
-                    {{-- Turno (dinámico desde sysacad) --}}
-                    <div>
-                        <label for="turno" class="block text-sm font-medium text-gray-700 mb-1.5">
-                            Turno <span class="text-red-500">*</span>
-                        </label>
-                        <select name="turno" id="turno" required
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow">
-                            <option value="">Seleccionar...</option>
-                            @foreach($turnos as $key => $value)
-                            <option value="{{ $key }}" {{ old('turno') == $key ? 'selected' : '' }}>{{ $value }}</option>
-                            @endforeach
-                        </select>
-                        @error('turno')
-                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
                     {{-- Modalidad --}}
                     <div>
                         <label for="modalidad" class="block text-sm font-medium text-gray-700 mb-1.5">
@@ -191,19 +174,76 @@
                         @error('modalidad')
                         <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                         @enderror
+                        <p class="mt-1 text-xs text-gray-500" id="modalidad-info"></p>
+                    </div>
+
+                    {{-- Turno (dinámico desde sysacad) --}}
+                    <div id="turno-container">
+                        <label for="turno" class="block text-sm font-medium text-gray-700 mb-1.5">
+                            Turno <span class="text-red-500 turno-required">*</span>
+                        </label>
+                        <select name="turno" id="turno"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow">
+                            <option value="">Seleccionar...</option>
+                            @foreach($turnos as $key => $value)
+                            <option value="{{ $key }}" {{ old('turno') == $key ? 'selected' : '' }}>{{ $value }}</option>
+                            @endforeach
+                        </select>
+                        @error('turno')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     {{-- Cupo Máximo --}}
-                    <div>
+                    <div id="cupo-container">
                         <label for="cupo_maximo" class="block text-sm font-medium text-gray-700 mb-1.5">
-                            Cupo Máximo <span class="text-red-500">*</span>
+                            Cupo Máximo <span class="text-red-500 cupo-required">*</span>
                         </label>
                         <div class="relative">
-                            <input type="number" name="cupo_maximo" id="cupo_maximo" value="{{ old('cupo_maximo', 80) }}" required min="1" max="200"
+                            <input type="number" name="cupo_maximo" id="cupo_maximo" value="{{ old('cupo_maximo', 80) }}" min="1" max="200"
                                 class="w-full px-4 py-2.5 pr-16 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">alumnos</span>
                         </div>
                         @error('cupo_maximo')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                {{-- Fila adicional: Municipio --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5" id="municipio-container">
+                    <div>
+                        <label for="municipio_id" class="block text-sm font-medium text-gray-700 mb-1.5">
+                            Municipio/Sede <span class="text-red-500 municipio-required">*</span>
+                        </label>
+                        <select name="municipio_id" id="municipio_id"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow">
+                            <option value="">Seleccionar...</option>
+                            @foreach($municipios ?? [] as $municipio)
+                            <option value="{{ $municipio->id }}" {{ old('municipio_id') == $municipio->id ? 'selected' : '' }}>
+                                {{ $municipio->nombre }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('municipio_id')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-xs text-gray-500">Sede presencial donde se dictarán las clases</p>
+                    </div>
+
+                    {{-- Aula (opcional) --}}
+                    <div id="aula-container">
+                        <label for="aula_id" class="block text-sm font-medium text-gray-700 mb-1.5">Aula</label>
+                        <select name="aula_id" id="aula_id"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow">
+                            <option value="">Sin asignar</option>
+                            @foreach($aulas ?? [] as $aula)
+                            <option value="{{ $aula->id }}" data-municipio="{{ $aula->municipio_id }}" {{ old('aula_id') == $aula->id ? 'selected' : '' }}>
+                                {{ $aula->nombre_completo }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('aula_id')
                         <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -327,4 +367,108 @@
         </div>
     </form>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modalidadSelect = document.getElementById('modalidad');
+    const turnoContainer = document.getElementById('turno-container');
+    const turnoSelect = document.getElementById('turno');
+    const cupoContainer = document.getElementById('cupo-container');
+    const cupoInput = document.getElementById('cupo_maximo');
+    const municipioContainer = document.getElementById('municipio-container');
+    const municipioSelect = document.getElementById('municipio_id');
+    const aulaSelect = document.getElementById('aula_id');
+    const modalidadInfo = document.getElementById('modalidad-info');
+
+    // Elementos de asterisco requerido
+    const turnoRequired = document.querySelector('.turno-required');
+    const cupoRequired = document.querySelector('.cupo-required');
+    const municipioRequired = document.querySelector('.municipio-required');
+
+    function actualizarCamposPorModalidad() {
+        const modalidad = modalidadSelect.value.toLowerCase();
+
+        if (modalidad === 'virtual') {
+            // Virtual: sin turno, sin cupo, municipio opcional
+            turnoContainer.classList.add('opacity-50');
+            turnoSelect.removeAttribute('required');
+            turnoSelect.value = '';
+            turnoRequired.classList.add('hidden');
+
+            cupoContainer.classList.add('opacity-50');
+            cupoInput.removeAttribute('required');
+            cupoInput.value = '';
+            cupoRequired.classList.add('hidden');
+
+            municipioRequired.classList.add('hidden');
+            municipioSelect.removeAttribute('required');
+
+            modalidadInfo.textContent = 'Virtual: Sin turno fijo, sin l\u00edmite de cupos. Los alumnos rinden un examen final libre.';
+            modalidadInfo.classList.remove('hidden');
+
+        } else if (modalidad === 'semipresencial') {
+            // Semipresencial: turno opcional, cupo normal, municipio requerido
+            turnoContainer.classList.remove('opacity-50');
+            turnoSelect.removeAttribute('required');
+            turnoRequired.classList.add('hidden');
+
+            cupoContainer.classList.remove('opacity-50');
+            cupoInput.setAttribute('required', 'required');
+            cupoRequired.classList.remove('hidden');
+
+            municipioRequired.classList.remove('hidden');
+            municipioSelect.setAttribute('required', 'required');
+
+            modalidadInfo.textContent = 'Semipresencial: Rinden parciales pero la asistencia a clases es opcional.';
+            modalidadInfo.classList.remove('hidden');
+
+        } else {
+            // Presencial: todos los campos requeridos
+            turnoContainer.classList.remove('opacity-50');
+            turnoSelect.setAttribute('required', 'required');
+            turnoRequired.classList.remove('hidden');
+
+            cupoContainer.classList.remove('opacity-50');
+            cupoInput.setAttribute('required', 'required');
+            if (!cupoInput.value) cupoInput.value = 80;
+            cupoRequired.classList.remove('hidden');
+
+            municipioRequired.classList.remove('hidden');
+            municipioSelect.setAttribute('required', 'required');
+
+            modalidadInfo.textContent = '';
+            modalidadInfo.classList.add('hidden');
+        }
+    }
+
+    // Filtrar aulas por municipio
+    function filtrarAulasPorMunicipio() {
+        const municipioId = municipioSelect.value;
+        const opciones = aulaSelect.querySelectorAll('option[data-municipio]');
+
+        opciones.forEach(opcion => {
+            if (!municipioId || opcion.dataset.municipio === municipioId) {
+                opcion.classList.remove('hidden');
+                opcion.disabled = false;
+            } else {
+                opcion.classList.add('hidden');
+                opcion.disabled = true;
+                if (opcion.selected) {
+                    aulaSelect.value = '';
+                }
+            }
+        });
+    }
+
+    // Event listeners
+    modalidadSelect.addEventListener('change', actualizarCamposPorModalidad);
+    municipioSelect.addEventListener('change', filtrarAulasPorMunicipio);
+
+    // Estado inicial
+    actualizarCamposPorModalidad();
+    filtrarAulasPorMunicipio();
+});
+</script>
+@endpush
 @endsection

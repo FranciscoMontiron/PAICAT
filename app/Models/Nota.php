@@ -13,10 +13,20 @@ class Nota extends Model
 
     protected $table = 'notas';
 
+    /**
+     * Nota mínima para aprobar en curso de ingreso UTN
+     * Puede configurarse en config/paicat.php o .env con NOTA_APROBACION=6
+     */
+    public static function notaAprobacion(): float
+    {
+        return (float) config('paicat.nota_aprobacion', 6);
+    }
+
     protected $fillable = [
         'inscripcion_id',
         'evaluacion_id',
         'inscripcion_comision_id',
+        'cursada_id',
         'nota',
         'fecha_carga',
         'cargado_por',
@@ -29,7 +39,7 @@ class Nota extends Model
     ];
 
     /**
-     * Relación con la inscripción (alumno + año) - NUEVA RELACIÓN PRINCIPAL
+     * Relación con la inscripción (alumno + año)
      */
     public function inscripcion(): BelongsTo
     {
@@ -46,11 +56,18 @@ class Nota extends Model
 
     /**
      * Relación con la inscripción de comisión (para saber en qué comisión estaba)
-     * Mantenida por compatibilidad y trazabilidad
      */
     public function inscripcionComision(): BelongsTo
     {
         return $this->belongsTo(InscripcionComision::class);
+    }
+
+    /**
+     * Relación con la cursada (historial específico)
+     */
+    public function cursada(): BelongsTo
+    {
+        return $this->belongsTo(Cursada::class);
     }
 
     /**
@@ -62,11 +79,106 @@ class Nota extends Model
     }
 
     /**
-     * Verificar si está aprobado (nota >= 4)
+     * Verificar si está aprobado (nota >= 6 por defecto en UTN)
      */
     public function estaAprobado(): bool
     {
-        return $this->nota >= 4;
+        return $this->nota !== null && $this->nota >= self::notaAprobacion();
+    }
+
+    /**
+     * Verificar si está desaprobado
+     */
+    public function estaDesaprobado(): bool
+    {
+        return $this->nota !== null && $this->nota < self::notaAprobacion();
+    }
+
+    /**
+     * Verificar si puede rendir recuperatorio
+     * (Desaprobó el parcial y existe recuperatorio para esa evaluación)
+     */
+    public function puedeRecuperatorio(): bool
+    {
+        if ($this->estaAprobado()) {
+            return false;
+        }
+
+        // Verificar si existe un recuperatorio asociado a este parcial
+        $evaluacion = $this->evaluacion;
+        if (!$evaluacion || $evaluacion->tipo !== 'parcial') {
+            return false;
+        }
+
+        // Buscar recuperatorio de la misma materia/comisión e instancia
+        return Evaluacion::where('tipo', 'recuperatorio')
+            ->where('materia_id', $evaluacion->materia_id)
+            ->where('comision_id', $evaluacion->comision_id)
+            ->where('instancia', $evaluacion->instancia)
+            ->exists();
+    }
+
+    /**
+     * Obtener la nota del recuperatorio (si existe)
+     */
+    public function notaRecuperatorio(): ?Nota
+    {
+        $evaluacion = $this->evaluacion;
+        if (!$evaluacion) {
+            return null;
+        }
+
+        // Buscar el recuperatorio correspondiente
+        $recuperatorio = Evaluacion::where('tipo', 'recuperatorio')
+            ->where('materia_id', $evaluacion->materia_id)
+            ->where('comision_id', $evaluacion->comision_id)
+            ->where('instancia', $evaluacion->instancia)
+            ->first();
+
+        if (!$recuperatorio) {
+            return null;
+        }
+
+        return Nota::where('inscripcion_id', $this->inscripcion_id)
+            ->where('evaluacion_id', $recuperatorio->id)
+            ->first();
+    }
+
+    /**
+     * Obtener nota final considerando recuperatorio
+     * Si aprobó el parcial, devuelve la nota del parcial
+     * Si rindió recuperatorio, devuelve la mayor nota
+     */
+    public function notaFinal(): ?float
+    {
+        if ($this->estaAprobado()) {
+            return $this->nota;
+        }
+
+        $notaRecuperatorio = $this->notaRecuperatorio();
+        if ($notaRecuperatorio && $notaRecuperatorio->nota !== null) {
+            // Si aprobó el recuperatorio, usa esa nota
+            if ($notaRecuperatorio->estaAprobado()) {
+                return $notaRecuperatorio->nota;
+            }
+            // Si no aprobó, devuelve la mayor de las dos
+            return max($this->nota ?? 0, $notaRecuperatorio->nota);
+        }
+
+        return $this->nota;
+    }
+
+    /**
+     * Verificar si aprobó considerando recuperatorio
+     */
+    public function aproboConRecuperatorio(): bool
+    {
+        if ($this->estaAprobado()) {
+            return true;
+        }
+
+        $notaRecuperatorio = $this->notaRecuperatorio();
+        return $notaRecuperatorio && $notaRecuperatorio->estaAprobado();
     }
 
     /**
@@ -78,11 +190,19 @@ class Nota extends Model
     }
 
     /**
-     * Scope para notas aprobadas
+     * Scope para notas de una cursada
+     */
+    public function scopeDeCursada($query, int $cursadaId)
+    {
+        return $query->where('cursada_id', $cursadaId);
+    }
+
+    /**
+     * Scope para notas aprobadas (usando la nota configurable)
      */
     public function scopeAprobadas($query)
     {
-        return $query->where('nota', '>=', 4);
+        return $query->where('nota', '>=', self::notaAprobacion());
     }
 
     /**
@@ -90,6 +210,6 @@ class Nota extends Model
      */
     public function scopeDesaprobadas($query)
     {
-        return $query->where('nota', '<', 4);
+        return $query->where('nota', '<', self::notaAprobacion());
     }
 }

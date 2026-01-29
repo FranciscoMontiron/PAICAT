@@ -51,12 +51,45 @@ class TrayectoriaController extends Controller
             'trayectorias' => fn($q) => $q->orderBy('fecha_inicio', 'desc'),
             'solicitudesCambio' => fn($q) => $q->orderBy('created_at', 'desc'),
             'condicionesParticulares' => fn($q) => $q->where('activa', true),
-            'inscripcionesComision.comision',
+            'inscripcionesComision.comision.municipio',
         ]);
 
         $person = $inscripcion->getPerson();
 
-        return view('trayectorias.show', compact('inscripcion', 'person'));
+        // Obtener comisiones actuales del estudiante para excluirlas
+        $comisionesActualesIds = $inscripcion->inscripcionesComision
+            ->where('estado', 'inscripto')
+            ->pluck('comision_id')
+            ->toArray();
+
+        // Obtener comisiones disponibles para cambio
+        // Filtrar por año actual, activas, con cupo disponible
+        $comisionesDisponibles = Comision::with('municipio')
+            ->where('estado', 'activa')
+            ->where('anio', date('Y'))
+            ->whereNotIn('id', $comisionesActualesIds)
+            ->where(function ($query) {
+                // Con cupo disponible O virtuales (sin límite)
+                $query->whereRaw('cupo_actual < cupo_maximo')
+                    ->orWhere('modalidad', 'Virtual')
+                    ->orWhereNull('cupo_maximo');
+            })
+            ->orderBy('turno')
+            ->orderBy('modalidad')
+            ->orderBy('nombre')
+            ->get();
+
+        // Obtener turnos y modalidades desde alumnos_utn si están disponibles
+        $turnos = Comision::TURNOS;
+        $modalidades = Comision::MODALIDADES;
+
+        return view('trayectorias.show', compact(
+            'inscripcion',
+            'person',
+            'comisionesDisponibles',
+            'turnos',
+            'modalidades'
+        ));
     }
 
     /**

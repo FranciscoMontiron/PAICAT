@@ -47,10 +47,12 @@
                 <h2 class="text-lg font-semibold text-gray-800">Información de la Clase</h2>
             </div>
             <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div>
-                        <p class="text-sm font-medium text-gray-700 mb-2">Fecha de la Clase</p>
-                        <p class="text-gray-900 text-lg">{{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}</p>
+                        <label for="fecha" class="text-sm font-medium text-gray-700 mb-2 block">Fecha de la Clase</label>
+                        <input type="date" name="fecha" id="fecha" value="{{ $fecha }}"
+                               class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="mt-1 text-xs text-gray-500">Puedes cambiar la fecha de esta asistencia</p>
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-700 mb-2">Docente</p>
@@ -59,6 +61,13 @@
                     <div>
                         <p class="text-sm font-medium text-gray-700 mb-2">Total Alumnos</p>
                         <p class="text-2xl font-bold text-gray-900">{{ $inscripciones->count() }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 mb-2">Materia</p>
+                        <p class="text-gray-900">{{ $materia->nombre ?? 'General' }}</p>
+                        @if(isset($materia))
+                        <input type="hidden" name="materia_id" value="{{ $materia->id }}">
+                        @endif
                     </div>
                 </div>
             </div>

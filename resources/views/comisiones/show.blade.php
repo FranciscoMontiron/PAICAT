@@ -307,6 +307,68 @@
                 </div>
             </div>
 
+            <!-- Ubicación / Municipio -->
+            <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-800">Ubicación</h2>
+                </div>
+                <div class="p-6 space-y-3">
+                    @if($comision->municipio)
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ $comision->municipio->nombre }}</p>
+                            @if($comision->municipio->direccion)
+                            <p class="text-sm text-gray-600">{{ $comision->municipio->direccion }}</p>
+                            @endif
+                        </div>
+                    </div>
+                    @else
+                    <p class="text-gray-500 italic">Sin municipio asignado</p>
+                    @endif
+
+                    @if($comision->aula)
+                    <div class="flex items-center space-x-3 pt-3 border-t border-gray-200">
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ $comision->aula->nombre }}</p>
+                            @if($comision->aula->capacidad)
+                            <p class="text-sm text-gray-600">Capacidad: {{ $comision->aula->capacidad }}</p>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Gestión de Cursadas -->
+            <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-800">Cursadas</h2>
+                </div>
+                <div class="p-6">
+                    <p class="text-sm text-gray-600 mb-4">
+                        Gestiona el historial de cursadas de los alumnos, estados (cursando, aprobado, libre, etc.) y notas finales.
+                    </p>
+                    <a href="{{ route('cursadas.index', $comision) }}"
+                       class="w-full inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        Ver Cursadas
+                    </a>
+                </div>
+            </div>
+
             <!-- Acciones Rápidas -->
             @if(auth()->user()->hasPermission('comisiones.editar'))
             <div class="bg-white rounded-lg shadow overflow-hidden mb-6">

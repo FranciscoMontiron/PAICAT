@@ -172,10 +172,18 @@
                             <input type="checkbox" id="seleccionar_pagina" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
                             <span class="ml-2 text-sm text-gray-700">Seleccionar página</span>
                         </label>
+                        @if($alumnosDisponibles->total() > $alumnosDisponibles->perPage())
+                        <button type="button" id="btn-seleccionar-todos"
+                            class="px-3 py-1 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                            Seleccionar todos ({{ $alumnosDisponibles->total() }})
+                        </button>
+                        @endif
                         <span id="contador_seleccionados" class="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm font-semibold rounded-full">
                             0 seleccionados
                         </span>
                     </div>
+                    {{-- Campo oculto para importar todos --}}
+                    <input type="hidden" name="importar_todos" id="importar_todos" value="0">
                 </div>
             </div>
 
@@ -510,6 +518,54 @@
             if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
                 cerrarModal();
             }
+        });
+
+        // Botón "Seleccionar todos" (todas las páginas)
+        const btnSeleccionarTodos = document.getElementById('btn-seleccionar-todos');
+        const inputImportarTodos = document.getElementById('importar_todos');
+        let todosSeleccionados = false;
+
+        if (btnSeleccionarTodos) {
+            btnSeleccionarTodos.addEventListener('click', function() {
+                todosSeleccionados = !todosSeleccionados;
+
+                if (todosSeleccionados) {
+                    // Seleccionar todos
+                    inputImportarTodos.value = '1';
+                    checkboxes.forEach(cb => cb.checked = true);
+                    selectPagina.checked = true;
+                    btnSeleccionarTodos.textContent = 'Deseleccionar todos';
+                    btnSeleccionarTodos.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    btnSeleccionarTodos.classList.add('bg-red-600', 'hover:bg-red-700');
+                    contador.textContent = '{{ $alumnosDisponibles->total() }} seleccionados (todos)';
+                    btnTexto.textContent = 'Importar {{ $alumnosDisponibles->total() }} Alumnos';
+                    btnImportar.disabled = false;
+                } else {
+                    // Deseleccionar todos
+                    inputImportarTodos.value = '0';
+                    checkboxes.forEach(cb => cb.checked = false);
+                    selectPagina.checked = false;
+                    btnSeleccionarTodos.textContent = 'Seleccionar todos ({{ $alumnosDisponibles->total() }})';
+                    btnSeleccionarTodos.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    btnSeleccionarTodos.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    actualizarEstado();
+                }
+            });
+        }
+
+        // Actualizar estado cuando se cambia checkbox individual (deselecciona "todos")
+        checkboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                if (todosSeleccionados && !this.checked) {
+                    todosSeleccionados = false;
+                    inputImportarTodos.value = '0';
+                    if (btnSeleccionarTodos) {
+                        btnSeleccionarTodos.textContent = 'Seleccionar todos ({{ $alumnosDisponibles->total() }})';
+                        btnSeleccionarTodos.classList.remove('bg-red-600', 'hover:bg-red-700');
+                        btnSeleccionarTodos.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    }
+                }
+            });
         });
     });
 </script>
