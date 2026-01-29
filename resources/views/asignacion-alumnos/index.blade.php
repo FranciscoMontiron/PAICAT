@@ -80,6 +80,57 @@
     <form method="POST" action="{{ route('asignacion-alumnos.preview') }}" id="formAsignacion">
         @csrf
 
+        <!-- Opciones de Asignación -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Opciones de Asignación</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Distribuir por Carrera -->
+                <div class="flex items-start gap-3">
+                    <input type="checkbox" name="distribuir_por_carrera" id="distribuir_por_carrera" value="1"
+                        class="mt-1 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                    <div>
+                        <label for="distribuir_por_carrera" class="font-medium text-gray-700 cursor-pointer">
+                            Distribuir equitativamente por carrera
+                        </label>
+                        <p class="text-sm text-gray-500">
+                            Asegura que cada comisión tenga representación de todas las carreras en proporción equitativa.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Filtrar por Especialidad -->
+                <div>
+                    <label for="filtrar_especialidad" class="block font-medium text-gray-700 mb-2">
+                        Filtrar por carrera específica (opcional)
+                    </label>
+                    <select name="filtrar_especialidad" id="filtrar_especialidad"
+                        class="w-full rounded-lg border-gray-300 focus:ring-green-500 focus:border-green-500">
+                        <option value="">Todas las carreras</option>
+                        @foreach($especialidades ?? [] as $id => $nombre)
+                        <option value="{{ $id }}">{{ $nombre }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Solo asignar alumnos de una carrera específica.
+                    </p>
+                </div>
+            </div>
+
+            @if(isset($alumnosPorCarrera) && $alumnosPorCarrera->count() > 0)
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <h3 class="text-sm font-medium text-gray-700 mb-2">Alumnos sin asignar por carrera:</h3>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($alumnosPorCarrera as $espId => $info)
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm
+                        {{ $espId ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800' }}">
+                        {{ $info['nombre'] }}: <strong class="ml-1">{{ $info['cantidad'] }}</strong>
+                    </span>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+        </div>
+
         <!-- Tabla de Comisiones -->
         <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
             <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">

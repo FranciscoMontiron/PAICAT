@@ -15,6 +15,31 @@ class Comision extends Model
 
     protected $table = 'comisiones';
 
+    /**
+     * Tipos de periodo disponibles (igual que tipo_ingreso en Inscripcion)
+     */
+    const TIPOS_INGRESO = [
+        'Intensivo' => 'Intensivo',
+        'Extensivo' => 'Extensivo',
+    ];
+
+    /**
+     * Turnos disponibles (valores de la BD de alumnos)
+     */
+    const TURNOS = [
+        'mañana' => 'Mañana',
+        'tardenoche' => 'TardeNoche',
+    ];
+
+    /**
+     * Modalidades disponibles
+     */
+    const MODALIDADES = [
+        'Presencial' => 'Presencial',
+        'Virtual' => 'Virtual',
+        'Semipresencial' => 'Semipresencial',
+    ];
+
     protected $fillable = [
         'nombre',
         'codigo',
@@ -23,18 +48,16 @@ class Comision extends Model
         'periodo',
         'turno',
         'modalidad',
+        'municipio_id',
+        'aula_id',
         'cupo_maximo',
         'cupo_actual',
         'docente_id',
-        'fecha_inicio',
-        'fecha_fin',
         'estado',
         'observaciones',
     ];
 
     protected $casts = [
-        'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
         'anio' => 'integer',
         'cupo_maximo' => 'integer',
         'cupo_actual' => 'integer',
@@ -49,11 +72,77 @@ class Comision extends Model
     }
 
     /**
-     * Relación con el docente asignado
+     * Relación con el docente asignado (legacy, para compatibilidad)
      */
     public function docente(): BelongsTo
     {
         return $this->belongsTo(User::class, 'docente_id');
+    }
+
+    /**
+     * Relación con municipio (sede presencial)
+     */
+    public function municipio(): BelongsTo
+    {
+        return $this->belongsTo(Municipio::class);
+    }
+
+    /**
+     * Relación con aula
+     */
+    public function aula(): BelongsTo
+    {
+        return $this->belongsTo(Aula::class);
+    }
+
+    /**
+     * Cursadas de esta comisión (historial de estudiantes que cursaron)
+     */
+    public function cursadas(): HasMany
+    {
+        return $this->hasMany(Cursada::class);
+    }
+
+    /**
+     * Cursadas activas de esta comisión
+     */
+    public function cursadasActivas(): HasMany
+    {
+        return $this->hasMany(Cursada::class)->where('estado', 'cursando');
+    }
+
+    /**
+     * Todas las asignaciones de docentes (activos e inactivos)
+     */
+    public function asignacionesDocentes(): HasMany
+    {
+        return $this->hasMany(ComisionDocente::class);
+    }
+
+    /**
+     * Docentes actualmente asignados (solo activos)
+     */
+    public function docentesActivos(): HasMany
+    {
+        return $this->hasMany(ComisionDocente::class)->where('activo', true);
+    }
+
+    /**
+     * Historial de docentes (solo inactivos)
+     */
+    public function historialDocentes(): HasMany
+    {
+        return $this->hasMany(ComisionDocente::class)->where('activo', false);
+    }
+
+    /**
+     * Relación N:M con usuarios docentes (para acceso directo)
+     */
+    public function docentes(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'comision_docente')
+            ->withPivot(['activo', 'fecha_asignacion', 'fecha_baja', 'observaciones'])
+            ->withTimestamps();
     }
 
     /**
@@ -90,18 +179,51 @@ class Comision extends Model
 
     /**
      * Verificar si la comisión tiene cupos disponibles
+     * Las comisiones virtuales no tienen límite de cupo
      */
     public function tieneCuposDisponibles(): bool
     {
+        // Virtual: sin límite de cupo
+        if ($this->esVirtual()) {
+            return true;
+        }
+
+        // Si cupo_maximo es null o 0, es sin límite
+        if (!$this->cupo_maximo) {
+            return true;
+        }
+
         return $this->cupo_actual < $this->cupo_maximo;
     }
 
     /**
      * Obtener cupos disponibles
+     * Retorna null para comisiones sin límite
      */
-    public function getCuposDisponiblesAttribute(): int
+    public function getCuposDisponiblesAttribute(): ?int
     {
+        // Virtual o sin límite definido
+        if ($this->esVirtual() || !$this->cupo_maximo) {
+            return null; // Sin límite
+        }
+
         return max(0, $this->cupo_maximo - $this->cupo_actual);
+    }
+
+    /**
+     * Verificar si es comisión virtual
+     */
+    public function esVirtual(): bool
+    {
+        return strtolower($this->modalidad ?? '') === 'virtual';
+    }
+
+    /**
+     * Verificar si es comisión semipresencial
+     */
+    public function esSemipresencial(): bool
+    {
+        return strtolower($this->modalidad ?? '') === 'semipresencial';
     }
 
     /**

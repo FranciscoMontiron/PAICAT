@@ -54,11 +54,13 @@ class EvaluacionController extends Controller
             'nombre' => $data['name'],
             'descripcion' => $data['descripcion'] ?? null,
             'tipo' => $data['tipo'],
+            'instancia' => $data['instancia'] ?? null,
             'fecha' => $data['fecha'],
             'peso_porcentual' => $data['porcentual'],
             'comision_id' => $data['comision'] ?: null,
             'materia_id' => $data['materia_id'],
             'anio' => $data['anio'],
+            'cuenta_promedio' => $request->boolean('cuenta_promedio', true),
         ]);
 
 
@@ -88,11 +90,13 @@ class EvaluacionController extends Controller
             'nombre' => $data['name'],
             'descripcion' => $data['descripcion'] ?? null,
             'tipo' => $data['tipo'],
+            'instancia' => $data['instancia'] ?? null,
             'fecha' => $data['fecha'],
             'peso_porcentual' => $data['porcentual'],
             'comision_id' => $data['comision'] ?? null,
             'materia_id' => $data['materia_id'],
             'anio' => $data['anio'],
+            'cuenta_promedio' => $request->boolean('cuenta_promedio', true),
         ]);
 
         return redirect()
@@ -467,7 +471,7 @@ class EvaluacionController extends Controller
     {
         // Obtener todas las inscripciones con sus notas
         $inscripciones = InscripcionComision::where('comision_id', $comision->id)
-            ->with(['academicoDato', 'notas.evaluacion'])
+            ->with(['inscripcion', 'academicoDato', 'notas.evaluacion'])
             ->get();
 
         // Obtener evaluaciones de la comisión
@@ -492,29 +496,51 @@ class EvaluacionController extends Controller
 
         // Datos de alumnos
         $contador = 1;
-        foreach ($inscripciones as $inscripcion) {
+        foreach ($inscripciones as $inscripcionComision) {
+            // Obtener datos del alumno desde alumnos_utn o academicoDato
+            $person = $inscripcionComision->inscripcion?->getPerson();
+            $academicoDato = $inscripcionComision->academicoDato;
+
+            $nombreCompleto = 'N/A';
+            $documento = 'N/A';
+
+            if ($person) {
+                $nombreCompleto = ($person->apellido ?? '') . ', ' . ($person->nombre ?? '');
+                $documento = $person->documento ?? 'N/A';
+            } elseif ($academicoDato) {
+                $nombreCompleto = ($academicoDato->apellido ?? '') . ', ' . ($academicoDato->nombre ?? '');
+                $documento = $academicoDato->documento ?? $academicoDato->dni ?? 'N/A';
+            }
+
             $fila = [
                 $contador++,
-                $inscripcion->academicoDato->apellido . ', ' . $inscripcion->academicoDato->nombre ?? 'N/A',
-                $inscripcion->academicoDato->documento ?? 'N/A',
+                $nombreCompleto,
+                $documento,
             ];
 
             // Notas por evaluación
             foreach ($evaluaciones as $eval) {
-                $nota = $inscripcion->notas->where('evaluacion_id', $eval->id)->first();
+                $nota = $inscripcionComision->notas->where('evaluacion_id', $eval->id)->first();
                 $fila[] = $nota ? number_format($nota->nota, 2) : '-';
             }
 
             // Promedio
-            $promedio = $inscripcion->calcularPromedioPonderado();
+            $promedio = method_exists($inscripcionComision, 'calcularPromedioPonderado')
+                ? $inscripcionComision->calcularPromedioPonderado()
+                : null;
             $fila[] = $promedio !== null ? number_format($promedio, 2) : '-';
 
             // Asistencia
-            $fila[] = $inscripcion->calcularPorcentajeAsistencia() . '%';
+            $porcentajeAsistencia = method_exists($inscripcionComision, 'calcularPorcentajeAsistencia')
+                ? $inscripcionComision->calcularPorcentajeAsistencia()
+                : 0;
+            $fila[] = $porcentajeAsistencia . '%';
 
             // Condición
-            $condicion = $inscripcion->determinarCondicion();
-            $fila[] = $condicion['condicion'];
+            $condicion = method_exists($inscripcionComision, 'determinarCondicion')
+                ? $inscripcionComision->determinarCondicion()
+                : ['condicion' => 'N/A'];
+            $fila[] = $condicion['condicion'] ?? 'N/A';
 
             $datos[] = $fila;
         }

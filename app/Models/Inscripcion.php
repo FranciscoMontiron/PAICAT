@@ -42,7 +42,9 @@ class Inscripcion extends Model
         'turno_carrera',
         'tipo_ingreso',
         'sede_id_sysacad',
-        'estado',
+        'estado', // Legacy - mantenido para compatibilidad
+        'estado_documentacion',
+        'estado_ingreso',
         'doc_dni_validado',
         'doc_titulo_validado',
         'doc_analitico_validado',
@@ -70,7 +72,7 @@ class Inscripcion extends Model
     ];
 
     /**
-     * Estados disponibles
+     * Estados disponibles (legacy - para compatibilidad)
      */
     const ESTADO_PENDIENTE = 'pendiente';
     const ESTADO_DOCUMENTACION_OK = 'documentacion_ok';
@@ -84,6 +86,44 @@ class Inscripcion extends Model
         self::ESTADO_CONFIRMADO => 'Confirmado',
         self::ESTADO_CANCELADO => 'Cancelado',
         self::ESTADO_BAJA => 'Baja',
+    ];
+
+    // ==================== ESTADOS SEPARADOS ====================
+
+    /**
+     * Estados de documentación
+     */
+    const DOC_PENDIENTE = 'pendiente';
+    const DOC_VALIDADA = 'validada';
+    const DOC_INCOMPLETA = 'incompleta';
+    const DOC_RECHAZADA = 'rechazada';
+
+    const ESTADOS_DOCUMENTACION = [
+        self::DOC_PENDIENTE => 'Pendiente',
+        self::DOC_VALIDADA => 'Validada',
+        self::DOC_INCOMPLETA => 'Incompleta',
+        self::DOC_RECHAZADA => 'Rechazada',
+    ];
+
+    /**
+     * Estados de ingreso/cursada
+     */
+    const INGRESO_INSCRIPTO = 'inscripto';
+    const INGRESO_CURSANDO = 'cursando';
+    const INGRESO_APROBADO = 'aprobado';
+    const INGRESO_DESAPROBADO = 'desaprobado';
+    const INGRESO_LIBRE = 'libre';
+    const INGRESO_BAJA = 'baja';
+    const INGRESO_CANCELADO = 'cancelado';
+
+    const ESTADOS_INGRESO = [
+        self::INGRESO_INSCRIPTO => 'Inscripto',
+        self::INGRESO_CURSANDO => 'Cursando',
+        self::INGRESO_APROBADO => 'Aprobado',
+        self::INGRESO_DESAPROBADO => 'Desaprobado',
+        self::INGRESO_LIBRE => 'Libre',
+        self::INGRESO_BAJA => 'Baja',
+        self::INGRESO_CANCELADO => 'Cancelado',
     ];
 
     /**
@@ -267,7 +307,7 @@ class Inscripcion extends Model
     }
 
     /**
-     * Obtener el color del badge según el estado
+     * Obtener el color del badge según el estado (legacy)
      */
     public function getEstadoColorAttribute(): string
     {
@@ -279,6 +319,87 @@ class Inscripcion extends Model
             self::ESTADO_BAJA => 'gray',
             default => 'gray',
         };
+    }
+
+    // ==================== ACCESSORS ESTADOS SEPARADOS ====================
+
+    /**
+     * Obtener el nombre del estado de documentación formateado
+     */
+    public function getEstadoDocumentacionNombreAttribute(): string
+    {
+        return self::ESTADOS_DOCUMENTACION[$this->estado_documentacion] ?? $this->estado_documentacion ?? 'N/A';
+    }
+
+    /**
+     * Obtener el nombre del estado de ingreso formateado
+     */
+    public function getEstadoIngresoNombreAttribute(): string
+    {
+        return self::ESTADOS_INGRESO[$this->estado_ingreso] ?? $this->estado_ingreso ?? 'N/A';
+    }
+
+    /**
+     * Obtener el color del badge según el estado de documentación
+     */
+    public function getEstadoDocumentacionColorAttribute(): string
+    {
+        return match ($this->estado_documentacion) {
+            self::DOC_PENDIENTE => 'yellow',
+            self::DOC_VALIDADA => 'green',
+            self::DOC_INCOMPLETA => 'orange',
+            self::DOC_RECHAZADA => 'red',
+            default => 'gray',
+        };
+    }
+
+    /**
+     * Obtener el color del badge según el estado de ingreso
+     */
+    public function getEstadoIngresoColorAttribute(): string
+    {
+        return match ($this->estado_ingreso) {
+            self::INGRESO_INSCRIPTO => 'blue',
+            self::INGRESO_CURSANDO => 'indigo',
+            self::INGRESO_APROBADO => 'green',
+            self::INGRESO_DESAPROBADO => 'red',
+            self::INGRESO_LIBRE => 'orange',
+            self::INGRESO_BAJA => 'gray',
+            self::INGRESO_CANCELADO => 'red',
+            default => 'gray',
+        };
+    }
+
+    /**
+     * Verificar si la documentación está validada
+     */
+    public function documentacionValidada(): bool
+    {
+        return $this->estado_documentacion === self::DOC_VALIDADA;
+    }
+
+    /**
+     * Verificar si está cursando activamente
+     */
+    public function estaCursando(): bool
+    {
+        return $this->estado_ingreso === self::INGRESO_CURSANDO;
+    }
+
+    /**
+     * Verificar si aprobó el ingreso
+     */
+    public function aproboIngreso(): bool
+    {
+        return $this->estado_ingreso === self::INGRESO_APROBADO;
+    }
+
+    /**
+     * Verificar si está activo (no dado de baja ni cancelado)
+     */
+    public function estaActivo(): bool
+    {
+        return !in_array($this->estado_ingreso, [self::INGRESO_BAJA, self::INGRESO_CANCELADO]);
     }
 
     /**
@@ -374,11 +495,69 @@ class Inscripcion extends Model
     }
 
     /**
-     * Scope para inscripciones pendientes de validación
+     * Scope para inscripciones pendientes de validación (legacy)
      */
     public function scopePendientesValidacion($query)
     {
         return $query->where('estado', self::ESTADO_PENDIENTE);
+    }
+
+    // ==================== SCOPES ESTADOS SEPARADOS ====================
+
+    /**
+     * Scope para filtrar por estado de documentación
+     */
+    public function scopeEstadoDocumentacion($query, string $estado)
+    {
+        return $query->where('estado_documentacion', $estado);
+    }
+
+    /**
+     * Scope para filtrar por estado de ingreso
+     */
+    public function scopeEstadoIngreso($query, string $estado)
+    {
+        return $query->where('estado_ingreso', $estado);
+    }
+
+    /**
+     * Scope para inscripciones con documentación pendiente
+     */
+    public function scopeDocumentacionPendiente($query)
+    {
+        return $query->where('estado_documentacion', self::DOC_PENDIENTE);
+    }
+
+    /**
+     * Scope para inscripciones con documentación validada
+     */
+    public function scopeDocumentacionValidada($query)
+    {
+        return $query->where('estado_documentacion', self::DOC_VALIDADA);
+    }
+
+    /**
+     * Scope para inscripciones cursando
+     */
+    public function scopeCursando($query)
+    {
+        return $query->where('estado_ingreso', self::INGRESO_CURSANDO);
+    }
+
+    /**
+     * Scope para inscripciones aprobadas
+     */
+    public function scopeAprobadas($query)
+    {
+        return $query->where('estado_ingreso', self::INGRESO_APROBADO);
+    }
+
+    /**
+     * Scope para inscripciones activas (nuevo - basado en estado_ingreso)
+     */
+    public function scopeActivasNuevo($query)
+    {
+        return $query->whereNotIn('estado_ingreso', [self::INGRESO_BAJA, self::INGRESO_CANCELADO]);
     }
 
     /**

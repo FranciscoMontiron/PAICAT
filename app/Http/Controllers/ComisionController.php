@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicoDato;
+use App\Models\Aula;
 use App\Models\Comision;
+use App\Models\Cursada;
 use App\Models\Inscripcion;
 use App\Models\InscripcionComision;
 use App\Models\Materia;
+use App\Models\Municipio;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -71,7 +74,47 @@ class ComisionController extends Controller
 
         $materias = Materia::activas()->orderBy('codigo')->get();
 
-        return view('comisiones.create', compact('docentes', 'materias'));
+        // Obtener valores únicos de alumnos_utn.academico_datos
+        // Turnos disponibles (campo turno_ingreso)
+        $turnos = DB::connection('alumnos_utn')
+            ->table('academico_datos')
+            ->select('turno_ingreso')
+            ->distinct()
+            ->whereNotNull('turno_ingreso')
+            ->where('turno_ingreso', '!=', '')
+            ->orderBy('turno_ingreso')
+            ->pluck('turno_ingreso', 'turno_ingreso')
+            ->toArray();
+
+        // Tipos de periodo/ingreso (campo tipo_ingreso)
+        $tiposIngreso = DB::connection('alumnos_utn')
+            ->table('academico_datos')
+            ->select('tipo_ingreso')
+            ->distinct()
+            ->whereNotNull('tipo_ingreso')
+            ->where('tipo_ingreso', '!=', '')
+            ->orderBy('tipo_ingreso')
+            ->pluck('tipo_ingreso', 'tipo_ingreso')
+            ->toArray();
+
+        // Modalidades (campo modalidad)
+        $modalidades = DB::connection('alumnos_utn')
+            ->table('academico_datos')
+            ->select('modalidad')
+            ->distinct()
+            ->whereNotNull('modalidad')
+            ->where('modalidad', '!=', '')
+            ->orderBy('modalidad')
+            ->pluck('modalidad', 'modalidad')
+            ->toArray();
+
+        // Municipios activos
+        $municipios = Municipio::activos()->orderBy('nombre')->get();
+
+        // Aulas activas con su municipio
+        $aulas = Aula::activas()->with('municipio')->orderBy('nombre')->get();
+
+        return view('comisiones.create', compact('docentes', 'materias', 'turnos', 'tiposIngreso', 'modalidades', 'municipios', 'aulas'));
     }
 
     /**
@@ -79,31 +122,60 @@ class ComisionController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        // Validación condicional basada en modalidad
+        $modalidad = strtolower($request->input('modalidad', ''));
+        $esVirtual = $modalidad === 'virtual';
+
+        $rules = [
             'materias' => 'required|array|min:1',
             'materias.*' => 'exists:materias,id',
             'nombre' => 'required|string|max:100',
             'codigo' => 'required|string|max:20|unique:comisiones,codigo',
             'descripcion' => 'nullable|string',
             'anio' => 'required|integer|min:2020|max:2100',
-            'periodo' => 'required|in:Verano,Invierno,Anual',
-            'turno' => 'required|in:Mañana,Tarde,Noche',
-            'modalidad' => 'required|in:Presencial,Virtual,Semipresencial',
-            'cupo_maximo' => 'required|integer|min:1|max:200',
-            'docente_id' => 'nullable|exists:users,id',
-            'fecha_inicio' => 'nullable|date',
-            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'periodo' => 'required|string|max:50',
+            'turno' => $esVirtual ? 'nullable|string|max:50' : 'required|string|max:50',
+            'modalidad' => 'required|string|max:50',
+            'cupo_maximo' => $esVirtual ? 'nullable|integer|min:0|max:9999' : 'required|integer|min:1|max:9999',
+            'municipio_id' => $esVirtual ? 'nullable|exists:municipios,id' : 'required|exists:municipios,id',
+            'aula_id' => 'nullable|exists:aulas,id',
+            'docentes' => 'nullable|array',
+            'docentes.*' => 'exists:users,id',
             'observaciones' => 'nullable|string',
-        ]);
+        ];
+
+        $validated = $request->validate($rules);
 
         $materiasIds = $validated['materias'];
-        unset($validated['materias']);
+        $docentesIds = $validated['docentes'] ?? [];
+        unset($validated['materias'], $validated['docentes']);
 
         $validated['cupo_actual'] = 0;
         $validated['estado'] = 'activa';
 
+        // Lógica especial para comisiones virtuales: sin cupo ni turno
+        if (strtolower($validated['modalidad']) === 'virtual') {
+            $validated['turno'] = null;
+            $validated['cupo_maximo'] = null; // Sin límite de cupo
+        }
+
+        // Si hay docentes, asignar el primero como docente_id (compatibilidad)
+        if (!empty($docentesIds)) {
+            $validated['docente_id'] = $docentesIds[0];
+        }
+
         $comision = Comision::create($validated);
         $comision->materias()->sync($materiasIds);
+
+        // Agregar docentes a la tabla pivot
+        foreach ($docentesIds as $docenteId) {
+            \App\Models\ComisionDocente::create([
+                'comision_id' => $comision->id,
+                'user_id' => $docenteId,
+                'activo' => true,
+                'fecha_asignacion' => now(),
+            ]);
+        }
 
         return redirect()->route('comisiones.show', $comision)
             ->with('success', 'Comisión creada exitosamente.');
@@ -137,7 +209,50 @@ class ComisionController extends Controller
 
         $materias = Materia::activas()->orderBy('codigo')->get();
 
-        return view('comisiones.edit', compact('comision', 'docentes', 'materias'));
+        // Obtener valores únicos de alumnos_utn.academico_datos
+        // Turnos disponibles (campo turno_ingreso)
+        $turnos = DB::connection('alumnos_utn')
+            ->table('academico_datos')
+            ->select('turno_ingreso')
+            ->distinct()
+            ->whereNotNull('turno_ingreso')
+            ->where('turno_ingreso', '!=', '')
+            ->orderBy('turno_ingreso')
+            ->pluck('turno_ingreso', 'turno_ingreso')
+            ->toArray();
+
+        // Tipos de periodo/ingreso (campo tipo_ingreso)
+        $tiposIngreso = DB::connection('alumnos_utn')
+            ->table('academico_datos')
+            ->select('tipo_ingreso')
+            ->distinct()
+            ->whereNotNull('tipo_ingreso')
+            ->where('tipo_ingreso', '!=', '')
+            ->orderBy('tipo_ingreso')
+            ->pluck('tipo_ingreso', 'tipo_ingreso')
+            ->toArray();
+
+        // Modalidades (campo modalidad)
+        $modalidades = DB::connection('alumnos_utn')
+            ->table('academico_datos')
+            ->select('modalidad')
+            ->distinct()
+            ->whereNotNull('modalidad')
+            ->where('modalidad', '!=', '')
+            ->orderBy('modalidad')
+            ->pluck('modalidad', 'modalidad')
+            ->toArray();
+
+        // Municipios activos
+        $municipios = Municipio::activos()->orderBy('nombre')->get();
+
+        // Aulas activas con su municipio
+        $aulas = Aula::activas()->with('municipio')->orderBy('nombre')->get();
+
+        // Cargar asignaciones de docentes
+        $comision->load(['docentesActivos.docente', 'historialDocentes.docente']);
+
+        return view('comisiones.edit', compact('comision', 'docentes', 'materias', 'turnos', 'tiposIngreso', 'modalidades', 'municipios', 'aulas'));
     }
 
     /**
@@ -152,13 +267,10 @@ class ComisionController extends Controller
             'codigo' => 'required|string|max:20|unique:comisiones,codigo,' . $comision->id,
             'descripcion' => 'nullable|string',
             'anio' => 'required|integer|min:2020|max:2100',
-            'periodo' => 'required|in:Verano,Invierno,Anual',
-            'turno' => 'required|in:Mañana,Tarde,Noche',
-            'modalidad' => 'required|in:Presencial,Virtual,Semipresencial',
-            'cupo_maximo' => 'required|integer|min:' . $comision->cupo_actual . '|max:200',
-            'docente_id' => 'nullable|exists:users,id',
-            'fecha_inicio' => 'nullable|date',
-            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'periodo' => 'required|string|max:50', // Dinámico desde alumnos_utn
+            'turno' => 'nullable|string|max:50', // Nullable para comisiones virtuales
+            'modalidad' => 'required|string|max:50', // Dinámico desde alumnos_utn
+            'cupo_maximo' => 'nullable|integer|min:' . $comision->cupo_actual . '|max:9999', // Nullable para virtual
             'estado' => 'required|in:activa,cerrada,finalizada,cancelada',
             'observaciones' => 'nullable|string',
         ]);
@@ -321,6 +433,27 @@ class ComisionController extends Controller
             'fecha_inscripcion' => now(),
             'estado' => 'inscripto',
         ]);
+
+        // Crear registro de cursada
+        $anioActual = date('Y');
+        $esRecursante = Cursada::where('inscripcion_id', $inscripcion->id)
+            ->where('anio', '<', $anioActual)
+            ->whereIn('estado', [Cursada::ESTADO_DESAPROBADO, Cursada::ESTADO_LIBRE])
+            ->exists();
+
+        Cursada::firstOrCreate(
+            [
+                'inscripcion_id' => $inscripcion->id,
+                'comision_id' => $comision->id,
+                'anio' => $anioActual,
+            ],
+            [
+                'estado' => Cursada::ESTADO_CURSANDO,
+                'modalidad' => $comision->modalidad,
+                'es_recursante' => $esRecursante,
+                'fecha_inicio' => now(),
+            ]
+        );
 
         // Actualizar cupo actual
         $comision->increment('cupo_actual');
