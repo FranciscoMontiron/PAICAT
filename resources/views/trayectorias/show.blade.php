@@ -331,24 +331,46 @@
                     <div id="campoComision">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Comisión Destino</label>
                         <select name="comision_destino_id" class="w-full rounded-lg border-gray-300">
-                            <option value="">Seleccionar...</option>
-                            {{-- Aquí se cargarían las comisiones disponibles --}}
+                            <option value="">Seleccionar comisión...</option>
+                            @if(isset($comisionesDisponibles) && $comisionesDisponibles->count() > 0)
+                                @php
+                                    $grupoAnterior = null;
+                                @endphp
+                                @foreach($comisionesDisponibles->groupBy(fn($c) => ($c->turno ?? 'Sin turno') . ' - ' . ($c->modalidad ?? 'Sin modalidad')) as $grupo => $comisiones)
+                                    <optgroup label="{{ $grupo }}">
+                                        @foreach($comisiones as $comision)
+                                            <option value="{{ $comision->id }}">
+                                                {{ $comision->nombre }}
+                                                @if($comision->municipio) - {{ $comision->municipio->nombre }}@endif
+                                                @if($comision->cupo_maximo && !$comision->esVirtual())
+                                                    ({{ $comision->cupos_disponibles ?? 0 }} cupos)
+                                                @endif
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            @else
+                                <option value="" disabled>No hay comisiones disponibles</option>
+                            @endif
                         </select>
+                        @if(isset($comisionesDisponibles) && $comisionesDisponibles->count() == 0)
+                            <p class="mt-1 text-xs text-amber-600">No hay comisiones con cupo disponible para cambio.</p>
+                        @endif
                     </div>
                     <div id="campoModalidad" class="hidden">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Modalidad Destino</label>
                         <select name="modalidad_destino" class="w-full rounded-lg border-gray-300">
-                            <option value="Presencial">Presencial</option>
-                            <option value="Virtual">Virtual</option>
-                            <option value="Semipresencial">Semipresencial</option>
+                            @foreach($modalidades ?? ['Presencial' => 'Presencial', 'Virtual' => 'Virtual', 'Semipresencial' => 'Semipresencial'] as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div id="campoTurno" class="hidden">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Turno Destino</label>
                         <select name="turno_destino" class="w-full rounded-lg border-gray-300">
-                            <option value="Mañana">Mañana</option>
-                            <option value="Tarde">Tarde</option>
-                            <option value="Noche">Noche</option>
+                            @foreach($turnos ?? ['mañana' => 'Mañana', 'tardenoche' => 'TardeNoche'] as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div>

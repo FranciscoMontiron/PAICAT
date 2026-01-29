@@ -316,14 +316,19 @@ class InscripcionController extends Controller
 
         // Actualizar estado según documentación
         if ($inscripcion->documentacionCompleta()) {
-            // Si toda la documentación está validada, cambiar a documentacion_ok
-            $inscripcion->update(['estado' => Inscripcion::ESTADO_DOCUMENTACION_OK]);
+            // Si toda la documentación está validada, cambiar ambos estados
+            $inscripcion->update([
+                'estado' => Inscripcion::ESTADO_DOCUMENTACION_OK,
+                'estado_documentacion' => Inscripcion::DOC_VALIDADA,
+            ]);
             $mensaje = 'Documentación validada completamente. La inscripción está lista para confirmar.';
         } else {
-            // Si falta algún documento, volver a pendiente (si estaba en documentacion_ok)
+            // Si falta algún documento, volver a pendiente
+            $updateData = ['estado_documentacion' => Inscripcion::DOC_PENDIENTE];
             if ($inscripcion->estado === Inscripcion::ESTADO_DOCUMENTACION_OK) {
-                $inscripcion->update(['estado' => Inscripcion::ESTADO_PENDIENTE]);
+                $updateData['estado'] = Inscripcion::ESTADO_PENDIENTE;
             }
+            $inscripcion->update($updateData);
             $mensaje = 'Documentación actualizada. Faltan documentos por validar.';
         }
 

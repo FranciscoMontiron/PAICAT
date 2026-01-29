@@ -427,6 +427,9 @@ class AsignacionAlumnosController extends Controller
                     ]
                 );
 
+                // Actualizar estado de la inscripción a 'cursando'
+                $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_CURSANDO]);
+
                 $data['comision']->incrementarCupo();
                 $totalAsignados++;
             }

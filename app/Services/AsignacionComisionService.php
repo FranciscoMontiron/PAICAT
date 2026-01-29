@@ -130,6 +130,9 @@ class AsignacionComisionService
                         ]
                     );
 
+                    // Actualizar estado de la inscripción a 'cursando'
+                    $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_CURSANDO]);
+
                     // Actualizar cupo
                     $comisionAsignada->increment('cupo_actual');
                     $asignacionesPorComision[$comisionAsignada->id]++;
