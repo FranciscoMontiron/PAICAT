@@ -455,6 +455,9 @@ class ComisionController extends Controller
             ]
         );
 
+        // Actualizar estado de la inscripción a 'cursando'
+        $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_CURSANDO]);
+
         // Actualizar cupo actual
         $comision->increment('cupo_actual');
 
