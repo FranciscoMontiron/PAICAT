@@ -1,0 +1,8 @@
+[mysqld]
+# Aumentar timeout para evitar "Lock wait timeout exceeded"
+innodb_lock_wait_timeout = 120
+lock_wait_timeout = 120
+
+# Mejorar rendimiento de transacciones
+innodb_buffer_pool_size = 256M
+innodb_log_file_size = 64M

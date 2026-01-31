@@ -233,7 +233,8 @@
                     <td class="px-4 py-3 text-center">
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
                             @if($inscripcion->estado_documentacion === 'pendiente') bg-yellow-100 text-yellow-800
-                            @elseif($inscripcion->estado_documentacion === 'validada') bg-green-100 text-green-800
+                            @elseif($inscripcion->estado_documentacion === 'validada') bg-blue-100 text-blue-800
+                            @elseif($inscripcion->estado_documentacion === 'confirmada') bg-green-100 text-green-800
                             @elseif($inscripcion->estado_documentacion === 'incompleta') bg-orange-100 text-orange-800
                             @elseif($inscripcion->estado_documentacion === 'rechazada') bg-red-100 text-red-800
                             @else bg-gray-100 text-gray-800
@@ -276,7 +277,7 @@
                                 </svg>
                             </a>
                             @endif
-                            @if($inscripcion->estado_documentacion !== 'validada')
+                            @if(!in_array($inscripcion->estado_documentacion, ['validada', 'confirmada']))
                             <a href="{{ route('inscripciones.show', $inscripcion) }}#documentacion"
                                class="p-1.5 rounded bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
                                title="Validar documentación">

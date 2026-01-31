@@ -59,6 +59,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/{inscripcion}/validar-documentacion', [InscripcionController::class, 'validarDocumentacion'])->middleware('permission:inscripciones.editar')->name('validar-documentacion');
         Route::post('/{inscripcion}/confirmar', [InscripcionController::class, 'confirmar'])->middleware('permission:inscripciones.editar')->name('confirmar');
         Route::post('/{inscripcion}/cancelar', [InscripcionController::class, 'cancelar'])->middleware('permission:inscripciones.editar')->name('cancelar');
+        Route::post('/{inscripcion}/aprobar-cursada', [InscripcionController::class, 'aprobarCursada'])->middleware('permission:inscripciones.editar')->name('aprobar-cursada');
+        Route::post('/{inscripcion}/agregar-condicion', [InscripcionController::class, 'agregarCondicion'])->middleware('permission:inscripciones.editar')->name('agregar-condicion');
+        Route::delete('/condicion/{condicion}', [InscripcionController::class, 'desactivarCondicion'])->middleware('permission:inscripciones.editar')->name('desactivar-condicion');
+        Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.editar')->name('crear-solicitud');
         Route::delete('/{inscripcion}', [InscripcionController::class, 'destroy'])->middleware('permission:inscripciones.eliminar')->name('destroy');
     });
 
@@ -251,35 +255,5 @@ Route::middleware('auth')->group(function () {
         Route::put('/{usuario}', [UsuarioController::class, 'update'])->middleware('permission:usuarios.editar')->name('update');
         Route::delete('/{usuario}', [UsuarioController::class, 'destroy'])->middleware('permission:usuarios.eliminar')->name('destroy');
         Route::post('/{id}/restore', [UsuarioController::class, 'restore'])->middleware('permission:usuarios.eliminar')->name('restore');
-    });
-
-    // Módulo 7: Trayectorias y Gestión Estudiantil
-    Route::prefix('trayectorias')->name('trayectorias.')->middleware('permission:inscripciones.ver')->group(function () {
-        // Listado de trayectorias
-        Route::get('/', [App\Http\Controllers\TrayectoriaController::class, 'index'])->name('index');
-        Route::get('/inactivos', [App\Http\Controllers\TrayectoriaController::class, 'inactivos'])->name('inactivos');
-        Route::get('/{inscripcion}', [App\Http\Controllers\TrayectoriaController::class, 'show'])->name('show');
-
-        // Cambio de estado
-        Route::post('/{inscripcion}/cambiar-estado', [App\Http\Controllers\TrayectoriaController::class, 'cambiarEstado'])
-            ->middleware('permission:inscripciones.editar')->name('cambiar-estado');
-        Route::post('/{inscripcion}/baja', [App\Http\Controllers\TrayectoriaController::class, 'registrarBaja'])
-            ->middleware('permission:inscripciones.editar')->name('baja');
-
-        // Condiciones particulares
-        Route::post('/{inscripcion}/condicion', [App\Http\Controllers\TrayectoriaController::class, 'agregarCondicion'])
-            ->middleware('permission:inscripciones.editar')->name('agregar-condicion');
-        Route::delete('/condicion/{condicion}', [App\Http\Controllers\TrayectoriaController::class, 'desactivarCondicion'])
-            ->middleware('permission:inscripciones.editar')->name('desactivar-condicion');
-
-        // Solicitudes de cambio
-        Route::post('/{inscripcion}/solicitud-cambio', [App\Http\Controllers\TrayectoriaController::class, 'crearSolicitudCambio'])
-            ->middleware('permission:inscripciones.editar')->name('crear-solicitud');
-    });
-
-    // Solicitudes de cambio (administración)
-    Route::prefix('solicitudes')->name('solicitudes.')->middleware('permission:comisiones.editar')->group(function () {
-        Route::get('/', [App\Http\Controllers\TrayectoriaController::class, 'solicitudesIndex'])->name('index');
-        Route::post('/{solicitud}/procesar', [App\Http\Controllers\TrayectoriaController::class, 'procesarSolicitud'])->name('procesar');
     });
 }); // Cierre del middleware auth

@@ -98,7 +98,7 @@
                         {{-- MENÚ: Alumnos --}}
                         @if(auth()->user()->hasPermission('inscripciones.ver'))
                         <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-                            <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 {{ request()->routeIs('inscripciones.*') || request()->routeIs('trayectorias.*') || request()->routeIs('cursadas.*') || request()->routeIs('solicitudes.*') ? 'bg-white text-utn-blue' : 'text-white hover:bg-white/10' }}">
+                            <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 {{ request()->routeIs('inscripciones.*') || request()->routeIs('cursadas.*') ? 'bg-white text-utn-blue' : 'text-white hover:bg-white/10' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                 </svg>
@@ -115,27 +115,12 @@
                                         </svg>
                                         Inscripciones
                                     </a>
-                                    <a href="{{ route('trayectorias.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('trayectorias.*') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                                        </svg>
-                                        Trayectorias
-                                    </a>
                                     @if(auth()->user()->hasPermission('comisiones.ver'))
                                     <a href="{{ route('cursadas.global') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('cursadas.*') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                                         </svg>
                                         Cursadas
-                                    </a>
-                                    @endif
-                                    @if(auth()->user()->hasPermission('comisiones.editar'))
-                                    <div class="border-t border-gray-100 my-1"></div>
-                                    <a href="{{ route('solicitudes.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('solicitudes.*') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                                        </svg>
-                                        Solicitudes de Cambio
                                     </a>
                                     @endif
                                 </div>
