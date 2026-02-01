@@ -162,6 +162,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/{evaluacion}', [EvaluacionController::class, 'update'])->middleware('permission:evaluaciones.editar')->name('update');
         Route::delete('/{evaluacion}', [EvaluacionController::class, 'destroy'])->middleware('permission:evaluaciones.eliminar')->name('destroy');
 
+        // Vista de evaluaciones por comisión
+        Route::get('/comision/{comision}', [EvaluacionController::class, 'showComision'])->name('comision');
+
         // NOTAS - Gestión de notas por comisión
         Route::get('/notas/{comision}', [EvaluacionController::class, 'indexNota'])->name('notas.index');
         Route::get('/notas/{comision}/create', [EvaluacionController::class, 'createNota'])->middleware('permission:evaluaciones.crear')->name('notas.create');
@@ -255,5 +258,15 @@ Route::middleware('auth')->group(function () {
         Route::put('/{usuario}', [UsuarioController::class, 'update'])->middleware('permission:usuarios.editar')->name('update');
         Route::delete('/{usuario}', [UsuarioController::class, 'destroy'])->middleware('permission:usuarios.eliminar')->name('destroy');
         Route::post('/{id}/restore', [UsuarioController::class, 'restore'])->middleware('permission:usuarios.eliminar')->name('restore');
+    });
+
+    // Módulo: Solicitudes de Cambio
+    Route::prefix('solicitudes')->name('solicitudes.')->middleware('permission:comisiones.editar')->group(function () {
+        Route::get('/', [App\Http\Controllers\SolicitudCambioController::class, 'index'])->name('index');
+        Route::get('/{solicitud}', [App\Http\Controllers\SolicitudCambioController::class, 'show'])->name('show');
+        Route::post('/{solicitud}/aprobar', [App\Http\Controllers\SolicitudCambioController::class, 'aprobar'])->name('aprobar');
+        Route::post('/{solicitud}/rechazar', [App\Http\Controllers\SolicitudCambioController::class, 'rechazar'])->name('rechazar');
+        Route::post('/detectar-trueques', [App\Http\Controllers\SolicitudCambioController::class, 'detectarTrueques'])->name('detectar-trueques');
+        Route::get('/comision/{comision}/cupos', [App\Http\Controllers\SolicitudCambioController::class, 'verificarCupos'])->name('verificar-cupos');
     });
 }); // Cierre del middleware auth

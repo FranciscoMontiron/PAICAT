@@ -547,38 +547,75 @@
 
             {{-- Solicitudes de Cambio --}}
             <div class="bg-white shadow-md rounded-lg p-6">
+                @php
+                    $tieneSolicitudPendiente = $inscripcion->solicitudesCambio()
+                        ->whereIn('estado', ['pendiente', 'en_revision', 'trueque_detectado'])
+                        ->exists();
+                @endphp
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-gray-800">Solicitudes de Cambio</h2>
-                    @if(auth()->user()->hasPermission('inscripciones.editar') && !empty($tieneComision))
-                    <button onclick="document.getElementById('modalSolicitudCambio').classList.remove('hidden')"
-                        class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                        + Nueva
-                    </button>
+                    @if(auth()->user()->hasPermission('inscripciones.editar'))
+                        @if(!empty($tieneComision) && !$tieneSolicitudPendiente)
+                            <button onclick="document.getElementById('modalSolicitudCambio').classList.remove('hidden')"
+                                class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                                + Nueva
+                            </button>
+                        @elseif($tieneSolicitudPendiente)
+                            <span class="text-xs text-yellow-600" title="Ya existe una solicitud pendiente">
+                                <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Solicitud en proceso
+                            </span>
+                        @elseif(empty($tieneComision))
+                            <span class="text-xs text-gray-400" title="El alumno debe estar en una comisión">
+                                Sin comisión
+                            </span>
+                        @endif
                     @endif
                 </div>
                 @if($inscripcion->solicitudesCambio && $inscripcion->solicitudesCambio->count() > 0)
                 <div class="space-y-3">
-                    @foreach($inscripcion->solicitudesCambio->take(5) as $solicitud)
-                    <div class="p-3 bg-gray-50 rounded-lg">
+                    @foreach($inscripcion->solicitudesCambio->sortByDesc('created_at')->take(5) as $solicitud)
+                    <div class="p-3 rounded-lg {{ $solicitud->estado === 'trueque_detectado' ? 'bg-purple-50 border border-purple-200' : 'bg-gray-50' }}">
                         <div class="flex items-center justify-between">
-                            <span class="text-sm font-medium text-gray-900 capitalize">{{ str_replace('_', ' ', $solicitud->tipo) }}</span>
+                            <div>
+                                <span class="text-sm font-medium text-gray-900">{{ \App\Models\SolicitudCambio::TIPOS[$solicitud->tipo] ?? ucfirst($solicitud->tipo) }}</span>
+                                @if($solicitud->tipo === 'comision' && $solicitud->comisionDestino)
+                                    <span class="text-xs text-gray-500 ml-1">→ {{ $solicitud->comisionDestino->nombre }}</span>
+                                @endif
+                            </div>
                             @php
                             $estadoColors = [
                                 'pendiente' => 'bg-yellow-100 text-yellow-700',
+                                'en_revision' => 'bg-blue-100 text-blue-700',
                                 'aprobada' => 'bg-green-100 text-green-700',
                                 'rechazada' => 'bg-red-100 text-red-700',
+                                'cancelada' => 'bg-gray-100 text-gray-600',
+                                'trueque_detectado' => 'bg-purple-100 text-purple-700',
                             ];
                             @endphp
                             <span class="px-2 py-0.5 text-xs rounded-full {{ $estadoColors[$solicitud->estado] ?? 'bg-gray-100 text-gray-600' }}">
-                                {{ ucfirst($solicitud->estado) }}
+                                {{ \App\Models\SolicitudCambio::ESTADOS[$solicitud->estado] ?? ucfirst($solicitud->estado) }}
                             </span>
                         </div>
+                        @if($solicitud->solicitud_trueque_id)
+                            <p class="text-xs text-purple-600 mt-1">
+                                <svg class="inline w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                                </svg>
+                                Trueque detectado - Pendiente de aprobación
+                            </p>
+                        @endif
                         <p class="text-xs text-gray-500 mt-1">{{ $solicitud->created_at->format('d/m/Y H:i') }}</p>
+                        @if($solicitud->estado === 'rechazada' && $solicitud->motivo_rechazo)
+                            <p class="text-xs text-red-600 mt-1">Motivo: {{ Str::limit($solicitud->motivo_rechazo, 50) }}</p>
+                        @endif
                     </div>
                     @endforeach
                 </div>
                 @else
-                <p class="text-gray-500 text-center py-4 text-sm">Sin solicitudes.</p>
+                <p class="text-gray-500 text-center py-4 text-sm">Sin solicitudes de cambio.</p>
                 @endif
             </div>
 
@@ -720,56 +757,95 @@
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
         <div class="p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Solicitar Cambio</h3>
-            <form action="{{ route('inscripciones.crear-solicitud', $inscripcion) }}" method="POST">
-                @csrf
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Cambio</label>
-                        <select name="tipo" id="tipoSolicitud" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue" onchange="toggleCamposCambio()">
-                            <option value="comision">Cambio de Comisión</option>
-                            <option value="modalidad">Cambio de Modalidad</option>
-                            <option value="turno">Cambio de Turno</option>
-                        </select>
+
+            @if(!empty($tieneComision) && $comision)
+                {{-- Info de comisión actual --}}
+                <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="text-sm text-blue-700">
+                        <span class="font-medium">Comisión actual:</span> {{ $comision->nombre }}
+                        ({{ $comision->turno ?? 'Sin turno' }} - {{ $comision->modalidad ?? 'Sin modalidad' }})
+                    </p>
+                </div>
+
+                <form action="{{ route('inscripciones.crear-solicitud', $inscripcion) }}" method="POST">
+                    @csrf
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Cambio</label>
+                            <select name="tipo" id="tipoSolicitud" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue" onchange="toggleCamposCambio()">
+                                <option value="comision">Cambio de Comisión</option>
+                                <option value="modalidad">Cambio de Modalidad</option>
+                                <option value="turno">Cambio de Turno</option>
+                            </select>
+                        </div>
+                        <div id="campoComision">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Comisión Destino <span class="text-red-500">*</span></label>
+                            <select name="comision_destino_id" id="comisionDestinoSelect" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue">
+                                <option value="">Seleccionar comisión...</option>
+                                @if(isset($comisionesDisponibles) && $comisionesDisponibles->count() > 0)
+                                    @foreach($comisionesDisponibles as $comisionDisp)
+                                        @if($comisionDisp->id !== $comision->id)
+                                            <option value="{{ $comisionDisp->id }}" data-cupos="{{ $comisionDisp->cupos_disponibles }}" data-virtual="{{ $comisionDisp->esVirtual() ? '1' : '0' }}">
+                                                {{ $comisionDisp->nombre }} - {{ $comisionDisp->turno ?? '' }} {{ $comisionDisp->modalidad ?? '' }}
+                                                @if($comisionDisp->esVirtual())
+                                                    (Sin límite)
+                                                @elseif($comisionDisp->cupos_disponibles !== null)
+                                                    ({{ $comisionDisp->cupos_disponibles }} cupos)
+                                                @endif
+                                            </option>
+                                        @endif
+                                    @endforeach
+                                @endif
+                            </select>
+                            <p id="alertaCupos" class="hidden mt-1 text-sm text-orange-600">
+                                <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                Esta comisión tiene pocos cupos disponibles.
+                            </p>
+                        </div>
+                        <div id="campoModalidad" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Modalidad Destino</label>
+                            <select name="modalidad_destino" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue">
+                                <option value="Presencial" {{ ($comision->modalidad ?? '') !== 'Presencial' ? '' : 'disabled' }}>Presencial</option>
+                                <option value="Virtual" {{ ($comision->modalidad ?? '') !== 'Virtual' ? '' : 'disabled' }}>Virtual</option>
+                                <option value="Semipresencial" {{ ($comision->modalidad ?? '') !== 'Semipresencial' ? '' : 'disabled' }}>Semipresencial</option>
+                            </select>
+                        </div>
+                        <div id="campoTurno" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Turno Destino</label>
+                            <select name="turno_destino" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue">
+                                <option value="mañana" {{ ($comision->turno ?? '') !== 'mañana' ? '' : 'disabled' }}>Mañana</option>
+                                <option value="tardenoche" {{ ($comision->turno ?? '') !== 'tardenoche' ? '' : 'disabled' }}>TardeNoche</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Motivo <span class="text-red-500">*</span></label>
+                            <textarea name="motivo" required rows="3" minlength="10" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue" placeholder="Explique el motivo de la solicitud (mínimo 10 caracteres)..."></textarea>
+                        </div>
                     </div>
-                    <div id="campoComision">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Comisión Destino</label>
-                        <select name="comision_destino_id" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue">
-                            <option value="">Seleccionar comisión...</option>
-                            @if(isset($comisionesDisponibles) && $comisionesDisponibles->count() > 0)
-                                @foreach($comisionesDisponibles as $comisionDisp)
-                                    <option value="{{ $comisionDisp->id }}">
-                                        {{ $comisionDisp->nombre }} - {{ $comisionDisp->turno ?? '' }} {{ $comisionDisp->modalidad ?? '' }}
-                                        @if($comisionDisp->cupos_disponibles !== null) ({{ $comisionDisp->cupos_disponibles }} cupos) @endif
-                                    </option>
-                                @endforeach
-                            @endif
-                        </select>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="document.getElementById('modalSolicitudCambio').classList.add('hidden')" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Enviar Solicitud</button>
                     </div>
-                    <div id="campoModalidad" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Modalidad Destino</label>
-                        <select name="modalidad_destino" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue">
-                            <option value="Presencial">Presencial</option>
-                            <option value="Virtual">Virtual</option>
-                            <option value="Semipresencial">Semipresencial</option>
-                        </select>
-                    </div>
-                    <div id="campoTurno" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Turno Destino</label>
-                        <select name="turno_destino" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue">
-                            <option value="mañana">Mañana</option>
-                            <option value="tardenoche">TardeNoche</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
-                        <textarea name="motivo" required rows="3" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue" placeholder="Explique el motivo de la solicitud..."></textarea>
+                </form>
+            @else
+                {{-- Mensaje cuando no tiene comisión --}}
+                <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-yellow-800">No se puede solicitar cambio</p>
+                            <p class="text-sm text-yellow-700 mt-1">El alumno debe estar asignado a una comisión antes de poder solicitar un cambio.</p>
+                        </div>
                     </div>
                 </div>
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" onclick="document.getElementById('modalSolicitudCambio').classList.add('hidden')" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Enviar Solicitud</button>
+                <div class="flex justify-end mt-6">
+                    <button type="button" onclick="document.getElementById('modalSolicitudCambio').classList.add('hidden')" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Cerrar</button>
                 </div>
-            </form>
+            @endif
         </div>
     </div>
 </div>
@@ -778,10 +854,45 @@
 <script>
     function toggleCamposCambio() {
         const tipo = document.getElementById('tipoSolicitud').value;
-        document.getElementById('campoComision').classList.toggle('hidden', tipo !== 'comision');
-        document.getElementById('campoModalidad').classList.toggle('hidden', tipo !== 'modalidad');
-        document.getElementById('campoTurno').classList.toggle('hidden', tipo !== 'turno');
+        const campoComision = document.getElementById('campoComision');
+        const campoModalidad = document.getElementById('campoModalidad');
+        const campoTurno = document.getElementById('campoTurno');
+        const comisionSelect = document.getElementById('comisionDestinoSelect');
+
+        if (campoComision) campoComision.classList.toggle('hidden', tipo !== 'comision');
+        if (campoModalidad) campoModalidad.classList.toggle('hidden', tipo !== 'modalidad');
+        if (campoTurno) campoTurno.classList.toggle('hidden', tipo !== 'turno');
+
+        // Hacer el select de comisión requerido solo cuando es cambio de comisión
+        if (comisionSelect) {
+            comisionSelect.required = (tipo === 'comision');
+        }
     }
+
+    // Verificar cupos al seleccionar comisión destino
+    document.addEventListener('DOMContentLoaded', function() {
+        const comisionSelect = document.getElementById('comisionDestinoSelect');
+        const alertaCupos = document.getElementById('alertaCupos');
+
+        if (comisionSelect && alertaCupos) {
+            comisionSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const cupos = parseInt(selectedOption.dataset.cupos);
+                const esVirtual = selectedOption.dataset.virtual === '1';
+
+                if (!esVirtual && cupos !== null && cupos <= 3 && cupos > 0) {
+                    alertaCupos.classList.remove('hidden');
+                } else {
+                    alertaCupos.classList.add('hidden');
+                }
+            });
+        }
+
+        // Inicializar el estado del formulario
+        if (document.getElementById('tipoSolicitud')) {
+            toggleCamposCambio();
+        }
+    });
 </script>
 @endpush
 @endsection

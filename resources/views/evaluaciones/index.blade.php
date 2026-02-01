@@ -4,227 +4,159 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     {{-- Header --}}
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900">Módulo de Evaluaciones y Notas</h1>
-            <p class="text-gray-600 mt-1">Administra las evaluaciones</p>
-        </div>
-        @if(auth()->user()->hasPermission('evaluaciones.crear'))
-        <a href="{{ route('evaluaciones.create') }}"
-            class="bg-utn-blue text-white px-6 py-3 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Nueva Evaluación
-        </a>
-        @endif
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Gestión de Evaluaciones</h1>
+        <p class="text-gray-600 mt-1">Selecciona una comisión para gestionar sus evaluaciones y calificaciones</p>
     </div>
 
-    {{-- Mensajes de éxito --}}
+    {{-- Mensajes --}}
     @if(session('success'))
-    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-            </div>
-            <div class="ml-3">
-                <p class="text-sm text-green-700">{{ session('success') }}</p>
-            </div>
+    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-r-lg">
+        <div class="flex items-center">
+            <svg class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <p class="text-sm text-green-700">{{ session('success') }}</p>
         </div>
     </div>
     @endif
+    @if(session('error'))
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+        <p class="text-sm text-red-700">{{ session('error') }}</p>
+    </div>
+    @endif
 
-
-
-
-    {{-- Tabla de Evaluaciones --}}
-    <div class="bg-white shadow-md rounded-lg overflow-hidden mb-8">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripcion</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">tipo</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nota</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comision</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materia</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anio</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @forelse($evaluaciones as $evaluacion)
-                <tr class="{{ $evaluacion->trashed() ? 'bg-gray-100 opacity-60' : '' }}">
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $evaluacion->nombre }}
-                    </td>
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $evaluacion->descripcion ?? 'N/A' }}
-                    </td>
-
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $evaluacion->tipo}}
-                    </td>
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $evaluacion->fecha->format('d/m/Y') }}
-                    </td>
-
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $evaluacion->peso_porcentual}}
-                    </td>
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $evaluacion->comision->nombre ?? 'N/A'}}
-                    </td>
-
-                    <td class="px-6 py-4 text-sm text-gray-500">
-                        @if($evaluacion->materia)
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                            {{ $evaluacion->materia->nombre }}
-                        </span>
-                        @else
-                        <span class="text-gray-400">Generla / Sin Materia</span>
-                        @endif
-                    </td>
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $evaluacion->anio}}
-                    </td>
-
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        @if($evaluacion->trashed())
-                        @if(auth()->user()->hasPermission('evaluaciones.eliminar'))
-                        <form method="POST" class="inline">
-                            @csrf
-                            <button type="submit" class="text-green-600 hover:text-green-900">Restaurar</button>
-                        </form>
-                        @endif
-                        @else
-                        @if($evaluacion->comision_id)
-                        <a href="{{ route('evaluaciones.carga-masiva', $evaluacion) }}" class="text-green-600 hover:text-green-900 mr-3" title="Carga Masiva de Notas">
-                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path> <!-- Icono temporal, mejor tabla -->
-                            </svg>
-                            Grilla
-                        </a>
-                        <a href="{{ route('evaluaciones.notas.index', $evaluacion->comision_id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Ver Notas</a>
-                        @endif
-                        @if(auth()->user()->hasPermission('evaluaciones.editar'))
-                        <a href="{{ route('evaluaciones.edit', $evaluacion) }}" class="text-blue-600 hover:text-blue-900 mr-3">Editar</a>
-                        @endif
-                        @if(auth()->user()->hasPermission('evaluaciones.eliminar'))
-                        <form action="{{ route('evaluaciones.destroy', $evaluacion) }}" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar esta evaluación?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-red-600 hover:text-red-900">Eliminar</button>
-                        </form>
-                        @endif
-                        @endif
-                    </td>
-
-                </tr>
-
-
-
-                @empty
-                <tr class="px-6 py-12 text-center text-gray-500">
-                    <td colspan="8" class="px-6 py-12 text-center text-gray-500">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                        </svg>
-                        <p class="mt-2">No hay Evaluaciones registradas</p>
-                        @if(auth()->user()->hasPermission('evaluaciones.crear'))
-                        <a href="{{ route('evaluaciones.create') }}" class="mt-4 inline-block text-utn-blue hover:text-blue-800">
-                            Crear la primera evaluación
-                        </a>
-                        @endif
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-
-
-
-
-        </table>
+    {{-- Filtros --}}
+    <div class="bg-white shadow-md rounded-lg p-4 mb-6">
+        <form action="{{ route('evaluaciones.index') }}" method="GET" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Buscar comisión</label>
+                <input type="text" name="buscar" value="{{ request('buscar') }}"
+                       placeholder="Nombre o código..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+            </div>
+            <div class="w-32">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Año</label>
+                <select name="anio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                    <option value="">Todos</option>
+                    @for($y = date('Y'); $y >= date('Y') - 3; $y--)
+                        <option value="{{ $y }}" {{ request('anio', date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                    @endfor
+                </select>
+            </div>
+            <div class="w-40">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Periodo</label>
+                <select name="periodo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                    <option value="">Todos</option>
+                    <option value="Intensivo" {{ request('periodo') == 'Intensivo' ? 'selected' : '' }}>Intensivo</option>
+                    <option value="Extensivo" {{ request('periodo') == 'Extensivo' ? 'selected' : '' }}>Extensivo</option>
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors">
+                Filtrar
+            </button>
+            @if(request()->hasAny(['buscar', 'anio', 'periodo']))
+                <a href="{{ route('evaluaciones.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Limpiar
+                </a>
+            @endif
+        </form>
     </div>
 
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900">Comisiones-Notas</h1>
-            <p class="text-gray-600 mt-1">Administra las notas segun la comision</p>
-        </div>
+    {{-- Grid de Comisiones --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @forelse($comisiones as $comision)
+            @php
+                $evaluacionesCount = $comision->evaluaciones->count();
+                $materiasCount = $comision->materias->count();
+                $alumnosCount = $comision->inscripciones()->whereIn('estado', ['inscripto', 'confirmado'])->count();
+            @endphp
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+                {{-- Header de la comisión --}}
+                <div class="bg-gradient-to-r from-utn-blue to-blue-700 px-5 py-4">
+                    <h3 class="text-lg font-bold text-white">{{ $comision->nombre }}</h3>
+                    <div class="flex items-center gap-3 mt-1 text-blue-100 text-sm">
+                        <span>{{ $comision->periodo }}</span>
+                        <span>•</span>
+                        <span>{{ $comision->anio }}</span>
+                        @if($comision->turno)
+                            <span>•</span>
+                            <span class="capitalize">{{ $comision->turno }}</span>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Estadísticas --}}
+                <div class="grid grid-cols-3 divide-x divide-gray-100 bg-gray-50">
+                    <div class="p-3 text-center">
+                        <p class="text-2xl font-bold text-gray-800">{{ $alumnosCount }}</p>
+                        <p class="text-xs text-gray-500">Alumnos</p>
+                    </div>
+                    <div class="p-3 text-center">
+                        <p class="text-2xl font-bold text-gray-800">{{ $materiasCount }}</p>
+                        <p class="text-xs text-gray-500">Materias</p>
+                    </div>
+                    <div class="p-3 text-center">
+                        <p class="text-2xl font-bold text-gray-800">{{ $evaluacionesCount }}</p>
+                        <p class="text-xs text-gray-500">Evaluaciones</p>
+                    </div>
+                </div>
+
+                {{-- Materias con evaluaciones --}}
+                <div class="p-4">
+                    @if($comision->materias->count() > 0)
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Materias</p>
+                        <div class="flex flex-wrap gap-1.5">
+                            @foreach($comision->materias->take(4) as $materia)
+                                @php
+                                    $evalsMateria = $comision->evaluaciones->where('materia_id', $materia->id)->count();
+                                @endphp
+                                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-700">
+                                    {{ Str::limit($materia->nombre, 15) }}
+                                    @if($evalsMateria > 0)
+                                        <span class="bg-purple-200 text-purple-800 px-1.5 rounded-full text-[10px]">{{ $evalsMateria }}</span>
+                                    @endif
+                                </span>
+                            @endforeach
+                            @if($comision->materias->count() > 4)
+                                <span class="text-xs text-gray-400">+{{ $comision->materias->count() - 4 }} más</span>
+                            @endif
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-400 italic">Sin materias asignadas</p>
+                    @endif
+                </div>
+
+                {{-- Acciones --}}
+                <div class="px-4 pb-4 flex gap-2">
+                    <a href="{{ route('evaluaciones.comision', $comision) }}"
+                       class="flex-1 text-center px-3 py-2 bg-utn-blue text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition-colors">
+                        Ver Evaluaciones
+                    </a>
+                    <a href="{{ route('evaluaciones.notas.index', $comision) }}"
+                       class="flex-1 text-center px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        Ver Notas
+                    </a>
+                </div>
+            </div>
+        @empty
+            <div class="col-span-full">
+                <div class="bg-white rounded-xl shadow-md p-12 text-center">
+                    <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900">No hay comisiones</h3>
+                    <p class="mt-2 text-gray-500">No se encontraron comisiones con los filtros seleccionados.</p>
+                </div>
+            </div>
+        @endforelse
     </div>
 
-    {{-- Tabla de notas --}}
-    <div class="bg-white shadow-md rounded-lg overflow-hidden mb-8">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comision</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">año</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">turno</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">periodo</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-
-            <tbody class="bg-white divide-y divide-gray-200">
-                @forelse($comisiones as $comision)
-                <tr class="{{ $comision->trashed() ? 'bg-gray-100 opacity-60' : '' }}">
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $comision->nombre }}
-                    </td>
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $comision->anio }}
-                    </td>
-
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $comision->turno }}
-                    </td>
-
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $comision->periodo }}
-                    </td>
-
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{{ route('evaluaciones.notas.index', $comision) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Ver Notas</a>
-                    </td>
-
-                </tr>
-
-                @empty
-                <tr class="px-6 py-12 text-center text-gray-500">
-                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                        </svg>
-                        <p class="mt-2">No hay Notas registradas</p>
-                        <a href="" class="mt-4 inline-block text-utn-blue hover:text-blue-800">
-                            Crear la primer Nota
-                        </a>
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-
-        </table>
+    {{-- Paginación --}}
+    @if($comisiones->hasPages())
+    <div class="mt-6">
+        {{ $comisiones->withQueryString()->links() }}
     </div>
+    @endif
 </div>
-
-
-
-
-
 @endsection

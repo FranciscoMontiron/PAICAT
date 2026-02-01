@@ -18,20 +18,61 @@ class EvaluacionController extends Controller
 {
 
     /**
-     * Mostrar evaluaciones
+     * Mostrar listado de comisiones para gestionar evaluaciones
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $evaluaciones = Evaluacion::with(['comision', 'materia'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $query = Comision::query()
+            ->with(['materias', 'evaluaciones'])
+            ->orderBy('anio', 'desc')
+            ->orderBy('nombre', 'asc');
 
-        $comisiones = Comision::orderBy('created_at', 'desc')
-            ->paginate(15);
+        // Filtros
+        if ($request->filled('buscar')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('nombre', 'like', '%' . $request->buscar . '%')
+                  ->orWhere('codigo', 'like', '%' . $request->buscar . '%');
+            });
+        }
 
-        return view('evaluaciones.index', compact('evaluaciones', 'comisiones'));
+        if ($request->filled('anio')) {
+            $query->where('anio', $request->anio);
+        }
+
+        if ($request->filled('periodo')) {
+            $query->where('periodo', $request->periodo);
+        }
+
+        $comisiones = $query->paginate(12);
+
+        return view('evaluaciones.index', compact('comisiones'));
     }
 
+    /**
+     * Mostrar evaluaciones de una comisión específica
+     */
+    public function showComision(Comision $comision): View
+    {
+        $comision->load(['materias', 'municipio']);
+
+        // Evaluaciones agrupadas por materia
+        $evaluaciones = Evaluacion::where('comision_id', $comision->id)
+            ->with(['materia', 'notas'])
+            ->orderBy('materia_id')
+            ->orderBy('fecha', 'asc')
+            ->get()
+            ->groupBy('materia_id');
+
+        // Materias de la comisión (para crear nuevas evaluaciones)
+        $materias = $comision->materias;
+
+        // Alumnos inscriptos
+        $alumnosCount = $comision->inscripciones()
+            ->whereIn('estado', ['inscripto', 'confirmado'])
+            ->count();
+
+        return view('evaluaciones.comision', compact('comision', 'evaluaciones', 'materias', 'alumnosCount'));
+    }
 
     /**
      * Mostrar formulario para crear nueva evaluacion

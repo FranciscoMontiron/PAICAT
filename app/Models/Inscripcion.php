@@ -159,6 +159,14 @@ class Inscripcion extends Model
     }
 
     /**
+     * Accessor para obtener el alumno (alias de getPerson)
+     */
+    public function getAlumnoAttribute(): ?Person
+    {
+        return $this->getPerson();
+    }
+
+    /**
      * Obtener los datos académicos desde alumnos_utn
      */
     public function getAcademicoDato(): ?AcademicoDato
@@ -440,12 +448,14 @@ class Inscripcion extends Model
 
     /**
      * Verificar si es un duplicado potencial
+     * Nota: La BD tiene unique constraint en (person_id, anio_ingreso) sin considerar estado,
+     * por lo que debemos verificar cualquier registro existente, incluyendo soft-deleted
      */
     public static function esDuplicado(int $personId, int $anioIngreso): bool
     {
-        return self::where('person_id', $personId)
+        return self::withTrashed()
+            ->where('person_id', $personId)
             ->where('anio_ingreso', $anioIngreso)
-            ->whereNotIn('estado', [self::ESTADO_CANCELADO, self::ESTADO_BAJA])
             ->exists();
     }
 
