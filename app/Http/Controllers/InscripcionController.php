@@ -214,7 +214,13 @@ class InscripcionController extends Controller
      */
     public function show(Inscripcion $inscripcion): View
     {
-        $inscripcion->load(['usuarioRegistro', 'usuarioValidacion']);
+        $inscripcion->load([
+            'usuarioRegistro',
+            'usuarioValidacion',
+            'condicionesParticulares',
+            'solicitudesCambio',
+            'trayectorias' => fn($q) => $q->orderBy('fecha_inicio', 'desc'),
+        ]);
 
         // Cargar datos del alumno
         $persona = Person::on('alumnos_utn')
@@ -233,12 +239,144 @@ class InscripcionController extends Controller
                 ->first();
         }
 
-        return view('inscripciones.show', compact(
-            'inscripcion',
-            'persona',
-            'especialidad',
-            'especialidadAlternativa'
+        // Cargar datos de trayectoria académica
+        $trayectoriaData = $this->cargarTrayectoriaAcademica($inscripcion);
+
+        // Obtener comisiones disponibles para solicitud de cambio
+        $comisionesDisponibles = \App\Models\Comision::activas()
+            ->conCuposDisponibles()
+            ->where('anio', date('Y'))
+            ->orderBy('turno')
+            ->orderBy('modalidad')
+            ->orderBy('nombre')
+            ->get();
+
+        return view('inscripciones.show', array_merge(
+            compact('inscripcion', 'persona', 'especialidad', 'especialidadAlternativa', 'comisionesDisponibles'),
+            $trayectoriaData
         ));
+    }
+
+    /**
+     * Cargar datos de trayectoria académica del alumno
+     * Incluye: comisión asignada, cursada, materias, notas y asistencia
+     */
+    private function cargarTrayectoriaAcademica(Inscripcion $inscripcion): array
+    {
+        $resultado = [
+            'tieneComision' => false,
+            'inscripcionComision' => null,
+            'comision' => null,
+            'cursada' => null,
+            'materias' => collect(),
+            'notasPorMateria' => [],
+            'asistencias' => collect(),
+            'puedeAprobarCursada' => false,
+            'resumenNotas' => null,
+        ];
+
+        // Obtener inscripción a comisión (activa: inscripto, confirmado, o ya aprobada)
+        $inscripcionComision = $inscripcion->inscripcionesComision()
+            ->with(['comision.materias', 'comision.municipio', 'comision.aula', 'comision.docentesActivos.docente'])
+            ->whereIn('estado', ['inscripto', 'confirmado', 'aprobado'])
+            ->latest()
+            ->first();
+
+        if (!$inscripcionComision || !$inscripcionComision->comision) {
+            return $resultado;
+        }
+
+        $resultado['tieneComision'] = true;
+        $resultado['inscripcionComision'] = $inscripcionComision;
+        $resultado['comision'] = $inscripcionComision->comision;
+
+        $comision = $inscripcionComision->comision;
+
+        // Buscar cursada asociada
+        $cursada = \App\Models\Cursada::where('inscripcion_id', $inscripcion->id)
+            ->where('comision_id', $comision->id)
+            ->first();
+        $resultado['cursada'] = $cursada;
+
+        // Obtener materias de la comisión
+        $materias = $comision->materias ?? collect();
+        $resultado['materias'] = $materias;
+
+        // Obtener asistencias
+        $asistencias = $inscripcionComision->asistencias()
+            ->orderBy('fecha', 'desc')
+            ->limit(10)
+            ->get();
+        $resultado['asistencias'] = $asistencias;
+
+        // Procesar notas por materia
+        $notasPorMateria = [];
+        $materiasAprobadas = 0;
+        $totalMaterias = $materias->count();
+
+        foreach ($materias as $materia) {
+            $evaluaciones = \App\Models\Evaluacion::where('materia_id', $materia->id)
+                ->where(function ($q) use ($comision) {
+                    $q->where('comision_id', $comision->id)
+                        ->orWhereNull('comision_id');
+                })
+                ->orderBy('instancia')
+                ->orderBy('fecha')
+                ->get();
+
+            $notasMateria = [];
+            $mejorNota = null;
+            $aprobada = false;
+
+            foreach ($evaluaciones as $evaluacion) {
+                $nota = \App\Models\Nota::where('inscripcion_id', $inscripcion->id)
+                    ->where('evaluacion_id', $evaluacion->id)
+                    ->first();
+
+                $notasMateria[] = [
+                    'evaluacion' => $evaluacion,
+                    'nota' => $nota,
+                ];
+
+                if ($nota && $nota->nota !== null) {
+                    if ($mejorNota === null || $nota->nota > $mejorNota) {
+                        $mejorNota = $nota->nota;
+                    }
+                    if ($nota->nota >= 6) {
+                        $aprobada = true;
+                    }
+                }
+            }
+
+            if ($aprobada) {
+                $materiasAprobadas++;
+            }
+
+            $notasPorMateria[$materia->id] = [
+                'materia' => $materia,
+                'notas' => $notasMateria,
+                'nota_final' => $mejorNota,
+                'aprobada' => $aprobada,
+            ];
+        }
+
+        $resultado['notasPorMateria'] = $notasPorMateria;
+
+        // Calcular resumen
+        $porcentajeAsistencia = $inscripcionComision->calcularPorcentajeAsistencia();
+
+        $resultado['resumenNotas'] = [
+            'total_materias' => $totalMaterias,
+            'materias_aprobadas' => $materiasAprobadas,
+            'porcentaje_asistencia' => $porcentajeAsistencia,
+        ];
+
+        // Puede aprobar si todas las materias están aprobadas y no está ya aprobado
+        $resultado['puedeAprobarCursada'] = $totalMaterias > 0
+            && $materiasAprobadas === $totalMaterias
+            && $inscripcion->estado_ingreso !== Inscripcion::INGRESO_APROBADO;
+
+        return $resultado;
     }
 
     /**
@@ -348,7 +486,10 @@ class InscripcionController extends Controller
                 ->with('error', 'No se puede confirmar la inscripción sin validar toda la documentación.');
         }
 
-        $inscripcion->update(['estado' => Inscripcion::ESTADO_CONFIRMADO]);
+        $inscripcion->update([
+            'estado' => Inscripcion::ESTADO_CONFIRMADO,
+            'estado_documentacion' => Inscripcion::DOC_CONFIRMADA,
+        ]);
 
         return redirect()
             ->route('inscripciones.show', $inscripcion)
@@ -769,5 +910,219 @@ class InscripcionController extends Controller
         }
 
         return $query->pluck('id')->toArray();
+    }
+
+    /**
+     * Aprobar cursada de una inscripción
+     * Solo si todas las materias están aprobadas
+     */
+    public function aprobarCursada(Inscripcion $inscripcion): RedirectResponse
+    {
+        // Verificar que tenga inscripción a comisión activa (no cancelada/trasladada)
+        $inscripcionComision = $inscripcion->inscripcionesComision()
+            ->whereIn('estado', ['inscripto', 'confirmado'])
+            ->with('comision')
+            ->first();
+
+        if (!$inscripcionComision) {
+            // Verificar si ya está aprobada
+            $yaAprobada = $inscripcion->inscripcionesComision()
+                ->where('estado', 'aprobado')
+                ->exists();
+
+            if ($yaAprobada) {
+                return redirect()
+                    ->route('inscripciones.show', $inscripcion)
+                    ->with('info', 'La cursada ya fue aprobada anteriormente.');
+            }
+
+            return redirect()
+                ->route('inscripciones.show', $inscripcion)
+                ->with('error', 'El alumno no está asignado a ninguna comisión activa.');
+        }
+
+        // Cargar datos de trayectoria para verificar
+        $trayectoriaData = $this->cargarTrayectoriaAcademica($inscripcion);
+
+        if (!$trayectoriaData['puedeAprobarCursada']) {
+            // Generar mensaje de error más descriptivo
+            $resumen = $trayectoriaData['resumenNotas'] ?? null;
+            if ($inscripcion->estado_ingreso === Inscripcion::INGRESO_APROBADO) {
+                $mensaje = 'La cursada ya fue aprobada anteriormente.';
+            } elseif (!$resumen || $resumen['total_materias'] === 0) {
+                $mensaje = 'La comisión no tiene materias asignadas.';
+            } else {
+                $mensaje = "Faltan materias por aprobar ({$resumen['materias_aprobadas']}/{$resumen['total_materias']}).";
+            }
+            return redirect()
+                ->route('inscripciones.show', $inscripcion)
+                ->with('error', $mensaje);
+        }
+
+        // Actualizar estado de la inscripción
+        $inscripcion->update([
+            'estado_ingreso' => Inscripcion::INGRESO_APROBADO,
+            'estado' => Inscripcion::ESTADO_CONFIRMADO,
+            'estado_documentacion' => Inscripcion::DOC_CONFIRMADA,
+        ]);
+
+        // Actualizar estado de la inscripción a comisión
+        $inscripcionComision->update([
+            'estado' => 'aprobado',
+        ]);
+
+        // Si existe una cursada asociada, actualizarla
+        $cursada = \App\Models\Cursada::where('inscripcion_id', $inscripcion->id)
+            ->where('comision_id', $inscripcionComision->comision_id)
+            ->first();
+
+        if ($cursada) {
+            $cursada->cambiarEstado(
+                \App\Models\Cursada::ESTADO_APROBADO,
+                auth()->id(),
+                'Cursada aprobada - Todas las materias completadas'
+            );
+        }
+
+        return redirect()
+            ->route('inscripciones.show', $inscripcion)
+            ->with('success', 'Cursada aprobada exitosamente. El alumno ha completado el curso de ingreso.');
+    }
+
+    /**
+     * Agregar condición particular a una inscripción
+     */
+    public function agregarCondicion(Request $request, Inscripcion $inscripcion): RedirectResponse
+    {
+        $request->validate([
+            'tipo' => 'required|string|max:50',
+            'titulo' => 'required|string|max:255',
+            'descripcion' => 'nullable|string',
+            'requiere_adecuacion' => 'nullable|boolean',
+        ]);
+
+        $inscripcion->condicionesParticulares()->create([
+            'tipo' => $request->tipo,
+            'titulo' => $request->titulo,
+            'descripcion' => $request->descripcion,
+            'requiere_adecuacion' => $request->boolean('requiere_adecuacion'),
+            'activa' => true,
+            'registrado_por' => auth()->id(),
+        ]);
+
+        return redirect()
+            ->route('inscripciones.show', $inscripcion)
+            ->with('success', 'Condición particular agregada correctamente.');
+    }
+
+    /**
+     * Desactivar una condición particular
+     */
+    public function desactivarCondicion(\App\Models\CondicionParticular $condicion): RedirectResponse
+    {
+        $inscripcionId = $condicion->inscripcion_id;
+        $condicion->update(['activa' => false]);
+
+        return redirect()
+            ->route('inscripciones.show', $inscripcionId)
+            ->with('success', 'Condición particular desactivada.');
+    }
+
+    /**
+     * Crear solicitud de cambio
+     */
+    public function crearSolicitud(Request $request, Inscripcion $inscripcion): RedirectResponse
+    {
+        $request->validate([
+            'tipo' => 'required|in:comision,modalidad,turno',
+            'motivo' => 'required|string|min:10',
+            'comision_destino_id' => 'nullable|exists:comisiones,id',
+            'modalidad_destino' => 'nullable|string',
+            'turno_destino' => 'nullable|string',
+        ]);
+
+        // Obtener comisión actual del alumno (a través de inscripcionesComision)
+        $inscripcionComisionActual = $inscripcion->inscripcionesComision()
+            ->whereIn('estado', ['inscripto', 'confirmado'])
+            ->with('comision')
+            ->first();
+
+        $comisionActual = $inscripcionComisionActual?->comision;
+        $comisionOrigenId = $comisionActual?->id;
+
+        // Validaciones específicas para cambio de comisión
+        if ($request->tipo === 'comision') {
+            // Debe estar en una comisión para solicitar cambio
+            if (!$comisionActual) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'El alumno debe estar asignado a una comisión para solicitar un cambio.');
+            }
+
+            // La comisión destino es requerida
+            if (!$request->comision_destino_id) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Debe seleccionar una comisión destino.');
+            }
+
+            // No puede solicitar cambio a la misma comisión
+            if ($comisionActual->id == $request->comision_destino_id) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'No puede solicitar cambio a la misma comisión en la que ya está inscripto.');
+            }
+
+            // Verificar si ya tiene una solicitud pendiente del mismo tipo
+            $solicitudPendiente = $inscripcion->solicitudesCambio()
+                ->where('tipo', 'comision')
+                ->whereIn('estado', [
+                    \App\Models\SolicitudCambio::ESTADO_PENDIENTE,
+                    \App\Models\SolicitudCambio::ESTADO_EN_REVISION,
+                    \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+                ])
+                ->exists();
+
+            if ($solicitudPendiente) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Ya existe una solicitud de cambio de comisión pendiente para este alumno.');
+            }
+        }
+
+        // Crear la solicitud
+        $solicitud = $inscripcion->solicitudesCambio()->create([
+            'tipo' => $request->tipo,
+            'motivo' => $request->motivo,
+            'comision_origen_id' => $comisionOrigenId,
+            'comision_destino_id' => $request->comision_destino_id,
+            'modalidad_origen' => $comisionActual?->modalidad ?? $inscripcion->modalidad,
+            'modalidad_destino' => $request->modalidad_destino,
+            'turno_origen' => $comisionActual?->turno ?? $inscripcion->turno_carrera,
+            'turno_destino' => $request->turno_destino,
+            'estado' => \App\Models\SolicitudCambio::ESTADO_PENDIENTE,
+        ]);
+
+        // Detectar posible trueque automáticamente
+        $mensaje = 'Solicitud de cambio creada correctamente.';
+        if ($request->tipo === 'comision' && $request->comision_destino_id) {
+            $trueque = \App\Models\SolicitudCambio::detectarTrueque($solicitud);
+            if ($trueque) {
+                // Vincular ambas solicitudes y marcar como trueque detectado
+                $solicitud->update([
+                    'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+                    'solicitud_trueque_id' => $trueque->id,
+                ]);
+                $trueque->update([
+                    'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+                    'solicitud_trueque_id' => $solicitud->id,
+                ]);
+                $mensaje = '¡Trueque detectado! Se encontró una solicitud inversa compatible. Ambas solicitudes requieren aprobación.';
+            }
+        }
+
+        return redirect()
+            ->route('inscripciones.show', $inscripcion)
+            ->with('success', $mensaje);
     }
 }

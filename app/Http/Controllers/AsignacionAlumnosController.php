@@ -126,11 +126,12 @@ class AsignacionAlumnosController extends Controller
         }
 
         try {
-            DB::beginTransaction();
+            // Usar la conexión específica de paicat para la transacción
+            DB::connection('paicat')->beginTransaction();
 
             $resultado = $this->ejecutarAsignacionEquitativa($comisiones, $excluirIds, $distribuirPorCarrera, $filtrarEspecialidad);
 
-            DB::commit();
+            DB::connection('paicat')->commit();
 
             $mensaje = "Se asignaron {$resultado['total']} alumnos a {$resultado['comisiones']} comisiones.";
             if ($distribuirPorCarrera) {
@@ -140,7 +141,7 @@ class AsignacionAlumnosController extends Controller
             return redirect()->route('asignacion-alumnos.index')
                 ->with('success', $mensaje);
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('paicat')->rollBack();
             return redirect()->route('asignacion-alumnos.index')
                 ->with('error', 'Error al ejecutar la asignación: ' . $e->getMessage());
         }

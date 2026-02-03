@@ -12,6 +12,7 @@ class InscripcionComision extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $connection = 'paicat';
     protected $table = 'inscripcion_comisiones';
 
     protected $fillable = [

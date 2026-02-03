@@ -12,6 +12,7 @@ class Cursada extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $connection = 'paicat';
     protected $table = 'cursadas';
 
     /**

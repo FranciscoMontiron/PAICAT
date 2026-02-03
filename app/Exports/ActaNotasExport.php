@@ -29,7 +29,7 @@ class ActaNotasExport implements FromArray, WithStyles, WithTitle, ShouldAutoSiz
         // Agregar información de cabecera
         $header = [
             ['UNIVERSIDAD TECNOLÓGICA NACIONAL'],
-            ['FACULTAD REGIONAL RESISTENCIA'],
+            ['FACULTAD REGIONAL LA PLATA'],
             [''],
             ['ACTA DE NOTAS - CURSO DE INGRESO'],
             [''],

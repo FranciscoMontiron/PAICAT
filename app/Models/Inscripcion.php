@@ -95,12 +95,14 @@ class Inscripcion extends Model
      */
     const DOC_PENDIENTE = 'pendiente';
     const DOC_VALIDADA = 'validada';
+    const DOC_CONFIRMADA = 'confirmada';
     const DOC_INCOMPLETA = 'incompleta';
     const DOC_RECHAZADA = 'rechazada';
 
     const ESTADOS_DOCUMENTACION = [
         self::DOC_PENDIENTE => 'Pendiente',
         self::DOC_VALIDADA => 'Validada',
+        self::DOC_CONFIRMADA => 'Confirmada',
         self::DOC_INCOMPLETA => 'Incompleta',
         self::DOC_RECHAZADA => 'Rechazada',
     ];
@@ -154,6 +156,14 @@ class Inscripcion extends Model
         }
 
         return Person::on('alumnos_utn')->find($this->person_id);
+    }
+
+    /**
+     * Accessor para obtener el alumno (alias de getPerson)
+     */
+    public function getAlumnoAttribute(): ?Person
+    {
+        return $this->getPerson();
     }
 
     /**
@@ -346,7 +356,8 @@ class Inscripcion extends Model
     {
         return match ($this->estado_documentacion) {
             self::DOC_PENDIENTE => 'yellow',
-            self::DOC_VALIDADA => 'green',
+            self::DOC_VALIDADA => 'blue',
+            self::DOC_CONFIRMADA => 'green',
             self::DOC_INCOMPLETA => 'orange',
             self::DOC_RECHAZADA => 'red',
             default => 'gray',
@@ -437,12 +448,14 @@ class Inscripcion extends Model
 
     /**
      * Verificar si es un duplicado potencial
+     * Nota: La BD tiene unique constraint en (person_id, anio_ingreso) sin considerar estado,
+     * por lo que debemos verificar cualquier registro existente, incluyendo soft-deleted
      */
     public static function esDuplicado(int $personId, int $anioIngreso): bool
     {
-        return self::where('person_id', $personId)
+        return self::withTrashed()
+            ->where('person_id', $personId)
             ->where('anio_ingreso', $anioIngreso)
-            ->whereNotIn('estado', [self::ESTADO_CANCELADO, self::ESTADO_BAJA])
             ->exists();
     }
 

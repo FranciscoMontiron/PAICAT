@@ -59,6 +59,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/{inscripcion}/validar-documentacion', [InscripcionController::class, 'validarDocumentacion'])->middleware('permission:inscripciones.editar')->name('validar-documentacion');
         Route::post('/{inscripcion}/confirmar', [InscripcionController::class, 'confirmar'])->middleware('permission:inscripciones.editar')->name('confirmar');
         Route::post('/{inscripcion}/cancelar', [InscripcionController::class, 'cancelar'])->middleware('permission:inscripciones.editar')->name('cancelar');
+        Route::post('/{inscripcion}/aprobar-cursada', [InscripcionController::class, 'aprobarCursada'])->middleware('permission:inscripciones.editar')->name('aprobar-cursada');
+        Route::post('/{inscripcion}/agregar-condicion', [InscripcionController::class, 'agregarCondicion'])->middleware('permission:inscripciones.editar')->name('agregar-condicion');
+        Route::delete('/condicion/{condicion}', [InscripcionController::class, 'desactivarCondicion'])->middleware('permission:inscripciones.editar')->name('desactivar-condicion');
+        Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.editar')->name('crear-solicitud');
         Route::delete('/{inscripcion}', [InscripcionController::class, 'destroy'])->middleware('permission:inscripciones.eliminar')->name('destroy');
     });
 
@@ -158,6 +162,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/{evaluacion}', [EvaluacionController::class, 'update'])->middleware('permission:evaluaciones.editar')->name('update');
         Route::delete('/{evaluacion}', [EvaluacionController::class, 'destroy'])->middleware('permission:evaluaciones.eliminar')->name('destroy');
 
+        // Vista de evaluaciones por comisión
+        Route::get('/comision/{comision}', [EvaluacionController::class, 'showComision'])->name('comision');
+
         // NOTAS - Gestión de notas por comisión
         Route::get('/notas/{comision}', [EvaluacionController::class, 'indexNota'])->name('notas.index');
         Route::get('/notas/{comision}/create', [EvaluacionController::class, 'createNota'])->middleware('permission:evaluaciones.crear')->name('notas.create');
@@ -256,33 +263,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/restore', [UsuarioController::class, 'restore'])->middleware('permission:usuarios.eliminar')->name('restore');
     });
 
-    // Módulo 7: Trayectorias y Gestión Estudiantil
-    Route::prefix('trayectorias')->name('trayectorias.')->middleware('permission:inscripciones.ver')->group(function () {
-        // Listado de trayectorias
-        Route::get('/', [App\Http\Controllers\TrayectoriaController::class, 'index'])->name('index');
-        Route::get('/inactivos', [App\Http\Controllers\TrayectoriaController::class, 'inactivos'])->name('inactivos');
-        Route::get('/{inscripcion}', [App\Http\Controllers\TrayectoriaController::class, 'show'])->name('show');
-
-        // Cambio de estado
-        Route::post('/{inscripcion}/cambiar-estado', [App\Http\Controllers\TrayectoriaController::class, 'cambiarEstado'])
-            ->middleware('permission:inscripciones.editar')->name('cambiar-estado');
-        Route::post('/{inscripcion}/baja', [App\Http\Controllers\TrayectoriaController::class, 'registrarBaja'])
-            ->middleware('permission:inscripciones.editar')->name('baja');
-
-        // Condiciones particulares
-        Route::post('/{inscripcion}/condicion', [App\Http\Controllers\TrayectoriaController::class, 'agregarCondicion'])
-            ->middleware('permission:inscripciones.editar')->name('agregar-condicion');
-        Route::delete('/condicion/{condicion}', [App\Http\Controllers\TrayectoriaController::class, 'desactivarCondicion'])
-            ->middleware('permission:inscripciones.editar')->name('desactivar-condicion');
-
-        // Solicitudes de cambio
-        Route::post('/{inscripcion}/solicitud-cambio', [App\Http\Controllers\TrayectoriaController::class, 'crearSolicitudCambio'])
-            ->middleware('permission:inscripciones.editar')->name('crear-solicitud');
-    });
-
-    // Solicitudes de cambio (administración)
+    // Módulo: Solicitudes de Cambio
     Route::prefix('solicitudes')->name('solicitudes.')->middleware('permission:comisiones.editar')->group(function () {
-        Route::get('/', [App\Http\Controllers\TrayectoriaController::class, 'solicitudesIndex'])->name('index');
-        Route::post('/{solicitud}/procesar', [App\Http\Controllers\TrayectoriaController::class, 'procesarSolicitud'])->name('procesar');
+        Route::get('/', [App\Http\Controllers\SolicitudCambioController::class, 'index'])->name('index');
+        Route::get('/{solicitud}', [App\Http\Controllers\SolicitudCambioController::class, 'show'])->name('show');
+        Route::post('/{solicitud}/aprobar', [App\Http\Controllers\SolicitudCambioController::class, 'aprobar'])->name('aprobar');
+        Route::post('/{solicitud}/rechazar', [App\Http\Controllers\SolicitudCambioController::class, 'rechazar'])->name('rechazar');
+        Route::post('/detectar-trueques', [App\Http\Controllers\SolicitudCambioController::class, 'detectarTrueques'])->name('detectar-trueques');
+        Route::get('/comision/{comision}/cupos', [App\Http\Controllers\SolicitudCambioController::class, 'verificarCupos'])->name('verificar-cupos');
     });
 }); // Cierre del middleware auth
