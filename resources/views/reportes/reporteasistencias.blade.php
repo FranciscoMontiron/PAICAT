@@ -1,232 +1,481 @@
 @extends('layouts.app')
-@section('title', 'Reportes')
+@section('title', 'Reporte de asistencia')
 @section('content')
 
-<div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-    <div class="p-6 bg-white border-b border-gray-200">
-
-        <div class="flex items-center justify-between mb-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <div class="flex items-center justify-between mb-6">
             <h1 class="text-3xl font-bold text-utn-blue">Módulo de Reportes de asistencias por comision</h1>
-            <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">Módulo 5 - Reportes de asistencias</span>
-        </div>
-     
+    </div>
+    
 
-       <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
-            <form method="GET" action="{{ route('reportes.reporteasistenciascomision') }}" class="p-6">
+    <div class="mb-6 flex justify-end">
+        <a href="{{ route('reportes.index') }}"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg transition duration-200">
+            Volver
+        </a>
+    </div>
 
-                <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-                        Filtros del Reporte
-                    </h3>
+    <div class="raw mb-6">
+        <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggleDetalle" class="sr-only peer">
 
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        {{-- Especialidad --}}
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Especialidad
-                                </label>
-                                <select name="especialidad_id"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                                    <option value="">Todas</option>
-                                    @foreach($especialidades as $esp)
-                                        <option value="{{ $esp->id_sysacad }}"
-                                            {{ request('especialidad_id') == $esp->id_sysacad ? 'selected' : '' }}>
-                                            {{ $esp->nombre }}
+                <!-- Fondo -->
+                <div
+                    class="w-28 h-7 rounded-full bg-indigo-500
+                        peer-checked:bg-orange-400
+                        transition-colors duration-300
+                        flex items-center justify-between px-2 text-[10px] font-semibold text-white"
+                >
+                    <span>General</span>
+                    <span>Detalle</span>
+                </div>
+
+                <!-- Botón -->
+                <div
+                    class="absolute left-0.5 top-0.5 w-[3.3rem] h-6 bg-white rounded-full
+                        transition-transform duration-300
+                        peer-checked:translate-x-[3.6rem]"
+                ></div>
+        </label>
+    </div>
+    
+    <div class="p-6 bg-white border-b border-gray-200">
+        <div id="vistaGeneral">
+            <div class="p-6 bg-white border-b border-gray-200">
+                <div class="mb-10 ">
+                    <div class="flex items-center justify-between mb-6">
+                        <h1 class="text-3xl font-bold text-utn-blue">Reportes de asistencias generales</h1>
+                    </div>
+                </div>
+                <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+                    
+                    <form method="GET" action="{{ route('reportes.reporteasistenciascomision') }}" class="p-6">
+                        <input type="hidden" name="vista" value="general">
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+                                Filtros del Reporte 
+                            </h3>
+
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                {{-- Especialidad --}}
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Especialidad
+                                        </label>
+                                        <select name="especialidad_id"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                    focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                            <option value="">Todas</option>
+                                            @foreach($especialidades as $esp)
+                                                <option value="{{ $esp->id_sysacad }}"
+                                                    {{ request('especialidad_id') == $esp->id_sysacad ? 'selected' : '' }}>
+                                                    {{ $esp->nombre }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                {{-- Materia --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Materia
+                                    </label>
+                                    <select name="materia_id"
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                        <option value="">Todas</option>
+                                        @foreach($materias as $materia)
+                                            <option value="{{ $materia->id }}"
+                                                {{ request('materia_id') == $materia->id ? 'selected' : '' }}>
+                                                {{ $materia->nombre }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Comisión --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Comisión
+                                    </label>
+                                    <select name="comision_id"
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                        <option value="">Todas</option>
+                                        @foreach($comisiones as $comision)
+                                            <option value="{{ $comision->id }}"
+                                                {{ request('comision_id') == $comision->id ? 'selected' : '' }}>
+                                                {{ $comision->nombre }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Estado --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Estado
+                                    </label>
+                                    <select name="estado"
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                        <option value="">Todos</option>
+                                        <option value="presente" {{ request('estado') == 'presente' ? 'selected' : '' }}>
+                                            Presente
                                         </option>
-                                    @endforeach
-                                </select>
+                                        <option value="ausente" {{ request('estado') == 'ausente' ? 'selected' : '' }}>
+                                            Ausente
+                                        </option>
+                                    </select>
+                                </div>
+
+                                {{-- Desde --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Desde
+                                    </label>
+                                    <input type="date" name="fecha_desde"
+                                        value="{{ request('fecha_desde') }}"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                </div>
+
+                                {{-- Hasta --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Hasta
+                                    </label>
+                                    <input type="date" name="fecha_hasta"
+                                        value="{{ request('fecha_hasta') }}"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                </div>
+
+                            </div>
+                        </div>
+
+                        {{-- Acciones --}}
+                        <div class="mt-8 flex justify-end gap-4">
+                            <a href="{{ route('reportes.reporteasistenciascomision') }}"
+                            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
+                                    hover:bg-gray-50 transition-colors duration-200">
+                                Limpiar
+                            </a>
+
+                            <button type="submit"
+                                    class="px-6 py-2 bg-utn-blue text-white rounded-lg
+                                        hover:bg-blue-800 transition-colors duration-200">
+                                Filtrar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                    <p id="totalRegistros" class="text-sm text-gray-600 mb-2">
+                        Total registros: {{ array_sum($totales->toArray()) }}
+                    </p>
+
+                            {{-- Gráfico de Asistencias --}}
+                    <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                Resumen de Asistencias
+                            </h3>
+                            <div class="flex justify-center">
+                                <div class="w-80 h-80"> {{-- 256x256 --}}
+                                    <canvas id="asistenciasChart" height="120"></canvas>
+                                </div>
                             </div>
 
-                        {{-- Materia --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Materia
-                            </label>
-                            <select name="materia_id"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                        focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                                <option value="">Todas</option>
-                                @foreach($materias as $materia)
-                                    <option value="{{ $materia->id }}"
-                                        {{ request('materia_id') == $materia->id ? 'selected' : '' }}>
-                                        {{ $materia->nombre }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
 
-                        {{-- Comisión --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Comisión
-                            </label>
-                            <select name="comision_id"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                        focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                                <option value="">Todas</option>
-                                @foreach($comisiones as $comision)
-                                    <option value="{{ $comision->id }}"
-                                        {{ request('comision_id') == $comision->id ? 'selected' : '' }}>
-                                        {{ $comision->nombre }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            
                         </div>
-
-                        {{-- Estado --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Estado
-                            </label>
-                            <select name="estado"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                        focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                                <option value="">Todos</option>
-                                <option value="presente" {{ request('estado') == 'presente' ? 'selected' : '' }}>
-                                    Presente
-                                </option>
-                                <option value="ausente" {{ request('estado') == 'ausente' ? 'selected' : '' }}>
-                                    Ausente
-                                </option>
-                            </select>
-                        </div>
-
-                        {{-- Desde --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Desde
-                            </label>
-                            <input type="date" name="fecha_desde"
-                                value="{{ request('fecha_desde') }}"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                        focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                        </div>
-
-                        {{-- Hasta --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Hasta
-                            </label>
-                            <input type="date" name="fecha_hasta"
-                                value="{{ request('fecha_hasta') }}"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                        focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                        </div>
-
                     </div>
-                </div>
-
-                {{-- Acciones --}}
-                <div class="mt-8 flex justify-end gap-4">
-                    <a href="{{ route('reportes.reporteasistenciascomision') }}"
-                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
-                            hover:bg-gray-50 transition-colors duration-200">
-                        Limpiar
-                    </a>
-
-                    <button type="submit"
-                            class="px-6 py-2 bg-utn-blue text-white rounded-lg
-                                hover:bg-blue-800 transition-colors duration-200">
-                        Filtrar
-                    </button>
-                </div>
-            </form>
-        </div>
-        <p id="totalRegistros" class="text-sm text-gray-600 mb-2">
-            Total registros: {{ array_sum($totales->toArray()) }}
-        </p>
-
-                   {{-- Gráfico de Asistencias --}}
-        <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                    Resumen de Asistencias
-                </h3>
-                <div class="flex justify-center">
-                    <div class="w-80 h-80"> {{-- 256x256 --}}
-                        <canvas id="asistenciasChart" height="120"></canvas>
-                    </div>
-                </div>
 
 
-                
-            </div>
-        </div>
+                    <!--Tabla donde mostramos las cantidades por carrera-->
 
+                    @php
+                        $estados = ['presente', 'ausente', 'justificado', 'tardanza'];
 
-        <!--Tabla donde mostramos las cantidades por carrera-->
+                        $totalesColumnas = array_fill_keys($estados, 0);
+                    @endphp
+                        <div class="bg-white shadow-md rounded-lg overflow-hidden mt-6">
+                            <div class="p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                    Asistencias por Especialidad
+                                </h3>
 
-        @php
-            $estados = ['presente', 'ausente', 'justificado', 'tardanza'];
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full border border-gray-300 text-sm">
+                                        <thead class="bg-gray-100">
+                                            <tr>
+                                                <th class="border px-3 py-2 text-left">Especialidad</th>
+                                                <th class="border px-3 py-2 text-center">Presente</th>
+                                                <th class="border px-3 py-2 text-center">Ausente</th>
+                                                <th class="border px-3 py-2 text-center">Justificado</th>
+                                                <th class="border px-3 py-2 text-center">Tardanza</th>
+                                            </tr>
+                                        </thead>
 
-            $totalesColumnas = array_fill_keys($estados, 0);
-        @endphp
-            <div class="bg-white shadow-md rounded-lg overflow-hidden mt-6">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                        Asistencias por Especialidad
-                    </h3>
+                                        <tbody>
+                                            @foreach ($especialidadesEstados as $especialidad => $registros)
+                                                @php
+                                                    $porEstado = $registros->keyBy('estado');
+                                                @endphp
 
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full border border-gray-300 text-sm">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="border px-3 py-2 text-left">Especialidad</th>
-                                    <th class="border px-3 py-2 text-center">Presente</th>
-                                    <th class="border px-3 py-2 text-center">Ausente</th>
-                                    <th class="border px-3 py-2 text-center">Justificado</th>
-                                    <th class="border px-3 py-2 text-center">Tardanza</th>
-                                </tr>
-                            </thead>
+                                                <tr>
+                                                    <td class="border px-3 py-2">{{ $especialidad }}</td>
 
-                            <tbody>
-                                @foreach ($especialidadesEstados as $especialidad => $registros)
-                                    @php
-                                        $porEstado = $registros->keyBy('estado');
-                                    @endphp
+                                                    @foreach ($estados as $estado)
+                                                        @php
+                                                            $valor = $porEstado[$estado]->total ?? 0;
+                                                            $totalesColumnas[$estado] += $valor;
+                                                        @endphp
 
-                                    <tr>
-                                        <td class="border px-3 py-2">{{ $especialidad }}</td>
+                                                        <td class="border px-3 py-2 text-center">
+                                                            {{ $valor }}
+                                                        </td>
+                                                    @endforeach
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
 
-                                        @foreach ($estados as $estado)
-                                            @php
-                                                $valor = $porEstado[$estado]->total ?? 0;
-                                                $totalesColumnas[$estado] += $valor;
-                                            @endphp
+                                        {{-- FILA TOTAL --}}
+                                        <tfoot class="bg-gray-200 font-semibold">
+                                            <tr>
+                                                <td class="border px-3 py-2 text-right">TOTAL</td>
 
-                                            <td class="border px-3 py-2 text-center">
-                                                {{ $valor }}
-                                            </td>
-                                        @endforeach
-                                    </tr>
-                                @endforeach
-                            </tbody>
+                                                @foreach ($estados as $estado)
+                                                    <td class="border px-3 py-2 text-center">
+                                                        {{ $totalesColumnas[$estado] }}
+                                                    </td>
+                                                @endforeach
+                                            </tr>
+                                        </tfoot>
+                                    </table>
 
-                            {{-- FILA TOTAL --}}
-                            <tfoot class="bg-gray-200 font-semibold">
-                                <tr>
-                                    <td class="border px-3 py-2 text-right">TOTAL</td>
-
-                                    @foreach ($estados as $estado)
-                                        <td class="border px-3 py-2 text-center">
-                                            {{ $totalesColumnas[$estado] }}
-                                        </td>
-                                    @endforeach
-                                </tr>
-                            </tfoot>
-                        </table>
-
-                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <!--Finaliza tabla donde se muestran las cantidades por carrera-->
                 </div>
             </div>
 
+            <!--Vista para detalle-->
+            <div id="vistaDetalle" class="hidden">   
+            <div class="p-6 bg-white border-b border-gray-200">
+                <div class="p-6 bg-white border-b border-gray-200">
+                    <div class="mb-10 ">
+                    <div class="flex items-center justify-between mb-6">
+                        <h1 class="text-3xl font-bold text-utn-blue">Reportes de asistencias Detallados</h1>
+                    </div>
+                </div>
+                        <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+                            <form method="GET" action="{{ route('reportes.reporteasistenciascomision') }}" class="p-6">
+                                <input type="hidden" name="vista" value="detalle">
+                                <div class="mb-8">
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+                                        Filtros del Reporte
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                    
+                                        {{-- Desde --}}
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                    Desde
+                                                </label>
+                                                <input type="date" name="fecha_desde"
+                                                    value="{{ request('fecha_desde') }}"
+                                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                            </div>
+
+                                        {{-- Hasta --}}
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                    Hasta
+                                                </label>
+                                                <input type="date" name="fecha_hasta"
+                                                    value="{{ request('fecha_hasta') }}"
+                                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                            </div>
+
+                                            {{-- Especialidad --}}
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                        Especialidad
+                                                    </label>
+                                                    <select name="especialidad_id"
+                                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                        <option value="">Todas</option>
+                                                        @foreach($especialidades as $esp)
+                                                            <option value="{{ $esp->id_sysacad }}"
+                                                                {{ request('especialidad_id') == $esp->id_sysacad ? 'selected' : '' }}>
+                                                                {{ $esp->nombre }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            {{-- Comisión --}}
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                        Comisión
+                                                    </label>
+                                                    <select name="comision_id"
+                                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                        <option value="">Todas</option>
+                                                        @foreach($comisiones as $comision)
+                                                            <option value="{{ $comision->id }}"
+                                                                {{ request('comision_id') == $comision->id ? 'selected' : '' }}>
+                                                                {{ $comision->nombre }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                {{-- Materia --}}
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                            Materia
+                                                        </label>
+                                                        <select name="materia_id"
+                                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                                                                    focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                            <option value="">Todas</option>
+                                                            @foreach($materias as $materia)
+                                                                <option value="{{ $materia->id }}"
+                                                                    {{ request('materia_id') == $materia->id ? 'selected' : '' }}>
+                                                                    {{ $materia->nombre }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                        <!---->
+    
+                                                                                       
+
+                                    </div>
+                     
+                                </div>
+
+                                {{-- Acciones --}}
+                                    <div class="mt-8 flex justify-end gap-4">
+                                      <a href="{{ route('reportes.reporteasistenciascomision', ['vista' => 'detalle']) }}"
+                                        class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700
+                                                hover:bg-gray-50 transition-colors duration-200">
+                                            Limpiar
+                                        </a>
+
+                                        <button type="submit"
+                                                class="px-6 py-2 bg-utn-blue text-white rounded-lg
+                                                    hover:bg-blue-800 transition-colors duration-200">
+                                            Filtrar
+                                        </button>
+                                    </div>
+                             </form>
+                        
+
+                        </div>
+                </div>
+            </div>
+            <!--Seccion para mostrar info-->
+            <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+                <!--Graficos-->
+                    @php
+                        $labels = $asistenciasPorFecha->pluck('fecha');
+                        $presentes = $asistenciasPorFecha->pluck('presentes');
+                        $ausentes = $asistenciasPorFecha->pluck('ausentes');
+                        $tardanzas = $asistenciasPorFecha->pluck('tardanzas');
+                        $justificados = $asistenciasPorFecha->pluck('justificados');
+                    @endphp
+                    <div class="bg-white rounded-lg shadow p-6 mb-8">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-4">
+                            Asistencias por fecha
+                        </h2>
+                            <div class="bg-white p-4 rounded shadow">
+                                <div class="overflow-x-auto">
+                                    <div class="h-[400px]">
+                                        <canvas id="chartDetalle"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        
+                    </div>
+                <!--Fin Graficos-->
+
+
+            <!--Comienza la tabla para el detalle de las personas y comisiones-->
+                <div class="bg-white shadow-md rounded-lg overflow-hidden mt-6">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                Asistencias
+                            </h3>
+                            <div class="bg-white rounded-lg shadow overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="border px-3 py-2 text-left">Fecha</th>
+                                                <th class="border px-3 py-2 text-left">Comision</th>
+                                                <th class="border px-3 py-2 text-left">Materia</th>
+                                                <th class="border px-3 py-2 text-left">Turno</th>
+                                                <th class="border px-3 py-2 text-left">Alumno</th>
+                                                <th class="border px-3 py-2 text-left">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            @foreach($asistenciadetalle as $asist)
+                                            <tr class="hover:bg-gray-50">
+                                                
+                                                 <td class="px-6 py-4">
+                                                    <div class="text-sm text-gray-900">{{ \Carbon\Carbon::parse($asist->fecha)->format('d/m/Y') }}</div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                     <div class="text-sm text-gray-900">{{$asist->comision_nombre}}</div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="text-sm text-gray-900">{{$asist->materia_nombre}} </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                     <div class="text-sm text-gray-900">{{$asist->turno}}</div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                     <div class="text-sm text-gray-900">{{$asist->apellido}}, {{$asist->nombre}} </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                     <div class="text-sm text-gray-900">{{$asist->estado}}</div>
+                                                </td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Paginación -->
+                                <div class="px-6 py-4 border-t border-gray-200">
+                                    {{ $asistenciadetalle->appends(request()->query())->links() }}
+                                </div>
+                            </div>
+
+                            
+                        </div>
+                    </div>
+
+                <!--Finaliza la tabla para el detalle de las personas y comisiones-->
+            </div>
+
+
+        </div><!--Fin de div para vistaDetalle-->
+
+
+        
 
 
 
-        <!--Finaliza tabla donde se muestran las cantidades por carrera-->
-
-    </div>
 </div>
 
 <!--Script de grafico-->
@@ -320,6 +569,127 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         }
+    });
+
+});
+</script>
+
+
+<!--Scrip de toggle para mostrar detalle o general-->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('toggleDetalle');
+    const general = document.getElementById('vistaGeneral');
+    const detalle = document.getElementById('vistaDetalle');
+
+    if (!toggle || !general || !detalle) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const vista = params.get('vista');
+
+    const esDetalle = vista === 'detalle';
+
+    toggle.checked = esDetalle;
+    general.classList.toggle('hidden', esDetalle);
+    detalle.classList.toggle('hidden', !esDetalle);
+
+    toggle.addEventListener('change', () => {
+        const nuevaVista = toggle.checked ? 'detalle' : 'general';
+
+        general.classList.toggle('hidden', toggle.checked);
+        detalle.classList.toggle('hidden', !toggle.checked);
+
+   
+        const url = new URL(window.location);
+        url.searchParams.set('vista', nuevaVista);
+        window.history.replaceState({}, '', url);
+    });
+});
+</script>
+
+
+<!--Grafico para detalle-->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const labels = @json($labels);
+    const presentes = @json($presentes);
+    const ausentes = @json($ausentes);
+    const tardanzas = @json($tardanzas);
+    const justificados = @json($justificados);
+
+    const canvas = document.getElementById('chartDetalle');
+    if (!canvas) return;
+
+    // ancho dinámico (scroll horizontal)
+    const barWidth = 50;
+    if (labels.length > 10) {
+        canvas.style.width = (labels.length * barWidth) + 'px';
+    }
+
+    const ctx = canvas.getContext('2d');
+
+    const totalPorFechaPlugin = {
+        id: 'totalPorFecha',
+        afterDatasetsDraw(chart) {
+            const { ctx, data } = chart;
+            const meta0 = chart.getDatasetMeta(0);
+
+            ctx.save();
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillStyle = '#111';
+            ctx.textAlign = 'center';
+
+            data.labels.forEach((_, index) => {
+
+                let total = 0;
+
+                chart.data.datasets.forEach((dataset, i) => {
+                    if (chart.isDatasetVisible(i)) {
+                        total += dataset.data[index] ?? 0;
+                    }
+                });
+
+                if (total === 0) return;
+
+                const x = meta0.data[index].x;
+
+                // buscamos el punto más alto de la pila
+                let yTop = Infinity;
+                chart.getSortedVisibleDatasetMetas().forEach(meta => {
+                    const bar = meta.data[index];
+                    if (bar) yTop = Math.min(yTop, bar.y);
+                });
+
+                ctx.fillText(total, x, yTop - 6);
+            });
+
+            ctx.restore();
+        }
+    };
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Presentes', data: presentes, backgroundColor: '#22c55e' },
+                { label: 'Ausentes', data: ausentes, backgroundColor: '#ef4444' },
+                { label: 'Tardanzas', data: tardanzas, backgroundColor: '#f59e0b' },
+                { label: 'Justificados', data: justificados, backgroundColor: '#3b82f6' }
+            ]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: { stacked: true },
+            y: { stacked: true, beginAtZero: true }
+        }
+    }
+,
+        plugins: [totalPorFechaPlugin]
     });
 
 });
