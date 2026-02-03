@@ -83,7 +83,7 @@
         <div class="border border-gray-200 rounded-lg p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-3">Funcionalidades a Desarrollar</h3>
             <ul class="space-y-2 text-gray-600">
-                <li class="flex items-center"><span class="text-purple-500 mr-2">•</span>Generar reporte de inscripciones por período - Finalizado.</li>
+                <li class="flex items-center"><span class="text-purple-500 mr-2">•</span>Generar reporte de inscripciones por período - Finalizado. </li>
                 <li class="flex items-center"><span class="text-purple-500 mr-2">•</span>Generar estadísticas de asistencia por comisión - Finalizado.</li>
                 <li class="flex items-center"><span class="text-purple-500 mr-2">•</span>Generar estadísticas de rendimiento académico</li>
                 <li class="flex items-center"><span class="text-purple-500 mr-2">•</span>Generar reporte de aspirantes por procedencia</li>
