@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Trayectoria extends Model
 {
@@ -39,6 +40,7 @@ class Trayectoria extends Model
     const ESTADO_REINCORPORADO = 'reincorporado';
     const ESTADO_APROBADO = 'aprobado';
     const ESTADO_DESAPROBADO = 'desaprobado';
+    const ESTADO_CANCELADO = 'cancelado';
 
     const ESTADOS = [
         self::ESTADO_ACTIVO => 'Activo',
@@ -48,6 +50,7 @@ class Trayectoria extends Model
         self::ESTADO_REINCORPORADO => 'Reincorporado',
         self::ESTADO_APROBADO => 'Aprobado',
         self::ESTADO_DESAPROBADO => 'Desaprobado',
+        self::ESTADO_CANCELADO => 'Cancelado',
     ];
 
     /**
@@ -88,6 +91,55 @@ class Trayectoria extends Model
     public function isBaja(): bool
     {
         return $this->estado === self::ESTADO_BAJA;
+    }
+
+    /**
+     * Verificar si es una cancelación
+     */
+    public function isCancelado(): bool
+    {
+        return $this->estado === self::ESTADO_CANCELADO;
+    }
+
+    /**
+     * Registrar un nuevo evento en la trayectoria
+     */
+    public static function registrarEvento(
+        int $inscripcionId,
+        string $estado,
+        string $motivo = null,
+        bool $esVoluntaria = null,
+        int $registradoPor = null
+    ): self {
+        return DB::transaction(function () use ($inscripcionId, $estado, $motivo, $esVoluntaria, $registradoPor) {
+            // Cerrar trayectoria anterior vigente usando DB::table con lockForUpdate
+            // para evitar error MariaDB 1020 "Record has changed since last read"
+            $trayectoriasPrevias = DB::table('trayectorias')
+                ->where('inscripcion_id', $inscripcionId)
+                ->whereNull('fecha_fin')
+                ->whereNull('deleted_at')
+                ->lockForUpdate()
+                ->get();
+
+            if ($trayectoriasPrevias->isNotEmpty()) {
+                DB::table('trayectorias')
+                    ->where('inscripcion_id', $inscripcionId)
+                    ->whereNull('fecha_fin')
+                    ->whereNull('deleted_at')
+                    ->update(['fecha_fin' => now(), 'updated_at' => now()]);
+            }
+
+            // Crear nueva trayectoria
+            return self::create([
+                'inscripcion_id' => $inscripcionId,
+                'estado' => $estado,
+                'fecha_inicio' => now(),
+                'fecha_fin' => null,
+                'motivo' => $motivo,
+                'es_voluntaria' => $esVoluntaria,
+                'registrado_por' => $registradoPor ?? auth()->id(),
+            ]);
+        });
     }
 
     /**

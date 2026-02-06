@@ -97,6 +97,16 @@
                         Cancelar Inscripción
                     </button>
                     @endif
+
+                    @if($inscripcion->estado === 'cancelado')
+                    <button type="button" onclick="document.getElementById('modal-reactivar').classList.remove('hidden')"
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Reactivar Inscripción
+                    </button>
+                    @endif
                 </div>
                 @endif
             </div>
@@ -228,6 +238,8 @@
                             @case('aprobado') bg-green-100 text-green-800 @break
                             @case('desaprobado') bg-red-100 text-red-800 @break
                             @case('libre') bg-orange-100 text-orange-800 @break
+                            @case('baja') bg-gray-100 text-gray-800 @break
+                            @case('cancelado') bg-red-100 text-red-800 @break
                             @default bg-gray-100 text-gray-800
                         @endswitch">
                         {{ \App\Models\Inscripcion::ESTADOS_INGRESO[$inscripcion->estado_ingreso] ?? $inscripcion->estado_ingreso ?? 'Sin estado' }}
@@ -235,7 +247,17 @@
                     @endif
                 </div>
 
-                @if(!empty($tieneComision) && $comision)
+                @if($inscripcion->estado === 'cancelado')
+                {{-- Inscripción cancelada --}}
+                <div class="text-center py-8 text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-lg font-semibold text-red-600">Inscripción Cancelada</p>
+                    <p class="text-sm mt-2">El alumno fue dado de baja de las comisiones asignadas.</p>
+                    <p class="text-xs text-gray-400 mt-1">Consulte el Historial de Trayectoria para más detalles.</p>
+                </div>
+                @elseif(!empty($tieneComision) && $comision)
                 {{-- Información de la comisión --}}
                 <div class="bg-blue-50 rounded-lg p-4 mb-4">
                     <h3 class="text-md font-semibold text-blue-800 mb-3 flex items-center">
@@ -420,7 +442,21 @@
             <div class="bg-white shadow-md rounded-lg p-6">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4">Validación de Documentación</h2>
 
-                @if($inscripcion->estado_documentacion === 'confirmada')
+                @if($inscripcion->estado === 'cancelado')
+                {{-- Inscripción cancelada - mostrar mensaje informativo --}}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-center text-red-800">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="font-semibold">Inscripción Cancelada</span>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600">La inscripción fue cancelada. El alumno fue dado de baja de las comisiones asignadas.</p>
+                @if($inscripcion->observaciones)
+                <p class="text-sm text-gray-500 mt-2"><strong>Motivo:</strong> {{ $inscripcion->observaciones }}</p>
+                @endif
+                @elseif($inscripcion->estado_documentacion === 'confirmada')
                 {{-- Documentación ya confirmada - mostrar estado final --}}
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                     <div class="flex items-center text-green-800">
@@ -636,17 +672,21 @@
                             'reincorporado' => 'bg-blue-500',
                             'aprobado' => 'bg-emerald-500',
                             'desaprobado' => 'bg-red-500',
+                            'cancelado' => 'bg-red-600',
                         ];
                         @endphp
                         <div class="relative pl-10">
                             <div class="absolute left-2 w-4 h-4 rounded-full {{ $colors[$trayectoria->estado] ?? 'bg-gray-400' }} border-2 border-white"></div>
                             <div class="bg-gray-50 rounded-lg p-3">
                                 <div class="flex items-center justify-between mb-1">
-                                    <span class="font-semibold text-gray-900 capitalize text-sm">{{ $trayectoria->estado }}</span>
+                                    <span class="font-semibold text-gray-900 capitalize text-sm">{{ \App\Models\Trayectoria::ESTADOS[$trayectoria->estado] ?? $trayectoria->estado }}</span>
                                     <span class="text-xs text-gray-500">{{ $trayectoria->fecha_inicio->format('d/m/Y') }}</span>
                                 </div>
                                 @if($trayectoria->motivo)
                                 <p class="text-xs text-gray-600">{{ $trayectoria->motivo }}</p>
+                                @endif
+                                @if($trayectoria->registradoPor)
+                                <p class="text-xs text-gray-400 mt-1">Por: {{ $trayectoria->registradoPor->nombre_completo ?? 'Usuario' }}</p>
                                 @endif
                                 @if($trayectoria->fecha_fin)
                                 <p class="text-xs text-gray-400 mt-1">Hasta: {{ $trayectoria->fecha_fin->format('d/m/Y') }}</p>
@@ -703,6 +743,35 @@
                 </button>
                 <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
                     Confirmar Cancelación
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Modal de reactivación --}}
+<div id="modal-reactivar" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Reactivar Inscripción</h3>
+        <p class="text-sm text-gray-600 mb-4">
+            Al reactivar esta inscripción, el alumno volverá a estar inscripto y deberá ser asignado a una comisión manualmente.
+            Este cambio quedará registrado en la trayectoria del alumno.
+        </p>
+        <form action="{{ route('inscripciones.reactivar', $inscripcion) }}" method="POST">
+            @csrf
+            <div class="mb-4">
+                <label for="motivo_reactivacion" class="block text-sm font-medium text-gray-700 mb-2">Motivo de reactivación</label>
+                <textarea name="motivo_reactivacion" id="motivo_reactivacion" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent"
+                          placeholder="Ingrese el motivo de la reactivación..."></textarea>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('modal-reactivar').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Confirmar Reactivación
                 </button>
             </div>
         </form>
