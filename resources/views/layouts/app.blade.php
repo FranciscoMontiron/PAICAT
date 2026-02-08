@@ -164,6 +164,7 @@
                                         Evaluaciones
                                     </a>
                                     @endif
+                                    @if(auth()->user()->hasPermission('comisiones.editar'))
                                     <div class="border-t border-gray-100 my-1"></div>
                                     <a href="{{ route('materias.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('materias.*') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,7 +172,6 @@
                                         </svg>
                                         Materias
                                     </a>
-                                    @if(auth()->user()->hasPermission('comisiones.editar'))
                                     <a href="{{ route('asignacion-alumnos.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('asignacion-alumnos.*') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -190,8 +190,8 @@
                         </div>
                         @endif
 
-                        {{-- MENÚ: Infraestructura --}}
-                        @if(auth()->user()->hasPermission('comisiones.ver'))
+                        {{-- MENÚ: Infraestructura (solo Admin/Coordinador) --}}
+                        @if(auth()->user()->hasPermission('comisiones.crear'))
                         <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
                             <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 {{ request()->routeIs('municipios.*') || request()->routeIs('aulas.*') ? 'bg-white text-utn-blue' : 'text-white hover:bg-white/10' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

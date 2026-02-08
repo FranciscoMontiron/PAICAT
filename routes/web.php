@@ -66,7 +66,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{inscripcion}/aprobar-excepcional', [InscripcionController::class, 'aprobarExcepcional'])->middleware('permission:inscripciones.editar')->name('aprobar-excepcional');
         Route::post('/{inscripcion}/agregar-condicion', [InscripcionController::class, 'agregarCondicion'])->middleware('permission:inscripciones.editar')->name('agregar-condicion');
         Route::delete('/condicion/{condicion}', [InscripcionController::class, 'desactivarCondicion'])->middleware('permission:inscripciones.editar')->name('desactivar-condicion');
-        Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.editar')->name('crear-solicitud');
+        Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.ver')->name('crear-solicitud');
         Route::delete('/{inscripcion}', [InscripcionController::class, 'destroy'])->middleware('permission:inscripciones.eliminar')->name('destroy');
     });
 
