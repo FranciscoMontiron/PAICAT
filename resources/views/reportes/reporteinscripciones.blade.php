@@ -9,11 +9,14 @@
         </h1>
     </div>
 
-    <div class="mb-6 flex justify-end">
+   <div class="mb-6 flex justify-end">
         <a href="{{ route('reportes.index') }}"
-           class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg transition duration-200">
-            Volver
-        </a>
+               class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors duration-200 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Volver
+            </a>
     </div>
 
     <div class="p-6 bg-white border-b border-gray-200">
@@ -28,7 +31,7 @@
                 </div>
 
 
-                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     {{-- Anio ingreso --}}
                        <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -152,6 +155,11 @@
                         <h3 class="text-md font-semibold text-center mb-2">
                             Cantidad de alumnos por rango etario
                         </h3>
+                        <h3 class="text-md font-semibold text-center mb-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    "Otros" son los registros que estan debajo del rango minimo o que no tienen edad cargada.
+                            </label>
+                        </h3>
 
                         <table class="min-w-full text-sm border border-gray-300">
                             <thead class="bg-gray-100">
@@ -160,7 +168,7 @@
                                         Especialidad
                                     </th>
                                     <th class="border px-3 py-2 text-center">
-                                        18–22
+                                        17–22
                                     </th>
                                     <th class="border px-3 py-2 text-center">
                                         23–27
@@ -187,7 +195,7 @@
                                             {{ $row->especialidad }}
                                         </td>
                                         <td class="border px-3 py-2 text-center">
-                                            {{ $row->r18_22 }}
+                                            {{ $row->r17_22 }}
                                         </td>
                                         <td class="border px-3 py-2 text-center">
                                             {{ $row->r23_27 }}
@@ -200,7 +208,7 @@
                                         </td>
                                         <td class="border px-3 py-2 text-center">{{ $row->otros }}</td>
                                         <td class="border px-3 py-2 text-center font-semibold">
-                                            {{ $row->r18_22 + $row->r23_27 + $row->r28_32 + $row->r32_mas + $row->otros }}
+                                            {{ $row->r17_22 + $row->r23_27 + $row->r28_32 + $row->r32_mas + $row->otros }}
                                         </td>
                                     </tr>
                                 @endforeach

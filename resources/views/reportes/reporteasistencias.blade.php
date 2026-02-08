@@ -11,9 +11,12 @@
 
     <div class="mb-6 flex justify-end">
         <a href="{{ route('reportes.index') }}"
-        class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg transition duration-200">
-            Volver
-        </a>
+               class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors duration-200 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Volver
+            </a>
     </div>
 
     <div class="raw mb-6">
@@ -267,10 +270,10 @@
             <div class="p-6 bg-white border-b border-gray-200">
                 <div class="p-6 bg-white border-b border-gray-200">
                     <div class="mb-10 ">
-                    <div class="flex items-center justify-between mb-6">
-                        <h1 class="text-3xl font-bold text-utn-blue">Reportes de asistencias Detallados</h1>
+                        <div class="flex items-center justify-between mb-6">
+                            <h1 class="text-3xl font-bold text-utn-blue">Reportes de asistencias Detallados</h1>
+                        </div>
                     </div>
-                </div>
                         <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
                             <form method="GET" action="{{ route('reportes.reporteasistenciascomision') }}" class="p-6">
                                 <input type="hidden" name="vista" value="detalle">
@@ -409,6 +412,7 @@
 
 
             <!--Comienza la tabla para el detalle de las personas y comisiones-->
+                <div id="reporte-asistencias-alumno"></div>
                 <div class="bg-white shadow-md rounded-lg overflow-hidden mt-6">
                         <div class="p-6">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4">
@@ -416,7 +420,17 @@
                             </h3>
                             <div class="bg-white rounded-lg shadow overflow-hidden">
                                 <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
+                                    <div class="mb-4">
+                                        <input
+                                            type="text"
+                                            id="buscador-asistencias"
+                                            placeholder="Buscar por alumno, comisión, materia, estado o fecha..."
+                                            class="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-lg
+                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent"
+                                        >
+                                    </div>
+
+                                    <table id="tabla-asistencias" class="min-w-full divide-y divide-gray-200">
                                         <thead class="bg-gray-50">
                                             <tr>
                                                 <th class="border px-3 py-2 text-left">Fecha</th>
@@ -457,7 +471,8 @@
 
                                 <!-- Paginación -->
                                 <div class="px-6 py-4 border-t border-gray-200">
-                                    {{ $asistenciadetalle->appends(request()->query())->links() }}
+                                    {{ $asistenciadetalle->appends(array_merge(request()->except('page_detalle'),['page_alumnos' => request('page_alumnos')]))->fragment('reporte-asistencias-alumno')->links() }}
+
                                 </div>
                             </div>
 
@@ -467,6 +482,70 @@
 
                 <!--Finaliza la tabla para el detalle de las personas y comisiones-->
             </div>
+        <!--Comienza la tabla de estados del alumno por materia-->     
+
+            <div class="mb-4">
+                <input
+                    type="text"
+                    id="buscador-alumnos"
+                    placeholder="Buscar alumno por nombre, apellido, comisión o materia..."
+                    class="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-lg
+                        focus:ring-2 focus:ring-utn-blue focus:border-transparent"
+                >
+            </div>
+            <div id="tabla-alumnos"></div>
+            <table id="tabla-alumnos-table" class="min-w-full text-sm border border-gray-300 mt-8">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="border px-3 py-2">Alumno</th>
+                        <th class="border px-3 py-2">Especialidad</th>
+                        <th class="border px-3 py-2">Comisión</th>
+                        <th class="border px-3 py-2">Materia</th>
+                        <th class="border px-3 py-2 text-green-600">Asist.</th>
+                        <th class="border px-3 py-2 text-red-600">Faltas</th>
+                        <th class="border px-3 py-2 text-yellow-600">Tard.</th>
+                        <th class="border px-3 py-2 text-blue-600">Justif.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($asistenciasPorAlumno as $row)
+                        <tr class="hover:bg-gray-50">
+                            <td class="border px-3 py-2">
+                                {{ $row->apellido }}, {{ $row->nombre }}
+                            </td>
+                            <td class="border px-3 py-2">{{ $row->especialidad }}</td>
+                            <td class="border px-3 py-2">{{ $row->comision }}</td>
+                            <td class="border px-3 py-2">{{ $row->materia }}</td>
+
+                            <td class="border px-3 py-2 text-center text-green-600 font-semibold">
+                                {{ $row->asistencias }}
+                            </td>
+                            <td class="border px-3 py-2 text-center text-red-600 font-semibold">
+                                {{ $row->faltas }}
+                            </td>
+                            <td class="border px-3 py-2 text-center text-yellow-600 font-semibold">
+                                {{ $row->tardanzas }}
+                            </td>
+                            <td class="border px-3 py-2 text-center text-blue-600 font-semibold">
+                                {{ $row->justificados }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-gray-500">
+                                No hay datos para los filtros seleccionados
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+
+            <div class="mt-4">
+                
+                {{ $asistenciasPorAlumno->appends(array_merge(request()->except('page_alumnos'),['page_detalle' => request('page_detalle')]))->fragment('tabla-alumnos')->links()}}
+            </div>
+
+        <!--Finaliza la tabla de estados del alumno-->
 
 
         </div><!--Fin de div para vistaDetalle-->
@@ -481,6 +560,9 @@
 <!--Script de grafico-->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -692,6 +774,47 @@ document.addEventListener('DOMContentLoaded', function () {
         plugins: [totalPorFechaPlugin]
     });
 
+});
+</script>
+
+
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('buscador-alumnos');
+    const filas = document.querySelectorAll('#tabla-alumnos-table tbody tr');
+
+    input.addEventListener('keyup', () => {
+        const texto = input.value.toLowerCase();
+
+        filas.forEach(fila => {
+            const contenido = fila.innerText.toLowerCase();
+            fila.style.display = contenido.includes(texto) ? '' : 'none';
+        });
+    });
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('buscador-asistencias');
+    const filas = document.querySelectorAll('#tabla-asistencias tbody tr');
+
+    if (!input) return;
+
+    input.addEventListener('keyup', () => {
+        const texto = input.value.toLowerCase();
+
+        filas.forEach(fila => {
+            const contenido = fila.innerText.toLowerCase();
+            fila.style.display = contenido.includes(texto) ? '' : 'none';
+        });
+    });
 });
 </script>
 

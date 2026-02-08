@@ -196,6 +196,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [ReporteController::class, 'index'])->name('index');
         Route::get('/reportes/asistencias', [ReporteController::class, 'reporteasistenciascomision'])->name('reporteasistenciascomision');
         Route::get('/reportes/inscripciones', [ReporteController::class, 'reporteinscriones'])->name('reporteinscriones');
+        Route::get('/reportes/rendimiento', [ReporteController::class, 'reporterendimiento'])->name('reporterendimiento');
+        Route::get('/reportes/alumnos', [ReporteController::class, 'reportealumnos'])->name('reportealumnos');
+        Route::get('/reportes/alumno/detalle{inscripcion_id}', [ReporteController::class, 'reportealumnosdetalle'])->name('reportealumnosdetalle');
 
     });
 
