@@ -42,7 +42,15 @@ class AsistenciaController extends Controller
             $query->where('estado', 'activa');
         }
 
-        $comisiones = $query->orderBy('codigo')->paginate(12);
+        // Presenciales primero, luego semipresenciales, luego virtuales
+        $comisiones = $query
+            ->orderByRaw("CASE
+                WHEN modalidad = 'Presencial' THEN 1
+                WHEN modalidad = 'Semipresencial' THEN 2
+                ELSE 3
+            END")
+            ->orderBy('codigo')
+            ->paginate(12);
 
         // Estadísticas generales
         $stats = [
