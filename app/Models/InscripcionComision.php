@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class InscripcionComision extends Model
@@ -66,6 +67,18 @@ class InscripcionComision extends Model
     public function notas(): HasMany
     {
         return $this->hasMany(Nota::class, 'inscripcion_comision_id');
+    }
+
+    public function alumno(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            User::class,                    // Modelo final que queremos obtener
+            AcademicoDato::class,           // Modelo intermedio
+            'id',                           // Foreign key en academico_datos (relaciona con academico_dato_id)
+            'id',                           // Foreign key en users (relaciona con academicoDato->user_id)
+            'academico_dato_id',            // Local key en inscripcion_comisiones
+            'user_id'                       // Local key en academico_datos
+        );
     }
 
     /**
@@ -212,11 +225,20 @@ class InscripcionComision extends Model
     }
 
     /**
-     * Acceso rápido al usuario del alumno
+     * Acceso rápido al usuario del alumno (ACCESSOR MANTENIDO)
+     * 
+     * Este accessor proporciona un fallback cuando la relación alumno() no está disponible
+     * (por ejemplo, cuando no existe academico_dato_id).
+     * 
      * Intenta obtenerlo desde academicoDato, si no desde inscripcion->person
      */
     public function getAlumnoAttribute()
     {
+        // Si la relación alumno() está cargada, usarla
+        if ($this->relationLoaded('alumno') && $this->alumno) {
+            return $this->alumno;
+        }
+
         // Primero intentar desde academico_dato
         if ($this->academicoDato && $this->academicoDato->user) {
             return $this->academicoDato->user;

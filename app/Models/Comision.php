@@ -305,4 +305,37 @@ class Comision extends Model
     {
         return $query->whereRaw('cupo_actual < cupo_maximo');
     }
+
+    public function calcularPromedioAsistencia()
+    {
+        $inscripciones = $this->inscripciones;
+        
+        if ($inscripciones->isEmpty()) {
+            return 0;
+        }
+        
+        $totalPorcentaje = 0;
+        $contadorAlumnos = 0;
+        
+        foreach ($inscripciones as $inscripcion) {
+            $porcentaje = $inscripcion->calcularPorcentajeAsistencia();
+            $totalPorcentaje += $porcentaje;
+            $contadorAlumnos++;
+        }
+        
+        return $contadorAlumnos > 0 ? $totalPorcentaje / $contadorAlumnos : 0;
+    }
+
+    public function contarAlumnosEnRiesgo()
+    {
+        $contador = 0;
+        
+        foreach ($this->inscripciones as $inscripcion) {
+            if ($inscripcion->estaEnRiesgo()) {
+                $contador++;
+            }
+        }
+        
+        return $contador;
+    }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Comision;
+use App\Models\Materia;
 use App\Models\InscripcionComision;
 use App\Models\Asistencia;
 use App\Models\AcademicoDato;
@@ -18,6 +19,7 @@ class AsistenciaTestSeeder extends Seeder
 {
     private $personIds = [];
     private $academicoDatosIds = [];
+    private $materias = [];
 
     public function run(): void
     {
@@ -32,26 +34,38 @@ class AsistenciaTestSeeder extends Seeder
             return;
         }
 
-        // 2. Crear docentes
+        // 2. Limpiar asistencias existentes para evitar conflictos
+        $this->command->info('🧹 Limpiando asistencias existentes...');
+        Asistencia::truncate();
+
+        // 3. Crear docentes
         $this->command->info('👨‍🏫 Creando docentes...');
         $docentes = $this->crearDocentes($roleDocente);
 
-        // 3. Gestionar datos en alumnos_utn
+        // 4. Crear materias
+        $this->command->info('📘 Creando materias...');
+        $this->crearMaterias();
+
+        // 5. Gestionar datos en alumnos_utn
         $this->gestionarAlumnosUtn();
 
-        // 4. NUEVO: Crear usuarios y academico_datos en paicat
+        // 6. Crear usuarios y academico_datos en paicat
         $this->command->info('👥 Creando usuarios y academico_datos en paicat...');
         $this->crearUsuariosYAcademicoDatos($roleAlumno);
 
-        // 5. Crear comisiones
+        // 7. Crear comisiones
         $this->command->info('📚 Creando comisiones...');
         $comisiones = $this->crearComisiones($docentes);
 
-        // 6. Inscribir alumnos en comisiones
+        // 8. Asociar materias a comisiones (2 materias por comisión)
+        $this->command->info('🔗 Asociando materias a comisiones...');
+        $this->asociarMateriasAComisiones($comisiones);
+
+        // 9. Inscribir alumnos en comisiones
         $this->command->info('📝 Inscribiendo alumnos en comisiones...');
         $this->inscribirAlumnos($comisiones);
 
-        // 7. Crear asistencias
+        // 10. Crear asistencias
         $this->command->info('📊 Generando asistencias...');
         $this->crearAsistencias($comisiones[0], 20, 20);
         $this->crearAsistenciasConRiesgo($comisiones[1], 25);
@@ -96,6 +110,58 @@ class AsistenciaTestSeeder extends Seeder
         $this->command->info("✅ Creados " . count($docentes) . " docentes");
         
         return $docentes;
+    }
+
+    private function crearMaterias()
+    {
+        // Crear Matemática
+        $matematica = Materia::firstOrCreate(['codigo' => 'MAT001'], [
+            'nombre' => 'Matemática',
+            'descripcion' => 'Curso de nivelación en matemática para ingreso a ingeniería',
+            'anio_cursado' => 1,
+            'es_nivelacion' => true,
+            'carga_horaria' => 80,
+            'tipo' => Materia::TIPO_NIVELACION,
+            'activa' => true,
+        ]);
+
+        // Crear Física
+        $fisica = Materia::firstOrCreate(['codigo' => 'FIS001'], [
+            'nombre' => 'Física',
+            'descripcion' => 'Curso de nivelación en física para ingreso a ingeniería',
+            'anio_cursado' => 1,
+            'es_nivelacion' => true,
+            'carga_horaria' => 60,
+            'tipo' => Materia::TIPO_NIVELACION,
+            'activa' => true,
+        ]);
+
+        // Guardar las materias para usarlas después
+        $this->materias = [
+            'matematica' => $matematica,
+            'fisica' => $fisica
+        ];
+
+        $this->command->info("✅ Creadas materias: {$matematica->nombre} y {$fisica->nombre}");
+    }
+
+    private function asociarMateriasAComisiones($comisiones)
+    {
+        foreach ($comisiones as $comision) {
+            // Asociar Matemática a la comisión
+            if (!$comision->materias()->where('materias.id', $this->materias['matematica']->id)->exists()) {
+                $comision->materias()->attach($this->materias['matematica']->id);
+                $this->command->info("  📚 Comisión {$comision->codigo}: asociada a Matemática");
+            }
+
+            // Asociar Física a la comisión
+            if (!$comision->materias()->where('materias.id', $this->materias['fisica']->id)->exists()) {
+                $comision->materias()->attach($this->materias['fisica']->id);
+                $this->command->info("  📚 Comisión {$comision->codigo}: asociada a Física");
+            }
+        }
+
+        $this->command->info("✅ Materias asociadas a todas las comisiones");
     }
 
     private function gestionarAlumnosUtn()
@@ -404,21 +470,40 @@ class AsistenciaTestSeeder extends Seeder
         while ($diasClase < $numClases) {
             if ($fecha->isWeekday()) {
                 foreach ($inscripciones as $inscripcion) {
-                    $rand = rand(1, 100);
-                    $estado = $rand <= 80 ? 'presente' : ($rand <= 90 ? 'ausente' : ($rand <= 95 ? 'tardanza' : 'justificado'));
+                    // Crear asistencia para Matemática
+                    $randMat = rand(1, 100);
+                    $estadoMat = $randMat <= 80 ? 'presente' : ($randMat <= 90 ? 'ausente' : ($randMat <= 95 ? 'tardanza' : 'justificado'));
                     
-                    Asistencia::firstOrCreate([
+                    Asistencia::create([
                         'inscripcion_comision_id' => $inscripcion->id,
+                        'materia_id' => $this->materias['matematica']->id,
                         'fecha' => $fecha->format('Y-m-d'),
-                    ], [
-                        'estado' => $estado,
+                        'estado' => $estadoMat,
                         'registrado_por' => $comision->docente_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    // Crear asistencia para Física
+                    $randFis = rand(1, 100);
+                    $estadoFis = $randFis <= 75 ? 'presente' : ($randFis <= 85 ? 'ausente' : ($randFis <= 95 ? 'tardanza' : 'justificado'));
+                    
+                    Asistencia::create([
+                        'inscripcion_comision_id' => $inscripcion->id,
+                        'materia_id' => $this->materias['fisica']->id,
+                        'fecha' => $fecha->format('Y-m-d'),
+                        'estado' => $estadoFis,
+                        'registrado_por' => $comision->docente_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ]);
                 }
                 $diasClase++;
             }
             $fecha->addDay();
         }
+        
+        $this->command->info("  ✅ Comisión {$comision->codigo}: creadas {$diasClase} días de clase con asistencias");
     }
 
     private function crearAsistenciasConRiesgo($comision, $numClases)
@@ -430,25 +515,49 @@ class AsistenciaTestSeeder extends Seeder
         while ($diasClase < $numClases) {
             if ($fecha->isWeekday()) {
                 foreach ($inscripciones as $index => $inscripcion) {
+                    // Para los primeros 3 alumnos (en riesgo)
                     if ($index < 3) {
-                        $rand = rand(1, 100);
-                        $estado = $rand <= 40 ? 'ausente' : ($rand <= 70 ? 'presente' : 'tardanza');
+                        $randMat = rand(1, 100);
+                        $estadoMat = $randMat <= 40 ? 'ausente' : ($randMat <= 70 ? 'presente' : 'tardanza');
+                        
+                        $randFis = rand(1, 100);
+                        $estadoFis = $randFis <= 35 ? 'ausente' : ($randFis <= 65 ? 'presente' : 'tardanza');
                     } else {
-                        $rand = rand(1, 100);
-                        $estado = $rand <= 85 ? 'presente' : ($rand <= 92 ? 'ausente' : 'tardanza');
+                        // Para el resto
+                        $randMat = rand(1, 100);
+                        $estadoMat = $randMat <= 85 ? 'presente' : ($randMat <= 92 ? 'ausente' : 'tardanza');
+                        
+                        $randFis = rand(1, 100);
+                        $estadoFis = $randFis <= 80 ? 'presente' : ($randFis <= 90 ? 'ausente' : 'tardanza');
                     }
                     
-                    Asistencia::firstOrCreate([
+                    // Crear asistencia para Matemática
+                    Asistencia::create([
                         'inscripcion_comision_id' => $inscripcion->id,
+                        'materia_id' => $this->materias['matematica']->id,
                         'fecha' => $fecha->format('Y-m-d'),
-                    ], [
-                        'estado' => $estado,
+                        'estado' => $estadoMat,
                         'registrado_por' => $comision->docente_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    // Crear asistencia para Física
+                    Asistencia::create([
+                        'inscripcion_comision_id' => $inscripcion->id,
+                        'materia_id' => $this->materias['fisica']->id,
+                        'fecha' => $fecha->format('Y-m-d'),
+                        'estado' => $estadoFis,
+                        'registrado_por' => $comision->docente_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ]);
                 }
                 $diasClase++;
             }
             $fecha->addDay();
         }
+        
+        $this->command->info("  ⚠️  Comisión {$comision->codigo}: creadas {$diasClase} días de clase con asistencias (algunos en riesgo)");
     }
 }

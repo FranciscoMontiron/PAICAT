@@ -104,6 +104,54 @@ Route::middleware('auth')->group(function () {
         // Alertas de alumnos en riesgo
         Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
 
+        // Ver materias de una comisión (RUTA AGREGADA)
+        Route::get('/comision/{comision}/materias', [AsistenciaController::class, 'comisionMaterias'])
+            ->name('comision.materias');
+
+        // Historial de asistencias por materia (RUTA AGREGADA)
+        Route::get('/comision/{comision}/materia/{materia}/historial', [AsistenciaController::class, 'materiaHistorial'])
+            ->name('materia.historial');
+
+        // Tomar asistencia por materia (RUTA AGREGADA)
+        Route::get('/comision/{comision}/materia/{materia}/tomar', [AsistenciaController::class, 'tomarAsistencia'])
+            ->middleware('permission:asistencias.crear')
+            ->name('tomar');
+
+        // Alias para tomar asistencia (usado en la vista materias.blade.php)
+        Route::get('/comision/{comision}/materia/{materia}/registrar', [AsistenciaController::class, 'tomarAsistencia'])
+            ->middleware('permission:asistencias.crear')
+            ->name('materia.registrar');
+
+        // Guardar asistencia por materia (RUTA AGREGADA)
+        Route::post('/comision/{comision}/materia/{materia}/guardar', [AsistenciaController::class, 'guardarAsistencia'])
+            ->middleware('permission:asistencias.crear')
+            ->name('guardar');
+
+        // Seleccionar alumno para justificar inasistencias por materia
+        Route::get('/comision/{comision}/materia/{materia}/justificar-alumno', [AsistenciaController::class, 'seleccionarAlumnoPorMateria'])
+            ->middleware('permission:asistencias.editar')
+            ->name('materia.seleccionar-alumno');
+
+        // Editar asistencia individual (RUTA AGREGADA)
+        Route::get('/asistencia/{asistencia}/editar', [AsistenciaController::class, 'editarAsistencia'])
+            ->middleware('permission:asistencias.editar')
+            ->name('editar');
+
+        // Actualizar asistencia individual (RUTA AGREGADA)
+        Route::put('/asistencia/{asistencia}/actualizar', [AsistenciaController::class, 'actualizarAsistencia'])
+            ->middleware('permission:asistencias.editar')
+            ->name('actualizar');
+
+        // Editar asistencia por materia (RUTA FALTANTE)
+        Route::get('/comision/{comision}/materia/{materia}/editar', [AsistenciaController::class, 'materiaEditar'])
+            ->middleware('permission:asistencias.editar')
+            ->name('materia.editar');
+
+        // Actualizar asistencia por materia (RUTA FALTANTE)
+        Route::put('/comision/{comision}/materia/{materia}/actualizar', [AsistenciaController::class, 'materiaActualizar'])
+            ->middleware('permission:asistencias.editar')
+            ->name('materia.actualizar');
+
         // Listado de asistencia por materia
         Route::get('/por-materia', [AsistenciaController::class, 'porMateria'])->name('por-materia');
 
