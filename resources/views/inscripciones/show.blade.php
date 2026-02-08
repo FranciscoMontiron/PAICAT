@@ -1012,23 +1012,21 @@
 
                 <form action="{{ route('inscripciones.crear-solicitud', $inscripcion) }}" method="POST">
                     @csrf
+                    <input type="hidden" name="tipo" value="comision">
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Cambio</label>
-                            <select name="tipo" id="tipoSolicitud" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500" onchange="toggleCamposCambio()">
-                                <option value="comision">Cambio de Comisi&oacute;n</option>
-                                <option value="modalidad">Cambio de Modalidad</option>
-                                <option value="turno">Cambio de Turno</option>
-                            </select>
-                        </div>
-                        <div id="campoComision">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Comisi&oacute;n Destino <span class="text-red-500">*</span></label>
-                            <select name="comision_destino_id" id="comisionDestinoSelect" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500">
+                            <select name="comision_destino_id" id="comisionDestinoSelect" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500">
                                 <option value="">Seleccionar comisi&oacute;n...</option>
                                 @if(isset($comisionesDisponibles) && $comisionesDisponibles->count() > 0)
                                     @foreach($comisionesDisponibles as $comisionDisp)
                                         @if($comisionDisp->id !== $comision->id)
-                                            <option value="{{ $comisionDisp->id }}" data-cupos="{{ $comisionDisp->cupos_disponibles }}" data-virtual="{{ $comisionDisp->esVirtual() ? '1' : '0' }}">
+                                            <option value="{{ $comisionDisp->id }}"
+                                                    data-cupos="{{ $comisionDisp->cupos_disponibles }}"
+                                                    data-virtual="{{ $comisionDisp->esVirtual() ? '1' : '0' }}"
+                                                    data-turno="{{ $comisionDisp->turno }}"
+                                                    data-modalidad="{{ $comisionDisp->modalidad }}"
+                                                    data-periodo="{{ $comisionDisp->periodo }}">
                                                 {{ $comisionDisp->nombre }} - {{ $comisionDisp->turno ?? '' }} {{ $comisionDisp->modalidad ?? '' }}
                                                 @if($comisionDisp->esVirtual())
                                                     (Sin l&iacute;mite)
@@ -1046,25 +1044,14 @@
                                 </svg>
                                 Esta comisi&oacute;n tiene pocos cupos disponibles.
                             </p>
-                        </div>
-                        <div id="campoModalidad" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Modalidad Destino</label>
-                            <select name="modalidad_destino" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500">
-                                <option value="Presencial" {{ ($comision->modalidad ?? '') !== 'Presencial' ? '' : 'disabled' }}>Presencial</option>
-                                <option value="Virtual" {{ ($comision->modalidad ?? '') !== 'Virtual' ? '' : 'disabled' }}>Virtual</option>
-                                <option value="Semipresencial" {{ ($comision->modalidad ?? '') !== 'Semipresencial' ? '' : 'disabled' }}>Semipresencial</option>
-                            </select>
-                        </div>
-                        <div id="campoTurno" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Turno Destino</label>
-                            <select name="turno_destino" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500">
-                                <option value="mañana" {{ ($comision->turno ?? '') !== 'mañana' ? '' : 'disabled' }}>Ma&ntilde;ana</option>
-                                <option value="tardenoche" {{ ($comision->turno ?? '') !== 'tardenoche' ? '' : 'disabled' }}>TardeNoche</option>
-                            </select>
+                            <div id="infoCambios" class="hidden mt-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                <p class="text-xs font-medium text-amber-800 mb-1">Al cambiar a esta comisi&oacute;n se actualizar&aacute;n:</p>
+                                <ul id="listaCambios" class="text-xs text-amber-700 space-y-0.5"></ul>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Motivo <span class="text-red-500">*</span></label>
-                            <textarea name="motivo" required rows="3" minlength="10" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500" placeholder="Explique el motivo (mínimo 10 caracteres)..."></textarea>
+                            <textarea name="motivo" required rows="3" minlength="10" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500" placeholder="Explique el motivo del cambio (m&iacute;nimo 10 caracteres)..."></textarea>
                         </div>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
@@ -1134,42 +1121,65 @@
 
 @push('scripts')
 <script>
-    function toggleCamposCambio() {
-        const tipo = document.getElementById('tipoSolicitud').value;
-        const campoComision = document.getElementById('campoComision');
-        const campoModalidad = document.getElementById('campoModalidad');
-        const campoTurno = document.getElementById('campoTurno');
-        const comisionSelect = document.getElementById('comisionDestinoSelect');
-
-        if (campoComision) campoComision.classList.toggle('hidden', tipo !== 'comision');
-        if (campoModalidad) campoModalidad.classList.toggle('hidden', tipo !== 'modalidad');
-        if (campoTurno) campoTurno.classList.toggle('hidden', tipo !== 'turno');
-
-        if (comisionSelect) {
-            comisionSelect.required = (tipo === 'comision');
-        }
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
         const comisionSelect = document.getElementById('comisionDestinoSelect');
         const alertaCupos = document.getElementById('alertaCupos');
+        const infoCambios = document.getElementById('infoCambios');
+        const listaCambios = document.getElementById('listaCambios');
 
-        if (comisionSelect && alertaCupos) {
+        // Datos actuales de la inscripción
+        const datosActuales = {
+            modalidad: '{{ $comision->modalidad ?? '' }}',
+            turno: '{{ $comision->turno ?? '' }}',
+            periodo: '{{ $comision->periodo ?? '' }}'
+        };
+
+        if (comisionSelect) {
             comisionSelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
+                if (!selectedOption.value) {
+                    if (alertaCupos) alertaCupos.classList.add('hidden');
+                    if (infoCambios) infoCambios.classList.add('hidden');
+                    return;
+                }
+
                 const cupos = parseInt(selectedOption.dataset.cupos);
                 const esVirtual = selectedOption.dataset.virtual === '1';
 
-                if (!esVirtual && cupos !== null && cupos <= 3 && cupos > 0) {
-                    alertaCupos.classList.remove('hidden');
-                } else {
-                    alertaCupos.classList.add('hidden');
+                // Alerta de pocos cupos
+                if (alertaCupos) {
+                    if (!esVirtual && !isNaN(cupos) && cupos <= 3 && cupos > 0) {
+                        alertaCupos.classList.remove('hidden');
+                    } else {
+                        alertaCupos.classList.add('hidden');
+                    }
+                }
+
+                // Mostrar cambios que se aplicarán
+                if (infoCambios && listaCambios) {
+                    const cambios = [];
+                    const turnoDestino = selectedOption.dataset.turno || '';
+                    const modalidadDestino = selectedOption.dataset.modalidad || '';
+                    const periodoDestino = selectedOption.dataset.periodo || '';
+
+                    if (modalidadDestino && modalidadDestino !== datosActuales.modalidad) {
+                        cambios.push('Modalidad: ' + datosActuales.modalidad + ' \u2192 ' + modalidadDestino);
+                    }
+                    if (turnoDestino && turnoDestino !== datosActuales.turno) {
+                        cambios.push('Turno: ' + datosActuales.turno + ' \u2192 ' + turnoDestino);
+                    }
+                    if (periodoDestino && periodoDestino !== datosActuales.periodo) {
+                        cambios.push('Tipo ingreso: ' + datosActuales.periodo + ' \u2192 ' + periodoDestino);
+                    }
+
+                    if (cambios.length > 0) {
+                        listaCambios.innerHTML = cambios.map(function(c) { return '<li>\u2022 ' + c + '</li>'; }).join('');
+                        infoCambios.classList.remove('hidden');
+                    } else {
+                        infoCambios.classList.add('hidden');
+                    }
                 }
             });
-        }
-
-        if (document.getElementById('tipoSolicitud')) {
-            toggleCamposCambio();
         }
     });
 </script>

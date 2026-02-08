@@ -1228,11 +1228,9 @@ class InscripcionController extends Controller
     public function crearSolicitud(Request $request, Inscripcion $inscripcion): RedirectResponse
     {
         $request->validate([
-            'tipo' => 'required|in:comision,modalidad,turno',
+            'tipo' => 'required|in:comision',
             'motivo' => 'required|string|min:10',
-            'comision_destino_id' => 'nullable|exists:comisiones,id',
-            'modalidad_destino' => 'nullable|string',
-            'turno_destino' => 'nullable|string',
+            'comision_destino_id' => 'required|exists:comisiones,id',
         ]);
 
         // Verificar límite configurable de solicitudes por año
@@ -1250,84 +1248,71 @@ class InscripcionController extends Controller
             }
         }
 
-        // Obtener comisión actual del alumno (a través de inscripcionesComision)
+        // Obtener comisión actual del alumno
         $inscripcionComisionActual = $inscripcion->inscripcionesComision()
             ->whereIn('estado', ['inscripto', 'confirmado'])
             ->with('comision')
             ->first();
 
         $comisionActual = $inscripcionComisionActual?->comision;
-        $comisionOrigenId = $comisionActual?->id;
 
-        // Validaciones específicas para cambio de comisión
-        if ($request->tipo === 'comision') {
-            // Debe estar en una comisión para solicitar cambio
-            if (!$comisionActual) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'El alumno debe estar asignado a una comisión para solicitar un cambio.');
-            }
-
-            // La comisión destino es requerida
-            if (!$request->comision_destino_id) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'Debe seleccionar una comisión destino.');
-            }
-
-            // No puede solicitar cambio a la misma comisión
-            if ($comisionActual->id == $request->comision_destino_id) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'No puede solicitar cambio a la misma comisión en la que ya está inscripto.');
-            }
-
-            // Verificar si ya tiene una solicitud pendiente del mismo tipo
-            $solicitudPendiente = $inscripcion->solicitudesCambio()
-                ->where('tipo', 'comision')
-                ->whereIn('estado', [
-                    \App\Models\SolicitudCambio::ESTADO_PENDIENTE,
-                    \App\Models\SolicitudCambio::ESTADO_EN_REVISION,
-                    \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
-                ])
-                ->exists();
-
-            if ($solicitudPendiente) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'Ya existe una solicitud de cambio de comisión pendiente para este alumno.');
-            }
+        if (!$comisionActual) {
+            return back()
+                ->withInput()
+                ->with('error', 'El alumno debe estar asignado a una comisión para solicitar un cambio.');
         }
+
+        if ($comisionActual->id == $request->comision_destino_id) {
+            return back()
+                ->withInput()
+                ->with('error', 'No puede solicitar cambio a la misma comisión en la que ya está inscripto.');
+        }
+
+        // Verificar si ya tiene una solicitud pendiente
+        $solicitudPendiente = $inscripcion->solicitudesCambio()
+            ->where('tipo', 'comision')
+            ->whereIn('estado', [
+                \App\Models\SolicitudCambio::ESTADO_PENDIENTE,
+                \App\Models\SolicitudCambio::ESTADO_EN_REVISION,
+                \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+            ])
+            ->exists();
+
+        if ($solicitudPendiente) {
+            return back()
+                ->withInput()
+                ->with('error', 'Ya existe una solicitud de cambio pendiente para este alumno.');
+        }
+
+        // Obtener comisión destino para guardar datos de referencia
+        $comisionDestino = \App\Models\Comision::find($request->comision_destino_id);
 
         // Crear la solicitud
         $solicitud = $inscripcion->solicitudesCambio()->create([
-            'tipo' => $request->tipo,
+            'tipo' => 'comision',
             'motivo' => $request->motivo,
-            'comision_origen_id' => $comisionOrigenId,
+            'comision_origen_id' => $comisionActual->id,
             'comision_destino_id' => $request->comision_destino_id,
-            'modalidad_origen' => $comisionActual?->modalidad ?? $inscripcion->modalidad,
-            'modalidad_destino' => $request->modalidad_destino,
-            'turno_origen' => $comisionActual?->turno ?? $inscripcion->turno_carrera,
-            'turno_destino' => $request->turno_destino,
+            'modalidad_origen' => $comisionActual->modalidad,
+            'modalidad_destino' => $comisionDestino?->modalidad,
+            'turno_origen' => $comisionActual->turno,
+            'turno_destino' => $comisionDestino?->turno,
             'estado' => \App\Models\SolicitudCambio::ESTADO_PENDIENTE,
         ]);
 
         // Detectar posible trueque automáticamente
-        $mensaje = 'Solicitud de cambio creada correctamente.';
-        if ($request->tipo === 'comision' && $request->comision_destino_id) {
-            $trueque = \App\Models\SolicitudCambio::detectarTrueque($solicitud);
-            if ($trueque) {
-                // Vincular ambas solicitudes y marcar como trueque detectado
-                $solicitud->update([
-                    'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
-                    'solicitud_trueque_id' => $trueque->id,
-                ]);
-                $trueque->update([
-                    'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
-                    'solicitud_trueque_id' => $solicitud->id,
-                ]);
-                $mensaje = '¡Trueque detectado! Se encontró una solicitud inversa compatible. Ambas solicitudes requieren aprobación.';
-            }
+        $mensaje = 'Solicitud de cambio de comisión creada correctamente.';
+        $trueque = \App\Models\SolicitudCambio::detectarTrueque($solicitud);
+        if ($trueque) {
+            $solicitud->update([
+                'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+                'solicitud_trueque_id' => $trueque->id,
+            ]);
+            $trueque->update([
+                'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+                'solicitud_trueque_id' => $solicitud->id,
+            ]);
+            $mensaje = '¡Trueque detectado! Se encontró una solicitud inversa compatible. Ambas solicitudes requieren aprobación.';
         }
 
         return redirect()

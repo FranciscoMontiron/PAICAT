@@ -39,10 +39,6 @@ class SolicitudCambioController extends Controller
             $query->where('estado', $request->estado);
         }
 
-        if ($request->filled('tipo')) {
-            $query->where('tipo', $request->tipo);
-        }
-
         if ($request->filled('buscar')) {
             $termino = $request->buscar;
             $query->whereHas('inscripcion', function ($q) use ($termino) {
@@ -112,10 +108,10 @@ class SolicitudCambioController extends Controller
             return $this->aprobarTrueque($solicitud);
         }
 
-        // Verificar cupos para cambio de comisión
-        if ($solicitud->tipo === SolicitudCambio::TIPO_COMISION && $solicitud->comision_destino_id) {
+        // Verificar cupos en comisión destino
+        if ($solicitud->comision_destino_id) {
             $comisionDestino = Comision::find($solicitud->comision_destino_id);
-            if (!$comisionDestino->tieneCuposDisponibles()) {
+            if ($comisionDestino && !$comisionDestino->tieneCuposDisponibles()) {
                 return back()->with('error', 'No hay cupos disponibles en la comisión destino.');
             }
         }
@@ -196,37 +192,9 @@ class SolicitudCambioController extends Controller
     {
         $inscripcion = $solicitud->inscripcion;
 
-        switch ($solicitud->tipo) {
-            case SolicitudCambio::TIPO_COMISION:
-                $this->cambiarComision($inscripcion, $solicitud);
-                break;
-
-            case SolicitudCambio::TIPO_MODALIDAD:
-                $modalidadAnterior = $inscripcion->modalidad;
-                $inscripcion->update(['modalidad' => $solicitud->modalidad_destino]);
-
-                Trayectoria::registrarEvento(
-                    $inscripcion->id,
-                    Trayectoria::ESTADO_ACTIVO,
-                    "Cambio de modalidad: {$modalidadAnterior} → {$solicitud->modalidad_destino}",
-                    null,
-                    auth()->id()
-                );
-                break;
-
-            case SolicitudCambio::TIPO_TURNO:
-                $turnoAnterior = $inscripcion->turno_carrera;
-                $inscripcion->update(['turno_carrera' => $solicitud->turno_destino]);
-
-                Trayectoria::registrarEvento(
-                    $inscripcion->id,
-                    Trayectoria::ESTADO_ACTIVO,
-                    "Cambio de turno: {$turnoAnterior} → {$solicitud->turno_destino}",
-                    null,
-                    auth()->id()
-                );
-                break;
-        }
+        // Todas las solicitudes se resuelven como cambio de comisión
+        // ya que la comisión contiene turno, modalidad y periodo
+        $this->cambiarComision($inscripcion, $solicitud);
     }
 
     /**
@@ -265,10 +233,42 @@ class SolicitudCambioController extends Controller
             $comisionDestino->incrementarCupo();
         }
 
+        // Sincronizar datos de la inscripción con la nueva comisión
+        $cambiosInscripcion = [];
+        $detallesCambios = [];
+
+        if ($comisionDestino) {
+            // Sincronizar modalidad
+            if ($comisionDestino->modalidad && $comisionDestino->modalidad !== $inscripcion->modalidad) {
+                $detallesCambios[] = "Modalidad: {$inscripcion->modalidad} → {$comisionDestino->modalidad}";
+                $cambiosInscripcion['modalidad'] = $comisionDestino->modalidad;
+            }
+
+            // Sincronizar turno
+            if ($comisionDestino->turno && $comisionDestino->turno !== $inscripcion->turno_carrera) {
+                $detallesCambios[] = "Turno: {$inscripcion->turno_carrera} → {$comisionDestino->turno}";
+                $cambiosInscripcion['turno_carrera'] = $comisionDestino->turno;
+            }
+
+            // Sincronizar tipo de ingreso (periodo: Intensivo/Extensivo)
+            if ($comisionDestino->periodo && $comisionDestino->periodo !== $inscripcion->tipo_ingreso) {
+                $detallesCambios[] = "Tipo ingreso: {$inscripcion->tipo_ingreso} → {$comisionDestino->periodo}";
+                $cambiosInscripcion['tipo_ingreso'] = $comisionDestino->periodo;
+            }
+
+            if (!empty($cambiosInscripcion)) {
+                $inscripcion->update($cambiosInscripcion);
+            }
+        }
+
         // Registrar en trayectoria
         $motivo = $comisionOrigenNombre
             ? "Cambio de comisión: {$comisionOrigenNombre} → {$comisionDestinoNombre}"
             : "Asignado a comisión {$comisionDestinoNombre}";
+
+        if (!empty($detallesCambios)) {
+            $motivo .= '. Datos actualizados: ' . implode(', ', $detallesCambios);
+        }
 
         if ($solicitud->motivo) {
             $motivo .= " (Motivo: {$solicitud->motivo})";

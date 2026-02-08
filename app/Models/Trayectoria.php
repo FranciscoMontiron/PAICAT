@@ -12,6 +12,7 @@ class Trayectoria extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $connection = 'paicat';
     protected $table = 'trayectorias';
 
     protected $fillable = [
@@ -111,10 +112,10 @@ class Trayectoria extends Model
         bool $esVoluntaria = null,
         int $registradoPor = null
     ): self {
-        return DB::transaction(function () use ($inscripcionId, $estado, $motivo, $esVoluntaria, $registradoPor) {
+        return DB::connection('paicat')->transaction(function () use ($inscripcionId, $estado, $motivo, $esVoluntaria, $registradoPor) {
             // Cerrar trayectoria anterior vigente usando DB::table con lockForUpdate
             // para evitar error MariaDB 1020 "Record has changed since last read"
-            $trayectoriasPrevias = DB::table('trayectorias')
+            $trayectoriasPrevias = DB::connection('paicat')->table('trayectorias')
                 ->where('inscripcion_id', $inscripcionId)
                 ->whereNull('fecha_fin')
                 ->whereNull('deleted_at')
@@ -122,7 +123,7 @@ class Trayectoria extends Model
                 ->get();
 
             if ($trayectoriasPrevias->isNotEmpty()) {
-                DB::table('trayectorias')
+                DB::connection('paicat')->table('trayectorias')
                     ->where('inscripcion_id', $inscripcionId)
                     ->whereNull('fecha_fin')
                     ->whereNull('deleted_at')
