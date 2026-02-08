@@ -6,6 +6,7 @@ use App\Models\Asistencia;
 use App\Models\Comision;
 use App\Models\InscripcionComision;
 use App\Models\Materia;
+use App\Models\AcademicoDato;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -756,81 +757,123 @@ class AsistenciaController extends Controller
     /**
      * Formulario para crear asistencia (MANTENER POR COMPATIBILIDAD - sin materia)
      */
-    public function create(Comision $comision)
+    public function create(Comision $comision, Request $request)
     {
-        // Si la comisión tiene materias, redirigir a seleccionar materia
-        if ($comision->materias->count() > 0) {
-            return view('asistencias.seleccionar-materia', compact('comision'));
+        $user = auth()->user();
+
+        // Verificar permisos
+        if (!auth()->user()->hasPermission('asistencias.crear')) {
+            abort(403);
         }
 
-        // Si no tiene materias, mostrar formulario genérico
-        $fecha = request('fecha', today()->format('Y-m-d'));
+        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
+            abort(403, 'No tienes permiso para pasar asistencia en esta comisión.');
+        }
+
+        // Obtener materia si viene por parámetro
+        $materia = null;
+        if ($request->has('materia_id')) {
+            $materia = Materia::findOrFail($request->materia_id);
+        }
+
+        // Fecha seleccionada (por defecto hoy)
+        $fecha = $request->input('fecha', today()->format('Y-m-d'));
+
+        // Cargar inscripciones de la comisión
         $inscripciones = $comision->inscripciones()
-            ->with(['inscripcion', 'academicoDato', 'asistencias' => function ($query) use ($fecha) {
-                $query->where('fecha', $fecha);
-            }])
-            ->whereIn('estado', ['inscripto', 'confirmado'])
+            ->with(['academicoDato.user', 'inscripcion', 'asistencias'])
             ->get();
 
-        $materia = null;
-        return view('asistencias.create', compact('comision', 'materia', 'inscripciones', 'fecha'));
+        // *** CAMBIO PRINCIPAL: Siempre cargar asistencias existentes para la fecha ***
+        $asistenciasExistentes = Asistencia::whereHas('inscripcionComision', function ($query) use ($comision) {
+                $query->where('comision_id', $comision->id);
+            })
+            ->where('fecha', $fecha)
+            ->when($materia, function ($query) use ($materia) {
+                return $query->where('materia_id', $materia->id);
+            })
+            ->get()
+            ->keyBy('inscripcion_comision_id');
+
+        // Cargar las asistencias para cada inscripción
+        foreach ($inscripciones as $inscripcion) {
+            if (isset($asistenciasExistentes[$inscripcion->id])) {
+                $inscripcion->asistencias = collect([$asistenciasExistentes[$inscripcion->id]]);
+            } else {
+                $inscripcion->asistencias = collect();
+            }
+        }
+
+        return view('asistencias.create', compact('comision', 'inscripciones', 'fecha', 'materia'));
     }
 
     /**
-     * Guardar asistencia (MANTENER POR COMPATIBILIDAD - sin materia)
+     * MÉTODO CORREGIDO: Guardar/Actualizar asistencias
      */
     public function store(Request $request, Comision $comision)
     {
         $user = auth()->user();
 
-        if (!$user->hasPermission('asistencias.crear')) {
-            abort(403, 'No tienes permiso para registrar asistencias.');
+        // Verificar permisos
+        if (!auth()->user()->hasPermission('asistencias.crear')) {
+            abort(403);
+        }
+
+        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
+            abort(403);
         }
 
         $validated = $request->validate([
             'fecha' => 'required|date|before_or_equal:today',
             'materia_id' => 'nullable|exists:materias,id',
             'asistencias' => 'required|array',
-            'asistencias.*.inscripcion_comision_id' => 'required|exists:inscripciones_comision,id',
+            'asistencias.*.inscripcion_id' => 'required|exists:inscripcion_comisiones,id',
             'asistencias.*.estado' => 'required|in:presente,ausente,tardanza,justificado',
-            'asistencias.*.observaciones' => 'nullable|string|max:500'
+            'asistencias.*.observaciones' => 'nullable|string|max:500',
         ]);
 
         DB::beginTransaction();
         try {
             foreach ($validated['asistencias'] as $asistenciaData) {
+                // *** CAMBIO: Usar updateOrCreate para actualizar si existe o crear si no existe ***
                 Asistencia::updateOrCreate(
                     [
-                        'inscripcion_comision_id' => $asistenciaData['inscripcion_comision_id'],
+                        // Condiciones para buscar el registro existente
+                        'inscripcion_comision_id' => $asistenciaData['inscripcion_id'],
                         'fecha' => $validated['fecha'],
-                        'materia_id' => $validated['materia_id'] ?? null
+                        'materia_id' => $validated['materia_id'] ?? null,
                     ],
                     [
+                        // Datos a actualizar o crear
                         'estado' => $asistenciaData['estado'],
                         'observaciones' => $asistenciaData['observaciones'] ?? null,
-                        'registrado_por' => $user->id
+                        'registrado_por' => $user->id,
                     ]
                 );
             }
 
             DB::commit();
 
-            // Si tiene materia, redirigir al historial de la materia
-            if ($validated['materia_id']) {
+            // Redirigir según si hay materia o no
+            if (isset($validated['materia_id'])) {
                 $materia = Materia::find($validated['materia_id']);
                 return redirect()
                     ->route('asistencias.materia.historial', [$comision, $materia])
-                    ->with('success', 'Asistencia registrada correctamente.');
+                    ->with('success', 'Asistencias guardadas exitosamente.');
+            } else {
+                return redirect()
+                    ->route('asistencias.comision.materias', $comision)
+                    ->with('success', 'Asistencias guardadas exitosamente.');
             }
 
-            return redirect()
-                ->route('asistencias.comision.materias', $comision)
-                ->with('success', 'Asistencia registrada correctamente.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error al registrar asistencia: ' . $e->getMessage());
+            return back()
+                ->withInput()
+                ->with('error', 'Error al guardar las asistencias: ' . $e->getMessage());
         }
     }
+
 
     /**
      * Editar asistencia (MANTENER POR COMPATIBILIDAD)
@@ -924,45 +967,124 @@ class AsistenciaController extends Controller
     /**
      * Buscador global de alumnos para justificar inasistencias
      */
+   /**
+     * Buscador global de alumnos con filtros avanzados
+     * VERSIÓN ALTERNATIVA - Sin modificar el modelo User
+     * 
+     * IMPORTANTE: Agregar este use al inicio del archivo AsistenciaController.php:
+     * use App\Models\AcademicoDato;
+     */
     public function buscarAlumno(Request $request)
     {
         $search = $request->get('search', '');
+        $comisionId = $request->get('comision_id');
+        $filtroAusencias = $request->get('filtro_ausencias'); // 'con_ausencias', 'sin_ausencias'
+        $filtroRiesgo = $request->get('filtro_riesgo'); // 'en_riesgo', 'sin_riesgo'
 
-        // Obtener usuarios con rol Alumno que tienen inscripciones activas y ausencias
+        // Query base: todos los alumnos
         $query = User::whereHas('roles', function ($q) {
-            $q->where('name', 'Alumno');
-        })
-            ->with(['inscripcionesComision' => function ($q) {
-                $q->where('estado', 'activo')
-                    ->with(['comision', 'asistencias' => function ($query) {
-                        $query->where('estado', 'ausente');
-                    }]);
-            }]);
+            $q->where('nombre', 'Alumno');
+        });
 
-        // Filtrar por búsqueda
+        // Filtrar por búsqueda (nombre o email)
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('apellido', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('dni', 'like', "%{$search}%");
             });
         }
 
         $alumnos = $query->orderBy('name')->paginate(20);
 
-        // Filtrar alumnos que tienen al menos una ausencia sin justificar
-        $alumnos->getCollection()->transform(function ($alumno) {
-            $alumno->total_ausencias = $alumno->inscripcionesComision->sum(function ($inscripcion) {
-                return $inscripcion->asistencias->count();
-            });
+        // Obtener inscripciones desde AcademicoDato
+        $alumnosIds = $alumnos->pluck('id');
+        
+        // Obtener academico_datos de estos usuarios
+        // NOTA: La relación se llama 'inscripcionesComisiones' (plural) en el modelo
+        $academicoDatosQuery = AcademicoDato::whereIn('user_id', $alumnosIds)
+            ->with(['inscripcionesComisiones' => function ($q) use ($comisionId) {
+                if ($comisionId) {
+                    $q->where('comision_id', $comisionId);
+                }
+                $q->whereIn('estado', ['inscripto', 'confirmado'])
+                    ->with(['comision', 'asistencias']);
+            }])
+            ->get();
+
+        // Agrupar por user_id
+        $academicoDatosPorUsuario = $academicoDatosQuery->groupBy('user_id');
+
+        // Calcular estadísticas para cada alumno
+        $alumnos->getCollection()->transform(function ($alumno) use ($academicoDatosPorUsuario) {
+            $inscripciones = collect();
+            
+            // Obtener inscripciones desde academicoDatos de este usuario
+            if (isset($academicoDatosPorUsuario[$alumno->id])) {
+                foreach ($academicoDatosPorUsuario[$alumno->id] as $academicoDato) {
+                    $inscripciones = $inscripciones->merge($academicoDato->inscripcionesComisiones);
+                }
+            }
+
+            // Calcular estadísticas
+            $totalAusencias = 0;
+            $enRiesgo = false;
+            $minimoAsistencia = config('paicat.porcentaje_asistencia_minimo', 75);
+
+            foreach ($inscripciones as $inscripcion) {
+                // Contar ausencias sin justificar
+                $ausencias = $inscripcion->asistencias->where('estado', 'ausente')->count();
+                $totalAusencias += $ausencias;
+
+                // Verificar si está en riesgo
+                $porcentaje = $inscripcion->calcularPorcentajeAsistencia();
+                if ($porcentaje < $minimoAsistencia) {
+                    $enRiesgo = true;
+                }
+            }
+
+            $alumno->inscripciones_comision = $inscripciones;
+            $alumno->total_ausencias = $totalAusencias;
+            $alumno->en_riesgo = $enRiesgo;
+
             return $alumno;
         });
 
-        // Filtrar solo los que tienen ausencias
-        $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
-            return $alumno->total_ausencias > 0;
-        }));
+        // Aplicar filtros adicionales
+        if ($filtroAusencias === 'con_ausencias') {
+            $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
+                return $alumno->total_ausencias > 0;
+            }));
+        } elseif ($filtroAusencias === 'sin_ausencias') {
+            $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
+                return $alumno->total_ausencias === 0;
+            }));
+        }
 
-        return view('asistencias.buscar-alumno', compact('alumnos', 'search'));
+        if ($filtroRiesgo === 'en_riesgo') {
+            $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
+                return $alumno->en_riesgo === true;
+            }));
+        } elseif ($filtroRiesgo === 'sin_riesgo') {
+            $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
+                return $alumno->en_riesgo === false;
+            }));
+        }
+
+        // Obtener comisiones para el filtro
+        $comisiones = Comision::activas()
+            ->orderBy('codigo')
+            ->get();
+
+        return view('asistencias.buscar-alumno', compact(
+            'alumnos',
+            'search',
+            'comisiones',
+            'comisionId',
+            'filtroAusencias',
+            'filtroRiesgo'
+        ));
     }
 
     /**

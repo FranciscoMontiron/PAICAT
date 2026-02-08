@@ -104,25 +104,25 @@ Route::middleware('auth')->group(function () {
         // Alertas de alumnos en riesgo
         Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
 
-        // Ver materias de una comisión (RUTA AGREGADA)
+        // Ver materias de una comisión
         Route::get('/comision/{comision}/materias', [AsistenciaController::class, 'comisionMaterias'])
             ->name('comision.materias');
 
-        // Historial de asistencias por materia (RUTA AGREGADA)
+        // Historial de asistencias por materia
         Route::get('/comision/{comision}/materia/{materia}/historial', [AsistenciaController::class, 'materiaHistorial'])
             ->name('materia.historial');
 
-        // Tomar asistencia por materia (RUTA AGREGADA)
+        // Tomar asistencia por materia
         Route::get('/comision/{comision}/materia/{materia}/tomar', [AsistenciaController::class, 'tomarAsistencia'])
             ->middleware('permission:asistencias.crear')
             ->name('tomar');
 
-        // Alias para tomar asistencia (usado en la vista materias.blade.php)
+        // Alias para tomar asistencia
         Route::get('/comision/{comision}/materia/{materia}/registrar', [AsistenciaController::class, 'tomarAsistencia'])
             ->middleware('permission:asistencias.crear')
             ->name('materia.registrar');
 
-        // Guardar asistencia por materia (RUTA AGREGADA)
+        // Guardar asistencia por materia
         Route::post('/comision/{comision}/materia/{materia}/guardar', [AsistenciaController::class, 'guardarAsistencia'])
             ->middleware('permission:asistencias.crear')
             ->name('guardar');
@@ -132,22 +132,22 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:asistencias.editar')
             ->name('materia.seleccionar-alumno');
 
-        // Editar asistencia individual (RUTA AGREGADA)
+        // Editar asistencia individual
         Route::get('/asistencia/{asistencia}/editar', [AsistenciaController::class, 'editarAsistencia'])
             ->middleware('permission:asistencias.editar')
             ->name('editar');
 
-        // Actualizar asistencia individual (RUTA AGREGADA)
+        // Actualizar asistencia individual
         Route::put('/asistencia/{asistencia}/actualizar', [AsistenciaController::class, 'actualizarAsistencia'])
             ->middleware('permission:asistencias.editar')
             ->name('actualizar');
 
-        // Editar asistencia por materia (RUTA FALTANTE)
+        // Editar asistencia por materia
         Route::get('/comision/{comision}/materia/{materia}/editar', [AsistenciaController::class, 'materiaEditar'])
             ->middleware('permission:asistencias.editar')
             ->name('materia.editar');
 
-        // Actualizar asistencia por materia (RUTA FALTANTE)
+        // Actualizar asistencia por materia
         Route::put('/comision/{comision}/materia/{materia}/actualizar', [AsistenciaController::class, 'materiaActualizar'])
             ->middleware('permission:asistencias.editar')
             ->name('materia.actualizar');
@@ -196,10 +196,16 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:asistencias.editar')
             ->name('alumno.justificar');
 
+        // Alias para justificar (usado en buscador)
+        Route::get('/{comision}/justificar/{inscripcion}', [AsistenciaController::class, 'justificarForm'])
+            ->middleware('permission:asistencias.editar')
+            ->name('justificar');
+
         Route::post('/{comision}/alumno/{inscripcion}/justificar', [AsistenciaController::class, 'justificarStore'])
             ->middleware('permission:asistencias.editar')
             ->name('alumno.justificar.store');
     });
+
 
     // Módulo 4: Evaluaciones
     Route::prefix('evaluaciones')->name('evaluaciones.')->middleware('permission:evaluaciones.ver')->group(function () {
