@@ -494,22 +494,51 @@ class InscripcionController extends Controller
         // Refrescar el modelo para obtener los valores actualizados
         $inscripcion->refresh();
 
+        // Armar detalle de documentos validados
+        $documentos = [];
+        if ($inscripcion->doc_dni_validado) $documentos[] = 'DNI';
+        if ($inscripcion->doc_titulo_validado) $documentos[] = 'Título';
+        if ($inscripcion->doc_analitico_validado) $documentos[] = 'Analítico';
+
         // Actualizar estado según documentación
         if ($inscripcion->documentacionCompleta()) {
-            // Si toda la documentación está validada, cambiar ambos estados
             $inscripcion->update([
                 'estado' => Inscripcion::ESTADO_DOCUMENTACION_OK,
                 'estado_documentacion' => Inscripcion::DOC_VALIDADA,
             ]);
             $mensaje = 'Documentación validada completamente. La inscripción está lista para confirmar.';
+
+            $motivo = 'Documentación validada completamente (' . implode(', ', $documentos) . ')';
+            if (!empty($data['observaciones_documentacion'])) {
+                $motivo .= '. Obs: ' . $data['observaciones_documentacion'];
+            }
+            \App\Models\Trayectoria::registrarEvento(
+                $inscripcion->id,
+                \App\Models\Trayectoria::ESTADO_ACTIVO,
+                $motivo,
+                null,
+                auth()->id()
+            );
         } else {
-            // Si falta algún documento, volver a pendiente
             $updateData = ['estado_documentacion' => Inscripcion::DOC_PENDIENTE];
             if ($inscripcion->estado === Inscripcion::ESTADO_DOCUMENTACION_OK) {
                 $updateData['estado'] = Inscripcion::ESTADO_PENDIENTE;
             }
             $inscripcion->update($updateData);
             $mensaje = 'Documentación actualizada. Faltan documentos por validar.';
+
+            $validados = !empty($documentos) ? implode(', ', $documentos) : 'ninguno';
+            $motivo = "Documentación actualizada (validados: {$validados}). Faltan documentos.";
+            if (!empty($data['observaciones_documentacion'])) {
+                $motivo .= ' Obs: ' . $data['observaciones_documentacion'];
+            }
+            \App\Models\Trayectoria::registrarEvento(
+                $inscripcion->id,
+                \App\Models\Trayectoria::ESTADO_ACTIVO,
+                $motivo,
+                null,
+                auth()->id()
+            );
         }
 
         return redirect()
@@ -532,6 +561,14 @@ class InscripcionController extends Controller
             'estado' => Inscripcion::ESTADO_CONFIRMADO,
             'estado_documentacion' => Inscripcion::DOC_CONFIRMADA,
         ]);
+
+        \App\Models\Trayectoria::registrarEvento(
+            $inscripcion->id,
+            \App\Models\Trayectoria::ESTADO_ACTIVO,
+            'Inscripción confirmada con documentación completa',
+            null,
+            auth()->id()
+        );
 
         return redirect()
             ->route('inscripciones.show', $inscripcion)
@@ -1198,6 +1235,21 @@ class InscripcionController extends Controller
             'turno_destino' => 'nullable|string',
         ]);
 
+        // Verificar límite configurable de solicitudes por año
+        $maxSolicitudes = config('paicat.max_solicitudes_cambio', 3);
+        if ($maxSolicitudes > 0) {
+            $solicitudesAnio = $inscripcion->solicitudesCambio()
+                ->whereYear('created_at', now()->year)
+                ->whereNotIn('estado', [\App\Models\SolicitudCambio::ESTADO_CANCELADA])
+                ->count();
+
+            if ($solicitudesAnio >= $maxSolicitudes) {
+                return back()
+                    ->withInput()
+                    ->with('error', "Se alcanzó el límite de {$maxSolicitudes} solicitudes de cambio por año para este alumno (ya tiene {$solicitudesAnio}).");
+            }
+        }
+
         // Obtener comisión actual del alumno (a través de inscripcionesComision)
         $inscripcionComisionActual = $inscripcion->inscripcionesComision()
             ->whereIn('estado', ['inscripto', 'confirmado'])
@@ -1281,5 +1333,160 @@ class InscripcionController extends Controller
         return redirect()
             ->route('inscripciones.show', $inscripcion)
             ->with('success', $mensaje);
+    }
+
+    /**
+     * Mostrar listado de estudiantes inactivos
+     */
+    public function inactivos(Request $request): View
+    {
+        $diasLimite = $request->input('dias', config('paicat.dias_inactividad', 30));
+        $fechaLimite = now()->subDays($diasLimite);
+
+        // Obtener inscripciones cursando con comisión activa
+        $inscripcionesCursando = Inscripcion::where('estado_ingreso', Inscripcion::INGRESO_CURSANDO)
+            ->whereHas('inscripcionesComision', function ($q) {
+                $q->whereIn('estado', ['inscripto', 'confirmado']);
+            })
+            ->with(['inscripcionesComision' => function ($q) {
+                $q->whereIn('estado', ['inscripto', 'confirmado'])->with('comision');
+            }])
+            ->get();
+
+        $inactivos = collect();
+
+        foreach ($inscripcionesCursando as $inscripcion) {
+            $inscripcionComision = $inscripcion->inscripcionesComision->first();
+            if (!$inscripcionComision) {
+                continue;
+            }
+
+            // Buscar última actividad: asistencia o nota
+            $ultimaAsistencia = DB::table('asistencias')
+                ->where('inscripcion_id', $inscripcion->id)
+                ->max('fecha');
+
+            $ultimaNota = DB::table('notas')
+                ->where('inscripcion_id', $inscripcion->id)
+                ->max('updated_at');
+
+            $ultimaActividad = collect([$ultimaAsistencia, $ultimaNota])
+                ->filter()
+                ->max();
+
+            // Si no tiene ninguna actividad, usar la fecha de inscripción a comisión
+            if (!$ultimaActividad) {
+                $ultimaActividad = $inscripcionComision->fecha_inscripcion
+                    ?? $inscripcionComision->created_at;
+            }
+
+            if ($ultimaActividad && $ultimaActividad < $fechaLimite) {
+                $person = $inscripcion->getPerson();
+                $inactivos->push([
+                    'inscripcion' => $inscripcion,
+                    'persona' => $person,
+                    'comision' => $inscripcionComision->comision,
+                    'ultima_actividad' => \Carbon\Carbon::parse($ultimaActividad),
+                    'dias_sin_actividad' => now()->diffInDays($ultimaActividad),
+                ]);
+            }
+        }
+
+        // Ordenar por más días inactivos primero
+        $inactivos = $inactivos->sortByDesc('dias_sin_actividad')->values();
+
+        return view('inscripciones.inactivos', compact('inactivos', 'diasLimite'));
+    }
+
+    /**
+     * Dar de baja estudiantes inactivos seleccionados
+     */
+    public function bajaInactivos(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'inscripcion_ids' => 'required|array|min:1',
+            'inscripcion_ids.*' => 'integer|exists:inscripciones,id',
+            'motivo' => 'required|string|min:5',
+        ]);
+
+        $count = 0;
+        foreach ($request->inscripcion_ids as $id) {
+            $inscripcion = Inscripcion::find($id);
+            if ($inscripcion && $inscripcion->estado_ingreso === Inscripcion::INGRESO_CURSANDO) {
+                $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_LIBRE]);
+
+                \App\Models\Trayectoria::registrarEvento(
+                    $inscripcion->id,
+                    \App\Models\Trayectoria::ESTADO_LIBRE,
+                    $request->motivo,
+                    false,
+                    auth()->id()
+                );
+                $count++;
+            }
+        }
+
+        return redirect()
+            ->route('inscripciones.inactivos')
+            ->with('success', "Se marcaron {$count} estudiantes como 'libre' por inactividad.");
+    }
+
+    /**
+     * RF15: Aprobar trayectoria de forma excepcional (sin completar todos los espacios)
+     */
+    public function aprobarExcepcional(Request $request, Inscripcion $inscripcion): RedirectResponse
+    {
+        $request->validate([
+            'motivo' => 'required|string|min:10',
+        ]);
+
+        // No se puede aprobar si ya está aprobado
+        if ($inscripcion->estado_ingreso === Inscripcion::INGRESO_APROBADO) {
+            return redirect()
+                ->route('inscripciones.show', $inscripcion)
+                ->with('info', 'La cursada ya fue aprobada anteriormente.');
+        }
+
+        // Obtener inscripción a comisión activa
+        $inscripcionComision = $inscripcion->inscripcionesComision()
+            ->whereIn('estado', ['inscripto', 'confirmado'])
+            ->first();
+
+        // Actualizar estado de la inscripción
+        $inscripcion->update([
+            'estado_ingreso' => Inscripcion::INGRESO_APROBADO,
+            'estado' => Inscripcion::ESTADO_CONFIRMADO,
+        ]);
+
+        // Actualizar inscripción a comisión
+        if ($inscripcionComision) {
+            $inscripcionComision->update(['estado' => 'aprobado']);
+        }
+
+        // Actualizar cursada si existe
+        $cursada = \App\Models\Cursada::where('inscripcion_id', $inscripcion->id)
+            ->whereIn('estado', [\App\Models\Cursada::ESTADO_CURSANDO])
+            ->first();
+
+        if ($cursada) {
+            $cursada->cambiarEstado(
+                \App\Models\Cursada::ESTADO_APROBADO,
+                auth()->id(),
+                'Aprobación excepcional: ' . $request->motivo
+            );
+        }
+
+        // Registrar en trayectoria
+        \App\Models\Trayectoria::registrarEvento(
+            $inscripcion->id,
+            \App\Models\Trayectoria::ESTADO_APROBADO,
+            'Aprobación excepcional: ' . $request->motivo,
+            null,
+            auth()->id()
+        );
+
+        return redirect()
+            ->route('inscripciones.show', $inscripcion)
+            ->with('success', 'Trayectoria aprobada de forma excepcional. Motivo registrado en el historial.');
     }
 }
