@@ -191,7 +191,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <span class="text-sm font-medium text-gray-900">{{ $comision->cupo_actual }}/{{ $comision->cupo_maximo }}</span>
+                                <span class="text-sm font-medium text-gray-900">{{ $comision->cupo_real }}/{{ $comision->cupo_maximo }}</span>
                                 <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
                                     <div class="bg-green-600 h-2 rounded-full" style="width: {{ min($comision->porcentaje_ocupacion, 100) }}%"></div>
                                 </div>

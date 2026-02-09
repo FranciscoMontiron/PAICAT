@@ -8,7 +8,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-gray-900">Solicitudes de Cambio</h1>
-            <p class="text-gray-600 mt-1">Gestión de solicitudes de cambio de comisión, modalidad y turno</p>
+            <p class="text-gray-600 mt-1">Gestión de solicitudes de cambio de comisión</p>
         </div>
         <div class="mt-4 sm:mt-0">
             <form action="{{ route('solicitudes.detectar-trueques') }}" method="POST" class="inline">
@@ -61,19 +61,10 @@
                     @endforeach
                 </select>
             </div>
-            <div class="w-40">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                <select name="tipo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                    <option value="">Todos</option>
-                    @foreach(\App\Models\SolicitudCambio::TIPOS as $key => $label)
-                        <option value="{{ $key }}" {{ request('tipo') == $key ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
             <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors">
                 Filtrar
             </button>
-            @if(request()->hasAny(['buscar', 'estado', 'tipo']))
+            @if(request()->hasAny(['buscar', 'estado']))
                 <a href="{{ route('solicitudes.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                     Limpiar
                 </a>
@@ -104,7 +95,6 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alumno</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cambio Solicitado</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cupos</th>
@@ -137,39 +127,26 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs rounded-full
-                                @if($solicitud->tipo === 'comision') bg-blue-100 text-blue-800
-                                @elseif($solicitud->tipo === 'modalidad') bg-indigo-100 text-indigo-800
-                                @else bg-gray-100 text-gray-800
-                                @endif">
-                                {{ $solicitud->tipo_nombre }}
-                            </span>
-                        </td>
                         <td class="px-6 py-4">
-                            @if($solicitud->tipo === 'comision')
-                                <div class="text-sm">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-gray-500">{{ $solicitud->comisionOrigen?->nombre ?? 'Sin comisión' }}</span>
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                                        </svg>
-                                        <span class="font-medium text-gray-900">{{ $solicitud->comisionDestino?->nombre ?? '-' }}</span>
+                            <div class="text-sm">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-500">{{ $solicitud->comisionOrigen?->nombre ?? 'Sin comisión' }}</span>
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                    </svg>
+                                    <span class="font-medium text-gray-900">{{ $solicitud->comisionDestino?->nombre ?? '-' }}</span>
+                                </div>
+                                @if($solicitud->modalidad_origen && $solicitud->modalidad_destino && $solicitud->modalidad_origen !== $solicitud->modalidad_destino)
+                                    <div class="text-xs text-gray-400 mt-0.5">
+                                        {{ $solicitud->modalidad_origen }} → {{ $solicitud->modalidad_destino }}
                                     </div>
-                                </div>
-                            @elseif($solicitud->tipo === 'modalidad')
-                                <div class="text-sm">
-                                    <span class="text-gray-500">{{ $solicitud->modalidad_origen ?? '-' }}</span>
-                                    <span class="mx-1">→</span>
-                                    <span class="font-medium">{{ $solicitud->modalidad_destino }}</span>
-                                </div>
-                            @else
-                                <div class="text-sm">
-                                    <span class="text-gray-500">{{ $solicitud->turno_origen ?? '-' }}</span>
-                                    <span class="mx-1">→</span>
-                                    <span class="font-medium">{{ $solicitud->turno_destino }}</span>
-                                </div>
-                            @endif
+                                @endif
+                                @if($solicitud->turno_origen && $solicitud->turno_destino && $solicitud->turno_origen !== $solicitud->turno_destino)
+                                    <div class="text-xs text-gray-400 mt-0.5">
+                                        {{ ucfirst($solicitud->turno_origen) }} → {{ ucfirst($solicitud->turno_destino) }}
+                                    </div>
+                                @endif
+                            </div>
 
                             @if($solicitud->solicitud_trueque_id)
                                 <div class="mt-1 flex items-center gap-1 text-xs text-purple-600">
@@ -195,7 +172,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            @if($solicitud->tipo === 'comision' && $solicitud->comisionDestino)
+                            @if($solicitud->comisionDestino)
                                 @if($solicitud->comisionDestino->esVirtual())
                                     <span class="text-sm text-green-600">Sin límite</span>
                                 @elseif($tieneCupos)
@@ -214,7 +191,7 @@
                             @if($solicitud->puedeSerProcesada())
                                 <div class="flex items-center justify-end gap-2">
                                     {{-- Botón Aprobar --}}
-                                    @if($tieneCupos || $solicitud->tipo !== 'comision')
+                                    @if($tieneCupos)
                                         <form action="{{ route('solicitudes.aprobar', $solicitud) }}" method="POST" class="inline"
                                               onsubmit="return confirm('{{ $solicitud->solicitud_trueque_id ? '¿Aprobar este trueque? Ambos alumnos serán cambiados de comisión.' : '¿Aprobar esta solicitud?' }}')">
                                             @csrf

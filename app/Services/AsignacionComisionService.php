@@ -133,8 +133,8 @@ class AsignacionComisionService
                     // Actualizar estado de la inscripción a 'cursando'
                     $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_CURSANDO]);
 
-                    // Actualizar cupo
-                    $comisionAsignada->increment('cupo_actual');
+                    // Sincronizar cupo
+                    $comisionAsignada->sincronizarCupo();
                     $asignacionesPorComision[$comisionAsignada->id]++;
 
                     $resultado['exitosas']++;
@@ -195,10 +195,11 @@ class AsignacionComisionService
             ->where('estado', 'activa')
             ->where(function ($q) {
                 // Con cupo disponible O sin límite (virtual)
-                $q->whereRaw('cupo_actual < cupo_maximo')
-                    ->orWhereNull('cupo_maximo');
+                $q->where(function ($sub) {
+                    $sub->whereRaw('(SELECT COUNT(*) FROM inscripcion_comisiones WHERE inscripcion_comisiones.comision_id = comisiones.id AND inscripcion_comisiones.deleted_at IS NULL AND inscripcion_comisiones.estado IN ("inscripto", "confirmado", "aprobado")) < comisiones.cupo_maximo');
+                })->orWhereNull('cupo_maximo');
             })
-            ->orderBy('cupo_actual') // Priorizar las que tienen menos inscriptos
+            ->orderByRaw('(SELECT COUNT(*) FROM inscripcion_comisiones WHERE inscripcion_comisiones.comision_id = comisiones.id AND inscripcion_comisiones.deleted_at IS NULL AND inscripcion_comisiones.estado IN ("inscripto", "confirmado", "aprobado"))') // Priorizar las que tienen menos inscriptos
             ->get();
     }
 
@@ -293,7 +294,7 @@ class AsignacionComisionService
             return $compatibles->sortBy(function ($comision) use ($asignacionesPorComision) {
                 // Ordenar por: asignaciones en esta ronda + cupo actual
                 $asignacionesRonda = $asignacionesPorComision[$comision->id] ?? 0;
-                return $asignacionesRonda + $comision->cupo_actual;
+                return $asignacionesRonda + $comision->cupo_real;
             })->first();
         }
 
@@ -390,7 +391,7 @@ class AsignacionComisionService
                 'codigo' => $comision->codigo,
                 'turno' => $comision->turno,
                 'modalidad' => $comision->modalidad,
-                'cupo_actual' => $comision->cupo_actual,
+                'cupo_actual' => $comision->cupo_real,
                 'cupo_maximo' => $comision->cupo_maximo,
                 'disponibles' => $comision->cupos_disponibles,
                 'porcentaje' => $comision->porcentaje_ocupacion,

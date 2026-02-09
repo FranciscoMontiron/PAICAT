@@ -6,6 +6,7 @@ use App\Models\Inscripcion;
 use App\Models\Comision;
 use App\Models\Asistencia;
 use App\Models\Cursada;
+use App\Models\SolicitudCambio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -14,8 +15,22 @@ class HomeController extends Controller
 {
     public function index()
     {
-        // Cachear estadísticas por 5 minutos para mejor rendimiento
-        $stats = Cache::remember('dashboard_stats', 300, function () {
+        $user = auth()->user();
+        $isDocente = $user->hasRole('docente') && !$user->hasAnyRole(['admin', 'coordinador']);
+
+        if ($isDocente) {
+            return $this->dashboardDocente($user);
+        }
+
+        return $this->dashboardAdmin($user);
+    }
+
+    /**
+     * Dashboard para Admin y Coordinador
+     */
+    private function dashboardAdmin($user)
+    {
+        $stats = Cache::remember('dashboard_stats_admin', 300, function () {
             $data = [
                 'inscripciones' => 0,
                 'pendientes' => 0,
@@ -26,55 +41,126 @@ class HomeController extends Controller
                 'usuarios' => 0,
                 'municipios' => 0,
                 'aulas' => 0,
+                'solicitudes_pendientes' => 0,
             ];
 
-            // Inscripciones
             try {
                 $data['inscripciones'] = Inscripcion::count();
                 $data['pendientes'] = Inscripcion::where('estado', 'pendiente')->count();
             } catch (\Exception $e) {}
 
-            // Comisiones
             try {
                 $data['comisiones_total'] = Comision::count();
                 $data['comisiones_activas'] = Comision::where('estado', 'activa')->count();
             } catch (\Exception $e) {}
 
-            // Cursadas/Alumnos cursando
             try {
                 $data['alumnos_cursando'] = Cursada::where('estado', Cursada::ESTADO_CURSANDO)->count();
             } catch (\Exception $e) {}
 
-            // Asistencias de hoy
             try {
                 $data['asistencias_hoy'] = Asistencia::whereDate('fecha', today())->count();
             } catch (\Exception $e) {}
 
-            // Usuarios
             try {
                 $data['usuarios'] = DB::table('users')->count();
             } catch (\Exception $e) {}
 
-            // Municipios y Aulas
             try {
                 $data['municipios'] = DB::table('municipios')->whereNull('deleted_at')->where('activo', true)->count();
                 $data['aulas'] = DB::table('aulas')->whereNull('deleted_at')->where('activa', true)->count();
             } catch (\Exception $e) {}
 
+            try {
+                $data['solicitudes_pendientes'] = SolicitudCambio::where('estado', 'pendiente')->count();
+            } catch (\Exception $e) {}
+
             return $data;
         });
 
-        // Alertas importantes (no cachear, siempre frescas)
-        $alertas = $this->getAlertas();
+        $alertas = $this->getAlertasAdmin();
 
         return view('home', compact('stats', 'alertas'));
     }
 
-    private function getAlertas(): array
+    /**
+     * Dashboard para Docente - enfocado en sus comisiones
+     */
+    private function dashboardDocente($user)
+    {
+        $userId = $user->id;
+
+        // Obtener IDs de comisiones del docente (via pivot y legacy docente_id)
+        $comisionIds = collect();
+        try {
+            $pivotIds = DB::connection('paicat')->table('comision_docente')
+                ->where('user_id', $userId)
+                ->where('activo', true)
+                ->pluck('comision_id');
+            $legacyIds = Comision::where('docente_id', $userId)->pluck('id');
+            $comisionIds = $pivotIds->merge($legacyIds)->unique();
+        } catch (\Exception $e) {}
+
+        // Stats específicas del docente
+        $stats = [
+            'mis_comisiones' => 0,
+            'mis_alumnos' => 0,
+            'asistencias_hoy' => 0,
+            'promedio_asistencia' => 0,
+            'alumnos_en_riesgo' => 0,
+            'evaluaciones_pendientes' => 0,
+        ];
+
+        try {
+            $stats['mis_comisiones'] = $comisionIds->count();
+        } catch (\Exception $e) {}
+
+        try {
+            if ($comisionIds->isNotEmpty()) {
+                $stats['mis_alumnos'] = DB::connection('paicat')->table('inscripcion_comision')
+                    ->whereIn('comision_id', $comisionIds)
+                    ->where('estado', 'activa')
+                    ->count();
+            }
+        } catch (\Exception $e) {}
+
+        try {
+            if ($comisionIds->isNotEmpty()) {
+                $stats['asistencias_hoy'] = Asistencia::whereDate('fecha', today())
+                    ->whereIn('comision_id', $comisionIds)
+                    ->distinct('inscripcion_id')
+                    ->count('inscripcion_id');
+            }
+        } catch (\Exception $e) {}
+
+        // Comisiones del docente con datos para acceso rápido
+        $misComisiones = collect();
+        try {
+            if ($comisionIds->isNotEmpty()) {
+                $misComisiones = Comision::whereIn('id', $comisionIds)
+                    ->where('estado', 'activa')
+                    ->withCount(['inscripciones as alumnos_activos_count' => function ($q) {
+                        $q->where('estado', 'activa');
+                    }])
+                    ->orderByRaw("CASE
+                        WHEN modalidad = 'Presencial' THEN 1
+                        WHEN modalidad = 'Semipresencial' THEN 2
+                        ELSE 3
+                    END")
+                    ->orderBy('codigo')
+                    ->get();
+            }
+        } catch (\Exception $e) {}
+
+        $alertas = $this->getAlertasDocente($comisionIds);
+
+        return view('home-docente', compact('stats', 'alertas', 'misComisiones'));
+    }
+
+    private function getAlertasAdmin(): array
     {
         $alertas = [];
 
-        // Inscripciones pendientes de validación
         try {
             $pendientes = Inscripcion::where('estado', 'pendiente')->count();
             if ($pendientes > 0) {
@@ -87,9 +173,8 @@ class HomeController extends Controller
             }
         } catch (\Exception $e) {}
 
-        // Solicitudes de cambio pendientes
         try {
-            $solicitudes = DB::table('solicitud_cambios')->where('estado', 'pendiente')->count();
+            $solicitudes = SolicitudCambio::where('estado', 'pendiente')->count();
             if ($solicitudes > 0) {
                 $alertas[] = [
                     'tipo' => 'info',
@@ -100,7 +185,6 @@ class HomeController extends Controller
             }
         } catch (\Exception $e) {}
 
-        // Comisiones sin docentes asignados
         try {
             $sinDocentes = Comision::where('estado', 'activa')
                 ->whereDoesntHave('docentes')
@@ -112,6 +196,46 @@ class HomeController extends Controller
                     'mensaje' => "{$sinDocentes} comisiones activas sin docentes asignados",
                     'url' => route('comisiones.index'),
                 ];
+            }
+        } catch (\Exception $e) {}
+
+        return $alertas;
+    }
+
+    private function getAlertasDocente($comisionIds): array
+    {
+        $alertas = [];
+
+        if ($comisionIds->isEmpty()) {
+            $alertas[] = [
+                'tipo' => 'warning',
+                'icono' => 'exclamation',
+                'mensaje' => 'No tenés comisiones asignadas actualmente',
+                'url' => '#',
+            ];
+            return $alertas;
+        }
+
+        // Comisiones presenciales sin asistencia hoy
+        try {
+            $presenciales = Comision::whereIn('id', $comisionIds)
+                ->where('estado', 'activa')
+                ->where('modalidad', 'Presencial')
+                ->get();
+
+            foreach ($presenciales as $comision) {
+                $tieneAsistenciaHoy = Asistencia::where('comision_id', $comision->id)
+                    ->whereDate('fecha', today())
+                    ->exists();
+
+                if (!$tieneAsistenciaHoy) {
+                    $alertas[] = [
+                        'tipo' => 'warning',
+                        'icono' => 'clock',
+                        'mensaje' => "Falta registrar asistencia hoy en {$comision->codigo}",
+                        'url' => route('asistencias.create', $comision->id),
+                    ];
+                }
             }
         } catch (\Exception $e) {}
 

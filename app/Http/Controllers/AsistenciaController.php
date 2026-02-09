@@ -160,7 +160,15 @@ class AsistenciaController extends Controller
         }
 
         // Paginar comisiones
-        $comisiones = $query->orderBy('codigo')->paginate(12)->appends($request->all());
+        $comisiones = $query
+            ->orderByRaw("CASE
+                WHEN modalidad = 'Presencial' THEN 1
+                WHEN modalidad = 'Semipresencial' THEN 2
+                ELSE 3
+            END")
+            ->orderBy('codigo')
+            ->paginate(12)
+            ->appends($request->all());
         
         // Calcular estadísticas para cada comisión paginada
         foreach ($comisiones as $comision) {
