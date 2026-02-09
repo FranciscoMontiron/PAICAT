@@ -109,12 +109,20 @@
                             </button>
                             <div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute left-0 mt-0 w-56 bg-white rounded-b-lg shadow-xl z-50" style="display: none;">
                                 <div class="py-1">
-                                    <a href="{{ route('inscripciones.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('inscripciones.*') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
+                                    <a href="{{ route('inscripciones.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('inscripciones.index') || request()->routeIs('inscripciones.show') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                         </svg>
                                         Inscripciones
                                     </a>
+                                    @if(auth()->user()->hasPermission('inscripciones.editar'))
+                                    <a href="{{ route('inscripciones.inactivos') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('inscripciones.inactivos') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Inactivos
+                                    </a>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -156,6 +164,7 @@
                                         Evaluaciones
                                     </a>
                                     @endif
+                                    @if(auth()->user()->hasPermission('comisiones.editar'))
                                     <div class="border-t border-gray-100 my-1"></div>
                                     <a href="{{ route('materias.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('materias.*') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +172,6 @@
                                         </svg>
                                         Materias
                                     </a>
-                                    @if(auth()->user()->hasPermission('comisiones.editar'))
                                     <a href="{{ route('asignacion-alumnos.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('asignacion-alumnos.*') ? 'bg-blue-50 text-utn-blue font-medium' : '' }}">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -182,8 +190,8 @@
                         </div>
                         @endif
 
-                        {{-- MENÚ: Infraestructura --}}
-                        @if(auth()->user()->hasPermission('comisiones.ver'))
+                        {{-- MENÚ: Infraestructura (solo Admin/Coordinador) --}}
+                        @if(auth()->user()->hasPermission('comisiones.crear'))
                         <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
                             <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 {{ request()->routeIs('municipios.*') || request()->routeIs('aulas.*') ? 'bg-white text-utn-blue' : 'text-white hover:bg-white/10' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

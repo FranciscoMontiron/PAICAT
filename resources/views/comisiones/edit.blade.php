@@ -181,11 +181,11 @@
                             Cupo Máximo <span class="text-red-500 cupo-required">*</span>
                         </label>
                         <div class="relative">
-                            <input type="number" name="cupo_maximo" id="cupo_maximo" value="{{ old('cupo_maximo', $comision->cupo_maximo) }}" min="{{ $comision->cupo_actual }}" max="200"
+                            <input type="number" name="cupo_maximo" id="cupo_maximo" value="{{ old('cupo_maximo', $comision->cupo_maximo) }}" min="{{ $comision->cupo_real }}" max="200"
                                 class="w-full px-4 py-2.5 pr-16 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow @error('cupo_maximo') border-red-500 @enderror">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">alumnos</span>
                         </div>
-                        <p class="mt-1 text-xs text-gray-500">Cupo actual: {{ $comision->cupo_actual }} inscriptos (mínimo: {{ $comision->cupo_actual }})</p>
+                        <p class="mt-1 text-xs text-gray-500">Cupo actual: {{ $comision->cupo_real }} inscriptos (mínimo: {{ $comision->cupo_real }})</p>
                         @error('cupo_maximo')
                         <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                         @enderror

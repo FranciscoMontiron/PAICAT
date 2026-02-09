@@ -125,7 +125,7 @@
                         </div>
                         <div>
                             <label class="text-sm font-medium text-gray-500">Cupo Actual</label>
-                            <p class="mt-1 text-gray-900">{{ $comision->cupo_actual }}</p>
+                            <p class="mt-1 text-gray-900">{{ $comision->cupo_real }}</p>
                         </div>
                         @if($comision->fecha_inicio)
                         <div>

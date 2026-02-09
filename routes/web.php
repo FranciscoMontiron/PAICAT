@@ -53,16 +53,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/importar', [InscripcionController::class, 'showImportar'])->middleware('permission:inscripciones.crear')->name('importar.show');
         Route::post('/importar', [InscripcionController::class, 'importar'])->middleware('permission:inscripciones.crear')->name('importar');
         Route::get('/exportar', [InscripcionController::class, 'exportar'])->name('exportar');
+        Route::get('/inactivos', [InscripcionController::class, 'inactivos'])->middleware('permission:inscripciones.editar')->name('inactivos');
+        Route::post('/inactivos/baja', [InscripcionController::class, 'bajaInactivos'])->middleware('permission:inscripciones.editar')->name('baja-inactivos');
         Route::get('/{inscripcion}', [InscripcionController::class, 'show'])->name('show');
         Route::get('/{inscripcion}/edit', [InscripcionController::class, 'edit'])->middleware('permission:inscripciones.editar')->name('edit');
         Route::put('/{inscripcion}', [InscripcionController::class, 'update'])->middleware('permission:inscripciones.editar')->name('update');
         Route::post('/{inscripcion}/validar-documentacion', [InscripcionController::class, 'validarDocumentacion'])->middleware('permission:inscripciones.editar')->name('validar-documentacion');
         Route::post('/{inscripcion}/confirmar', [InscripcionController::class, 'confirmar'])->middleware('permission:inscripciones.editar')->name('confirmar');
         Route::post('/{inscripcion}/cancelar', [InscripcionController::class, 'cancelar'])->middleware('permission:inscripciones.editar')->name('cancelar');
+        Route::post('/{inscripcion}/reactivar', [InscripcionController::class, 'reactivar'])->middleware('permission:inscripciones.editar')->name('reactivar');
         Route::post('/{inscripcion}/aprobar-cursada', [InscripcionController::class, 'aprobarCursada'])->middleware('permission:inscripciones.editar')->name('aprobar-cursada');
+        Route::post('/{inscripcion}/aprobar-excepcional', [InscripcionController::class, 'aprobarExcepcional'])->middleware('permission:inscripciones.editar')->name('aprobar-excepcional');
         Route::post('/{inscripcion}/agregar-condicion', [InscripcionController::class, 'agregarCondicion'])->middleware('permission:inscripciones.editar')->name('agregar-condicion');
         Route::delete('/condicion/{condicion}', [InscripcionController::class, 'desactivarCondicion'])->middleware('permission:inscripciones.editar')->name('desactivar-condicion');
-        Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.editar')->name('crear-solicitud');
+        Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.ver')->name('crear-solicitud');
         Route::delete('/{inscripcion}', [InscripcionController::class, 'destroy'])->middleware('permission:inscripciones.eliminar')->name('destroy');
     });
 
@@ -103,6 +107,54 @@ Route::middleware('auth')->group(function () {
 
         // Alertas de alumnos en riesgo
         Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
+
+        // Ver materias de una comisión
+        Route::get('/comision/{comision}/materias', [AsistenciaController::class, 'comisionMaterias'])
+            ->name('comision.materias');
+
+        // Historial de asistencias por materia
+        Route::get('/comision/{comision}/materia/{materia}/historial', [AsistenciaController::class, 'materiaHistorial'])
+            ->name('materia.historial');
+
+        // Tomar asistencia por materia
+        Route::get('/comision/{comision}/materia/{materia}/tomar', [AsistenciaController::class, 'tomarAsistencia'])
+            ->middleware('permission:asistencias.crear')
+            ->name('tomar');
+
+        // Alias para tomar asistencia
+        Route::get('/comision/{comision}/materia/{materia}/registrar', [AsistenciaController::class, 'tomarAsistencia'])
+            ->middleware('permission:asistencias.crear')
+            ->name('materia.registrar');
+
+        // Guardar asistencia por materia
+        Route::post('/comision/{comision}/materia/{materia}/guardar', [AsistenciaController::class, 'guardarAsistencia'])
+            ->middleware('permission:asistencias.crear')
+            ->name('guardar');
+
+        // Seleccionar alumno para justificar inasistencias por materia
+        Route::get('/comision/{comision}/materia/{materia}/justificar-alumno', [AsistenciaController::class, 'seleccionarAlumnoPorMateria'])
+            ->middleware('permission:asistencias.editar')
+            ->name('materia.seleccionar-alumno');
+
+        // Editar asistencia individual
+        Route::get('/asistencia/{asistencia}/editar', [AsistenciaController::class, 'editarAsistencia'])
+            ->middleware('permission:asistencias.editar')
+            ->name('editar');
+
+        // Actualizar asistencia individual
+        Route::put('/asistencia/{asistencia}/actualizar', [AsistenciaController::class, 'actualizarAsistencia'])
+            ->middleware('permission:asistencias.editar')
+            ->name('actualizar');
+
+        // Editar asistencia por materia
+        Route::get('/comision/{comision}/materia/{materia}/editar', [AsistenciaController::class, 'materiaEditar'])
+            ->middleware('permission:asistencias.editar')
+            ->name('materia.editar');
+
+        // Actualizar asistencia por materia
+        Route::put('/comision/{comision}/materia/{materia}/actualizar', [AsistenciaController::class, 'materiaActualizar'])
+            ->middleware('permission:asistencias.editar')
+            ->name('materia.actualizar');
 
         // Listado de asistencia por materia
         Route::get('/por-materia', [AsistenciaController::class, 'porMateria'])->name('por-materia');
@@ -148,10 +200,16 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:asistencias.editar')
             ->name('alumno.justificar');
 
+        // Alias para justificar (usado en buscador)
+        Route::get('/{comision}/justificar/{inscripcion}', [AsistenciaController::class, 'justificarForm'])
+            ->middleware('permission:asistencias.editar')
+            ->name('justificar');
+
         Route::post('/{comision}/alumno/{inscripcion}/justificar', [AsistenciaController::class, 'justificarStore'])
             ->middleware('permission:asistencias.editar')
             ->name('alumno.justificar.store');
     });
+
 
     // Módulo 4: Evaluaciones
     Route::prefix('evaluaciones')->name('evaluaciones.')->middleware('permission:evaluaciones.ver')->group(function () {
