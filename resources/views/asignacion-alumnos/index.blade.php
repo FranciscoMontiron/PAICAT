@@ -159,7 +159,8 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materias</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periodo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turno</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modalidad / Periodo</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Docente</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cupos</th>
                         </tr>
@@ -177,7 +178,6 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900">{{ $comision->nombre }}</div>
-                                <div class="text-sm text-gray-500">{{ $comision->modalidad }} - {{ $comision->turno }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 @foreach($comision->materias->take(2) as $materia)
@@ -190,7 +190,17 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ $comision->anio }} - {{ $comision->periodo }}
+                                @if($comision->turno)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ strtolower($comision->turno) === 'mañana' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' }}">
+                                        {{ $comision->turno }}
+                                    </span>
+                                @else
+                                    <span class="text-gray-400">-</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div>{{ $comision->modalidad }}</div>
+                                <div class="text-xs text-gray-500">{{ $comision->periodo }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 @if($comision->docente)
@@ -204,7 +214,7 @@
                                     <span class="text-sm font-medium {{ $comision->cupos_disponibles > 10 ? 'text-green-600' : ($comision->cupos_disponibles > 0 ? 'text-yellow-600' : 'text-red-600') }}">
                                         {{ $comision->cupos_disponibles }} disponibles
                                     </span>
-                                    <span class="text-sm text-gray-500 ml-1">({{ $comision->cupo_actual }}/{{ $comision->cupo_maximo }})</span>
+                                    <span class="text-sm text-gray-500 ml-1">({{ $comision->cupo_real }}/{{ $comision->cupo_maximo }})</span>
                                 </div>
                                 <div class="w-24 bg-gray-200 rounded-full h-2 mt-1">
                                     <div class="bg-green-600 h-2 rounded-full" style="width: {{ min($comision->porcentaje_ocupacion, 100) }}%"></div>

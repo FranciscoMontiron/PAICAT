@@ -11,6 +11,7 @@ class SolicitudCambio extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $connection = 'paicat';
     protected $table = 'solicitudes_cambio';
 
     protected $fillable = [

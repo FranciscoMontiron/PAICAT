@@ -11,6 +11,7 @@ use App\Models\InscripcionComision;
 use App\Models\Materia;
 use App\Models\Municipio;
 use App\Models\User;
+use App\Services\DataNormalizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -57,7 +58,10 @@ class ComisionController extends Controller
             'total' => Comision::count(),
             'activas' => Comision::where('estado', 'activa')->count(),
             'cupos_totales' => Comision::sum('cupo_maximo'),
-            'cupos_ocupados' => Comision::sum('cupo_actual'),
+            'cupos_ocupados' => \DB::table('inscripcion_comisiones')
+                ->whereNull('deleted_at')
+                ->whereIn('estado', ['inscripto', 'confirmado', 'aprobado'])
+                ->count(),
         ];
 
         return view('comisiones.index', compact('comisiones', 'stats'));
@@ -150,13 +154,21 @@ class ComisionController extends Controller
         $docentesIds = $validated['docentes'] ?? [];
         unset($validated['materias'], $validated['docentes']);
 
+        // Normalizar datos antes de crear
+        $normalizador = new DataNormalizationService();
+        $validated['modalidad'] = $normalizador->normalizarModalidad($validated['modalidad'] ?? null);
+        $validated['turno'] = $normalizador->normalizarTurno($validated['turno'] ?? null);
+        $validated['periodo'] = $normalizador->normalizarTipoIngreso($validated['periodo'] ?? null);
+
         $validated['cupo_actual'] = 0;
         $validated['estado'] = 'activa';
 
         // Lógica especial para comisiones virtuales: sin cupo ni turno
         if (strtolower($validated['modalidad']) === 'virtual') {
             $validated['turno'] = null;
-            $validated['cupo_maximo'] = null; // Sin límite de cupo
+            $validated['cupo_maximo'] = 9999; // Sin límite de cupo (valor muy alto)
+            $validated['municipio_id'] = null; // Virtual no requiere sede física
+            $validated['aula_id'] = null; // Virtual no requiere aula
         }
 
         // Si hay docentes, asignar el primero como docente_id (compatibilidad)
@@ -177,8 +189,16 @@ class ComisionController extends Controller
             ]);
         }
 
+        $mensaje = 'Comisión creada exitosamente.';
+
+        // Agregar mensaje de correcciones si hay
+        $mensajeCorrecciones = $normalizador->getMensajeCorrecciones();
+        if ($mensajeCorrecciones) {
+            $mensaje .= ' ' . str_replace("\n", ' ', $mensajeCorrecciones);
+        }
+
         return redirect()->route('comisiones.show', $comision)
-            ->with('success', 'Comisión creada exitosamente.');
+            ->with('success', $mensaje);
     }
 
     /**
@@ -186,10 +206,17 @@ class ComisionController extends Controller
      */
     public function show(Comision $comision)
     {
-        $comision->load(['docente', 'inscripciones.academicoDato.user', 'evaluaciones']);
+        $comision->load([
+            'docente',
+            'inscripciones' => function ($query) {
+                $query->whereIn('estado', ['inscripto', 'confirmado', 'aprobado'])
+                      ->with(['inscripcion', 'academicoDato.user']);
+            },
+            'evaluaciones'
+        ]);
 
         $stats = [
-            'inscriptos' => $comision->inscripciones()->count(),
+            'inscriptos' => $comision->inscripciones()->whereIn('estado', ['inscripto', 'confirmado', 'aprobado'])->count(),
             'cupos_disponibles' => $comision->cupos_disponibles,
             'porcentaje_ocupacion' => $comision->porcentaje_ocupacion,
             'evaluaciones' => $comision->evaluaciones()->count(),
@@ -260,29 +287,101 @@ class ComisionController extends Controller
      */
     public function update(Request $request, Comision $comision)
     {
-        $validated = $request->validate([
+        // Validación condicional basada en modalidad
+        $modalidad = strtolower($request->input('modalidad', ''));
+        $esVirtual = $modalidad === 'virtual';
+
+        $rules = [
             'materias' => 'required|array|min:1',
             'materias.*' => 'exists:materias,id',
             'nombre' => 'required|string|max:100',
             'codigo' => 'required|string|max:20|unique:comisiones,codigo,' . $comision->id,
             'descripcion' => 'nullable|string',
             'anio' => 'required|integer|min:2020|max:2100',
-            'periodo' => 'required|string|max:50', // Dinámico desde alumnos_utn
-            'turno' => 'nullable|string|max:50', // Nullable para comisiones virtuales
-            'modalidad' => 'required|string|max:50', // Dinámico desde alumnos_utn
-            'cupo_maximo' => 'nullable|integer|min:' . $comision->cupo_actual . '|max:9999', // Nullable para virtual
+            'periodo' => 'required|string|max:50',
+            'turno' => $esVirtual ? 'nullable|string|max:50' : 'required|string|max:50',
+            'modalidad' => 'required|string|max:50',
+            'cupo_maximo' => $esVirtual ? 'nullable|integer|min:0|max:9999' : 'required|integer|min:' . $comision->cupo_real . '|max:9999',
             'estado' => 'required|in:activa,cerrada,finalizada,cancelada',
+            'municipio_id' => $esVirtual ? 'nullable|exists:municipios,id' : 'required|exists:municipios,id',
+            'aula_id' => 'nullable|exists:aulas,id',
+            'docentes' => 'nullable|array',
+            'docentes.*' => 'exists:users,id',
             'observaciones' => 'nullable|string',
-        ]);
+        ];
+
+        $validated = $request->validate($rules);
 
         $materiasIds = $validated['materias'];
-        unset($validated['materias']);
+        $docentesIds = $validated['docentes'] ?? [];
+        unset($validated['materias'], $validated['docentes']);
+
+        // Normalizar datos antes de actualizar
+        $normalizador = new DataNormalizationService();
+        $validated['modalidad'] = $normalizador->normalizarModalidad($validated['modalidad'] ?? null);
+        $validated['turno'] = $normalizador->normalizarTurno($validated['turno'] ?? null);
+        $validated['periodo'] = $normalizador->normalizarTipoIngreso($validated['periodo'] ?? null);
+
+        // Lógica especial para comisiones virtuales
+        if (strtolower($validated['modalidad']) === 'virtual') {
+            $validated['turno'] = null;
+            $validated['cupo_maximo'] = 9999; // Sin límite de cupo (valor muy alto)
+            $validated['municipio_id'] = null; // Virtual no requiere sede física
+            $validated['aula_id'] = null; // Virtual no requiere aula
+        }
+
+        // Si hay docentes, actualizar el docente_id (compatibilidad)
+        if (!empty($docentesIds)) {
+            $validated['docente_id'] = $docentesIds[0];
+        } else {
+            $validated['docente_id'] = null;
+        }
 
         $comision->update($validated);
         $comision->materias()->sync($materiasIds);
 
+        // Sincronizar docentes en la tabla pivot
+        // Desactivar todos los docentes actuales
+        \App\Models\ComisionDocente::where('comision_id', $comision->id)
+            ->where('activo', true)
+            ->update([
+                'activo' => false,
+                'fecha_baja' => now(),
+            ]);
+
+        // Agregar/reactivar docentes nuevos
+        foreach ($docentesIds as $docenteId) {
+            $asignacion = \App\Models\ComisionDocente::where('comision_id', $comision->id)
+                ->where('user_id', $docenteId)
+                ->first();
+
+            if ($asignacion) {
+                // Reactivar si existe
+                $asignacion->update([
+                    'activo' => true,
+                    'fecha_baja' => null,
+                ]);
+            } else {
+                // Crear nueva asignación
+                \App\Models\ComisionDocente::create([
+                    'comision_id' => $comision->id,
+                    'user_id' => $docenteId,
+                    'activo' => true,
+                    'fecha_asignacion' => now(),
+                ]);
+            }
+        }
+
+        $mensaje = 'Comisión actualizada exitosamente.';
+
+        // Agregar mensaje de correcciones si hay
+        $mensajeCorrecciones = $normalizador->getMensajeCorrecciones();
+        if ($mensajeCorrecciones) {
+            $mensaje .= ' ' . str_replace("\n", ' ', $mensajeCorrecciones);
+        }
+
         return redirect()->route('comisiones.show', $comision)
-            ->with('success', 'Comisión actualizada exitosamente.');
+            ->with('success', $mensaje);
     }
 
     /**
@@ -415,51 +514,105 @@ class ComisionController extends Controller
                 ->with('error', 'La comisión no tiene cupos disponibles.');
         }
 
-        // Verificar que el alumno no esté ya inscripto
-        $yaInscripto = $comision->inscripciones()
-            ->where('inscripcion_id', $inscripcion->id)
-            ->exists();
-
-        if ($yaInscripto) {
+        // Validar que el tipo de ingreso coincida (Intensivo/Extensivo)
+        if ($inscripcion->tipo_ingreso && $comision->periodo && $inscripcion->tipo_ingreso !== $comision->periodo) {
             return redirect()->back()
-                ->with('error', 'El alumno ya está inscripto en esta comisión.');
+                ->with('error', "El alumno tiene tipo de ingreso \"{$inscripcion->tipo_ingreso}\" pero la comisión es \"{$comision->periodo}\". No se puede asignar.");
         }
 
-        // Crear la inscripción a la comisión
-        InscripcionComision::create([
-            'inscripcion_id' => $inscripcion->id,
-            'academico_dato_id' => $inscripcion->academico_dato_id, // Puede ser null
-            'comision_id' => $comision->id,
-            'fecha_inscripcion' => now(),
-            'estado' => 'inscripto',
-        ]);
+        // Validar que la modalidad coincida
+        if ($inscripcion->modalidad !== $comision->modalidad) {
+            return redirect()->back()
+                ->with('error', "El alumno tiene modalidad \"{$inscripcion->modalidad}\" pero la comisión es \"{$comision->modalidad}\". No se puede asignar.");
+        }
 
-        // Crear registro de cursada
+        // Verificar que el alumno no esté ya inscripto en CUALQUIER comisión activa
+        $yaInscriptoOtra = InscripcionComision::where('inscripcion_id', $inscripcion->id)
+            ->whereIn('estado', ['inscripto', 'confirmado', 'aprobado'])
+            ->first();
+
+        if ($yaInscriptoOtra) {
+            $comisionExistente = $yaInscriptoOtra->comision;
+            $nombreComision = $comisionExistente ? $comisionExistente->nombre : 'otra comisión';
+            return redirect()->back()
+                ->with('error', "El alumno ya está inscripto en {$nombreComision}.");
+        }
+
+        // Buscar si existe una inscripción_comision cancelada para reactivarla
+        $inscripcionComisionExistente = InscripcionComision::where('inscripcion_id', $inscripcion->id)
+            ->where('comision_id', $comision->id)
+            ->whereIn('estado', ['cancelado', 'trasladado'])
+            ->first();
+
+        if ($inscripcionComisionExistente) {
+            // Reactivar la inscripción existente
+            $inscripcionComisionExistente->update([
+                'estado' => 'inscripto',
+                'fecha_inscripcion' => now(),
+                'observaciones' => 'Reasignación manual - Reactivada',
+            ]);
+        } else {
+            // Crear la inscripción a la comisión
+            InscripcionComision::create([
+                'inscripcion_id' => $inscripcion->id,
+                'academico_dato_id' => $inscripcion->academico_dato_id,
+                'comision_id' => $comision->id,
+                'fecha_inscripcion' => now(),
+                'estado' => 'inscripto',
+            ]);
+        }
+
+        // Crear o reactivar registro de cursada
         $anioActual = date('Y');
         $esRecursante = Cursada::where('inscripcion_id', $inscripcion->id)
             ->where('anio', '<', $anioActual)
             ->whereIn('estado', [Cursada::ESTADO_DESAPROBADO, Cursada::ESTADO_LIBRE])
             ->exists();
 
-        Cursada::firstOrCreate(
-            [
+        // Buscar cursada existente (puede estar dada de baja)
+        $cursadaExistente = Cursada::where('inscripcion_id', $inscripcion->id)
+            ->where('comision_id', $comision->id)
+            ->where('anio', $anioActual)
+            ->first();
+
+        if ($cursadaExistente) {
+            // Reactivar cursada si estaba dada de baja
+            if ($cursadaExistente->estado === Cursada::ESTADO_BAJA) {
+                $cursadaExistente->update([
+                    'estado' => Cursada::ESTADO_CURSANDO,
+                    'fecha_inicio' => now(),
+                    'fecha_fin' => null,
+                    'usuario_cambio_estado_id' => auth()->id(),
+                    'fecha_cambio_estado' => now(),
+                    'observaciones' => 'Reactivada por reasignación',
+                ]);
+            }
+        } else {
+            Cursada::create([
                 'inscripcion_id' => $inscripcion->id,
                 'comision_id' => $comision->id,
                 'anio' => $anioActual,
-            ],
-            [
                 'estado' => Cursada::ESTADO_CURSANDO,
                 'modalidad' => $comision->modalidad,
                 'es_recursante' => $esRecursante,
                 'fecha_inicio' => now(),
-            ]
-        );
+            ]);
+        }
 
         // Actualizar estado de la inscripción a 'cursando'
         $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_CURSANDO]);
 
-        // Actualizar cupo actual
-        $comision->increment('cupo_actual');
+        // Registrar en trayectoria
+        \App\Models\Trayectoria::registrarEvento(
+            $inscripcion->id,
+            \App\Models\Trayectoria::ESTADO_ACTIVO,
+            'Asignado a comisión ' . $comision->nombre,
+            null,
+            auth()->id()
+        );
+
+        // Sincronizar cupo actual
+        $comision->sincronizarCupo();
 
         return redirect()->back()
             ->with('success', 'Alumno inscripto exitosamente.');

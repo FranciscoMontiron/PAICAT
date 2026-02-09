@@ -67,4 +67,33 @@ return [
         'Brandsen',
         'Magdalena',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Límite de solicitudes de cambio
+    |--------------------------------------------------------------------------
+    |
+    | Cantidad máxima de solicitudes de cambio (comisión, modalidad, turno, carrera)
+    | que un alumno puede realizar por año. 0 = sin límite.
+    |
+    */
+    'max_solicitudes_cambio' => env('MAX_SOLICITUDES_CAMBIO', 3),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Días de inactividad
+    |--------------------------------------------------------------------------
+    |
+    | Cantidad de días sin actividad (asistencia, notas) tras los cuales
+    | un alumno cursando se considera inactivo.
+    |
+    */
+    'dias_inactividad' => env('DIAS_INACTIVIDAD', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Porcentaje mínimo de asistencia (alias)
+    |--------------------------------------------------------------------------
+    */
+    'porcentaje_asistencia_minimo' => env('ASISTENCIA_MINIMA', 75),
 ];

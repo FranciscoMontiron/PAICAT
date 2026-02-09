@@ -160,7 +160,15 @@ class AsistenciaController extends Controller
         }
 
         // Paginar comisiones
-        $comisiones = $query->orderBy('codigo')->paginate(12)->appends($request->all());
+        $comisiones = $query
+            ->orderByRaw("CASE
+                WHEN modalidad = 'Presencial' THEN 1
+                WHEN modalidad = 'Semipresencial' THEN 2
+                ELSE 3
+            END")
+            ->orderBy('codigo')
+            ->paginate(12)
+            ->appends($request->all());
         
         // Calcular estadísticas para cada comisión paginada
         foreach ($comisiones as $comision) {
@@ -1097,151 +1105,154 @@ class AsistenciaController extends Controller
      * Buscador global de alumnos para justificar inasistencias
      */
    /**
-     * Buscador global de alumnos con filtros avanzados
-     * VERSIÓN ALTERNATIVA - Sin modificar el modelo User
-     * 
-     * IMPORTANTE: Agregar este use al inicio del archivo AsistenciaController.php:
      * use App\Models\AcademicoDato;
      */
     public function buscarAlumno(Request $request)
-    {
-        $user = auth()->user();
-        $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
-        
-        $search = $request->get('search', '');
-        $comisionId = $request->get('comision_id');
-        $filtroAusencias = $request->get('filtro_ausencias'); // 'con_ausencias', 'sin_ausencias'
-        $filtroRiesgo = $request->get('filtro_riesgo'); // 'en_riesgo', 'sin_riesgo'
+{
+    $user = auth()->user();
+    $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
+    
+    $search = $request->get('search', '');
+    $comisionId = $request->get('comision_id');
+    $filtroAusencias = $request->get('filtro_ausencias'); // 'con_ausencias', 'sin_ausencias'
+    $filtroRiesgo = $request->get('filtro_riesgo'); // 'en_riesgo', 'sin_riesgo'
 
-        // Query base: todos los alumnos
-        $query = User::whereHas('roles', function ($q) {
-            $q->where('nombre', 'Alumno');
+    // Query base: todos los alumnos
+    $query = User::whereHas('roles', function ($q) {
+        $q->where('nombre', 'Alumno');
+    });
+
+    // Filtrar por búsqueda (nombre o email)
+    if (!empty($search)) {
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+                ->orWhere('apellido', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('dni', 'like', "%{$search}%");
         });
-
-        // Filtrar por búsqueda (nombre o email)
-        if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('apellido', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('dni', 'like', "%{$search}%");
-            });
-        }
-
-        // FILTRO: Si es docente, solo alumnos de sus comisiones
-        if ($esDocente) {
-            // Obtener IDs de comisiones del docente
-            $comisionesDocenteIds = Comision::where('docente_id', $user->id)->pluck('id');
-            
-            // Obtener usuarios que tienen inscripciones en esas comisiones
-            $query->whereHas('academicoDato.inscripcionesComisiones', function ($q) use ($comisionesDocenteIds) {
-                $q->whereIn('comision_id', $comisionesDocenteIds);
-            });
-        }
-
-        $alumnos = $query->orderBy('name')->paginate(20);
-
-        // Obtener inscripciones desde AcademicoDato
-        $alumnosIds = $alumnos->pluck('id');
-        
-        // Obtener academico_datos de estos usuarios
-        $academicoDatosQuery = AcademicoDato::whereIn('user_id', $alumnosIds)
-            ->with(['inscripcionesComisiones' => function ($q) use ($comisionId, $esDocente, $user) {
-                if ($comisionId) {
-                    $q->where('comision_id', $comisionId);
-                }
-                
-                // Si es docente, filtrar solo sus comisiones
-                if ($esDocente) {
-                    $comisionesDocenteIds = Comision::where('docente_id', $user->id)->pluck('id');
-                    $q->whereIn('comision_id', $comisionesDocenteIds);
-                }
-                
-                $q->whereIn('estado', ['inscripto', 'confirmado'])
-                    ->with(['comision', 'asistencias']);
-            }])
-            ->get();
-
-        // Agrupar por user_id
-        $academicoDatosPorUsuario = $academicoDatosQuery->groupBy('user_id');
-
-        // Calcular estadísticas para cada alumno
-        $alumnos->getCollection()->transform(function ($alumno) use ($academicoDatosPorUsuario) {
-            $inscripciones = collect();
-            
-            // Obtener inscripciones desde academicoDatos de este usuario
-            if (isset($academicoDatosPorUsuario[$alumno->id])) {
-                foreach ($academicoDatosPorUsuario[$alumno->id] as $academicoDato) {
-                    $inscripciones = $inscripciones->merge($academicoDato->inscripcionesComisiones);
-                }
-            }
-
-            // Calcular estadísticas
-            $totalAusencias = 0;
-            $enRiesgo = false;
-            $minimoAsistencia = config('paicat.porcentaje_asistencia_minimo', 75);
-
-            foreach ($inscripciones as $inscripcion) {
-                // Contar ausencias sin justificar
-                $ausencias = $inscripcion->asistencias->where('estado', 'ausente')->count();
-                $totalAusencias += $ausencias;
-
-                // Verificar si está en riesgo
-                $porcentaje = $this->calcularPorcentajeAsistencia($inscripcion);
-                if ($porcentaje < $minimoAsistencia) {
-                    $enRiesgo = true;
-                }
-            }
-
-            $alumno->inscripciones_comision = $inscripciones;
-            $alumno->total_ausencias = $totalAusencias;
-            $alumno->en_riesgo = $enRiesgo;
-
-            return $alumno;
-        });
-
-        // Aplicar filtros adicionales
-        if ($filtroAusencias === 'con_ausencias') {
-            $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
-                return $alumno->total_ausencias > 0;
-            }));
-        } elseif ($filtroAusencias === 'sin_ausencias') {
-            $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
-                return $alumno->total_ausencias === 0;
-            }));
-        }
-
-        if ($filtroRiesgo === 'en_riesgo') {
-            $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
-                return $alumno->en_riesgo === true;
-            }));
-        } elseif ($filtroRiesgo === 'sin_riesgo') {
-            $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
-                return $alumno->en_riesgo === false;
-            }));
-        }
-
-        // Obtener comisiones para el filtro
-        $comisionesQuery = Comision::activas();
-        
-        // Si es docente, solo sus comisiones
-        if ($esDocente) {
-            $comisionesQuery->where('docente_id', $user->id);
-        }
-        
-        $comisiones = $comisionesQuery->orderBy('codigo')->get();
-
-        return view('asistencias.buscar-alumno', compact(
-            'alumnos',
-            'search',
-            'comisiones',
-            'comisionId',
-            'filtroAusencias',
-            'filtroRiesgo',
-            'esDocente'
-        ));
     }
 
+    // FILTRO: Si es docente, solo alumnos de sus comisiones
+    if ($esDocente) {
+        // Obtener IDs de comisiones del docente
+        $comisionesDocenteIds = Comision::where('docente_id', $user->id)->pluck('id');
+        
+        // Obtener IDs de academico_datos que tienen inscripciones en esas comisiones
+        $academicoDatosIds = InscripcionComision::whereIn('comision_id', $comisionesDocenteIds)
+            ->pluck('academico_dato_id')
+            ->unique();
+        
+        // Filtrar usuarios por sus academico_datos
+        $query->whereExists(function ($subquery) use ($academicoDatosIds) {
+            $subquery->select(DB::raw(1))
+                ->from('academico_datos')
+                ->whereColumn('academico_datos.user_id', 'users.id')
+                ->whereIn('academico_datos.id', $academicoDatosIds);
+        });
+    }
+
+    $alumnos = $query->orderBy('name')->paginate(20);
+
+    // Obtener inscripciones desde AcademicoDato
+    $alumnosIds = $alumnos->pluck('id');
+    
+    // Obtener academico_datos de estos usuarios
+    $academicoDatosQuery = AcademicoDato::whereIn('user_id', $alumnosIds)
+        ->with(['inscripcionesComisiones' => function ($q) use ($comisionId, $esDocente, $user) {
+            if ($comisionId) {
+                $q->where('comision_id', $comisionId);
+            }
+            
+            // Si es docente, filtrar solo sus comisiones
+            if ($esDocente) {
+                $comisionesDocenteIds = Comision::where('docente_id', $user->id)->pluck('id');
+                $q->whereIn('comision_id', $comisionesDocenteIds);
+            }
+            
+            $q->whereIn('estado', ['inscripto', 'confirmado'])
+                ->with(['comision', 'asistencias']);
+        }])
+        ->get();
+
+    // Agrupar por user_id
+    $academicoDatosPorUsuario = $academicoDatosQuery->groupBy('user_id');
+
+    // Calcular estadísticas para cada alumno
+    $alumnos->getCollection()->transform(function ($alumno) use ($academicoDatosPorUsuario) {
+        $inscripciones = collect();
+        
+        // Obtener inscripciones desde academicoDatos de este usuario
+        if (isset($academicoDatosPorUsuario[$alumno->id])) {
+            foreach ($academicoDatosPorUsuario[$alumno->id] as $academicoDato) {
+                $inscripciones = $inscripciones->merge($academicoDato->inscripcionesComisiones);
+            }
+        }
+
+        // Calcular estadísticas
+        $totalAusencias = 0;
+        $enRiesgo = false;
+        $minimoAsistencia = config('paicat.porcentaje_asistencia_minimo', 75);
+
+        foreach ($inscripciones as $inscripcion) {
+            // Contar ausencias sin justificar
+            $ausencias = $inscripcion->asistencias->where('estado', 'ausente')->count();
+            $totalAusencias += $ausencias;
+
+            // Verificar si está en riesgo
+            $porcentaje = $this->calcularPorcentajeAsistencia($inscripcion);
+            if ($porcentaje < $minimoAsistencia) {
+                $enRiesgo = true;
+            }
+        }
+
+        $alumno->inscripciones_comision = $inscripciones;
+        $alumno->total_ausencias = $totalAusencias;
+        $alumno->en_riesgo = $enRiesgo;
+
+        return $alumno;
+    });
+
+    // Aplicar filtros adicionales
+    if ($filtroAusencias === 'con_ausencias') {
+        $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
+            return $alumno->total_ausencias > 0;
+        }));
+    } elseif ($filtroAusencias === 'sin_ausencias') {
+        $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
+            return $alumno->total_ausencias === 0;
+        }));
+    }
+
+    if ($filtroRiesgo === 'en_riesgo') {
+        $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
+            return $alumno->en_riesgo === true;
+        }));
+    } elseif ($filtroRiesgo === 'sin_riesgo') {
+        $alumnos->setCollection($alumnos->getCollection()->filter(function ($alumno) {
+            return $alumno->en_riesgo === false;
+        }));
+    }
+
+    // Obtener comisiones para el filtro
+    $comisionesQuery = Comision::activas();
+    
+    // Si es docente, solo sus comisiones
+    if ($esDocente) {
+        $comisionesQuery->where('docente_id', $user->id);
+    }
+    
+    $comisiones = $comisionesQuery->orderBy('codigo')->get();
+
+    return view('asistencias.buscar-alumno', compact(
+        'alumnos',
+        'search',
+        'comisiones',
+        'comisionId',
+        'filtroAusencias',
+        'filtroRiesgo',
+        'esDocente'
+    ));
+}
     /**
      * Vista para seleccionar alumno a justificar inasistencias
      */

@@ -6,7 +6,9 @@ use App\Http\Requests\StoreInscripcionRequest;
 use App\Http\Requests\UpdateInscripcionRequest;
 use App\Http\Requests\ValidarDocumentacionRequest;
 use App\Models\AlumnosUtn\Person;
+use App\Models\Cursada;
 use App\Models\Inscripcion;
+use App\Services\DataNormalizationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -73,17 +75,17 @@ class InscripcionController extends Controller
             $query->where('turno_ingreso', $request->input('turno_ingreso'));
         }
 
-        // Filtro: solo alumnos SIN comisión asignada
+        // Filtro: solo alumnos SIN comisión asignada (ignora comisiones canceladas/trasladadas)
         if ($request->filled('sin_comision') && $request->input('sin_comision') === '1') {
             $query->whereDoesntHave('inscripcionesComision', function ($q) {
-                $q->whereIn('estado', ['inscripto', 'confirmado']);
+                $q->whereIn('estado', ['inscripto', 'confirmado', 'aprobado']);
             });
         }
 
-        // Filtro: solo alumnos CON comisión asignada
+        // Filtro: solo alumnos CON comisión asignada (ignora comisiones canceladas/trasladadas)
         if ($request->filled('con_comision') && $request->input('con_comision') === '1') {
             $query->whereHas('inscripcionesComision', function ($q) {
-                $q->whereIn('estado', ['inscripto', 'confirmado']);
+                $q->whereIn('estado', ['inscripto', 'confirmado', 'aprobado']);
             });
         }
 
@@ -197,6 +199,13 @@ class InscripcionController extends Controller
                 ->with('error', 'El alumno seleccionado no existe en el sistema.');
         }
 
+        // Normalizar datos antes de guardar
+        $normalizador = new DataNormalizationService();
+        $data['modalidad'] = $normalizador->normalizarModalidad($data['modalidad'] ?? null);
+        $data['turno_ingreso'] = $normalizador->normalizarTurno($data['turno_ingreso'] ?? null);
+        $data['turno_carrera'] = $normalizador->normalizarTurno($data['turno_carrera'] ?? null);
+        $data['tipo_ingreso'] = $normalizador->normalizarTipoIngreso($data['tipo_ingreso'] ?? null);
+
         // Crear inscripción
         $inscripcion = Inscripcion::create([
             ...$data,
@@ -204,9 +213,17 @@ class InscripcionController extends Controller
             'usuario_registro_id' => auth()->id(),
         ]);
 
+        $mensaje = 'Inscripción registrada exitosamente.';
+
+        // Agregar mensaje de correcciones si hay
+        $mensajeCorrecciones = $normalizador->getMensajeCorrecciones();
+        if ($mensajeCorrecciones) {
+            $mensaje .= ' ' . str_replace("\n", ' ', $mensajeCorrecciones);
+        }
+
         return redirect()
             ->route('inscripciones.show', $inscripcion)
-            ->with('success', 'Inscripción registrada exitosamente.');
+            ->with('success', $mensaje);
     }
 
     /**
@@ -219,7 +236,7 @@ class InscripcionController extends Controller
             'usuarioValidacion',
             'condicionesParticulares',
             'solicitudesCambio',
-            'trayectorias' => fn($q) => $q->orderBy('fecha_inicio', 'desc'),
+            'trayectorias' => fn($q) => $q->with('registradoPor')->orderBy('fecha_inicio', 'desc'),
         ]);
 
         // Cargar datos del alumno
@@ -429,11 +446,36 @@ class InscripcionController extends Controller
                 ->with('error', 'Esta inscripción no puede ser modificada en su estado actual.');
         }
 
-        $inscripcion->update($request->validated());
+        $data = $request->validated();
+
+        // Normalizar datos antes de actualizar
+        $normalizador = new DataNormalizationService();
+        if (isset($data['modalidad'])) {
+            $data['modalidad'] = $normalizador->normalizarModalidad($data['modalidad']);
+        }
+        if (isset($data['turno_ingreso'])) {
+            $data['turno_ingreso'] = $normalizador->normalizarTurno($data['turno_ingreso']);
+        }
+        if (isset($data['turno_carrera'])) {
+            $data['turno_carrera'] = $normalizador->normalizarTurno($data['turno_carrera']);
+        }
+        if (isset($data['tipo_ingreso'])) {
+            $data['tipo_ingreso'] = $normalizador->normalizarTipoIngreso($data['tipo_ingreso']);
+        }
+
+        $inscripcion->update($data);
+
+        $mensaje = 'Inscripción actualizada exitosamente.';
+
+        // Agregar mensaje de correcciones si hay
+        $mensajeCorrecciones = $normalizador->getMensajeCorrecciones();
+        if ($mensajeCorrecciones) {
+            $mensaje .= ' ' . str_replace("\n", ' ', $mensajeCorrecciones);
+        }
 
         return redirect()
             ->route('inscripciones.show', $inscripcion)
-            ->with('success', 'Inscripción actualizada exitosamente.');
+            ->with('success', $mensaje);
     }
 
     /**
@@ -452,22 +494,51 @@ class InscripcionController extends Controller
         // Refrescar el modelo para obtener los valores actualizados
         $inscripcion->refresh();
 
+        // Armar detalle de documentos validados
+        $documentos = [];
+        if ($inscripcion->doc_dni_validado) $documentos[] = 'DNI';
+        if ($inscripcion->doc_titulo_validado) $documentos[] = 'Título';
+        if ($inscripcion->doc_analitico_validado) $documentos[] = 'Analítico';
+
         // Actualizar estado según documentación
         if ($inscripcion->documentacionCompleta()) {
-            // Si toda la documentación está validada, cambiar ambos estados
             $inscripcion->update([
                 'estado' => Inscripcion::ESTADO_DOCUMENTACION_OK,
                 'estado_documentacion' => Inscripcion::DOC_VALIDADA,
             ]);
             $mensaje = 'Documentación validada completamente. La inscripción está lista para confirmar.';
+
+            $motivo = 'Documentación validada completamente (' . implode(', ', $documentos) . ')';
+            if (!empty($data['observaciones_documentacion'])) {
+                $motivo .= '. Obs: ' . $data['observaciones_documentacion'];
+            }
+            \App\Models\Trayectoria::registrarEvento(
+                $inscripcion->id,
+                \App\Models\Trayectoria::ESTADO_ACTIVO,
+                $motivo,
+                null,
+                auth()->id()
+            );
         } else {
-            // Si falta algún documento, volver a pendiente
             $updateData = ['estado_documentacion' => Inscripcion::DOC_PENDIENTE];
             if ($inscripcion->estado === Inscripcion::ESTADO_DOCUMENTACION_OK) {
                 $updateData['estado'] = Inscripcion::ESTADO_PENDIENTE;
             }
             $inscripcion->update($updateData);
             $mensaje = 'Documentación actualizada. Faltan documentos por validar.';
+
+            $validados = !empty($documentos) ? implode(', ', $documentos) : 'ninguno';
+            $motivo = "Documentación actualizada (validados: {$validados}). Faltan documentos.";
+            if (!empty($data['observaciones_documentacion'])) {
+                $motivo .= ' Obs: ' . $data['observaciones_documentacion'];
+            }
+            \App\Models\Trayectoria::registrarEvento(
+                $inscripcion->id,
+                \App\Models\Trayectoria::ESTADO_ACTIVO,
+                $motivo,
+                null,
+                auth()->id()
+            );
         }
 
         return redirect()
@@ -491,6 +562,14 @@ class InscripcionController extends Controller
             'estado_documentacion' => Inscripcion::DOC_CONFIRMADA,
         ]);
 
+        \App\Models\Trayectoria::registrarEvento(
+            $inscripcion->id,
+            \App\Models\Trayectoria::ESTADO_ACTIVO,
+            'Inscripción confirmada con documentación completa',
+            null,
+            auth()->id()
+        );
+
         return redirect()
             ->route('inscripciones.show', $inscripcion)
             ->with('success', 'Inscripción confirmada exitosamente.');
@@ -498,6 +577,9 @@ class InscripcionController extends Controller
 
     /**
      * Cancelar inscripción
+     * - Da de baja al alumno de las comisiones asignadas
+     * - Libera los cupos de las comisiones
+     * - Registra el evento en la trayectoria
      */
     public function cancelar(Request $request, Inscripcion $inscripcion): RedirectResponse
     {
@@ -507,14 +589,111 @@ class InscripcionController extends Controller
                 ->with('error', 'Esta inscripción no puede ser cancelada en su estado actual.');
         }
 
-        $inscripcion->update([
-            'estado' => Inscripcion::ESTADO_CANCELADO,
-            'observaciones' => $request->input('motivo_cancelacion', $inscripcion->observaciones),
-        ]);
+        $motivoCancelacion = $request->input('motivo_cancelacion', 'Cancelación de inscripción');
+
+        DB::transaction(function () use ($inscripcion, $motivoCancelacion) {
+            // 1. Dar de baja de las comisiones activas y liberar cupos
+            $inscripcionesComision = $inscripcion->inscripcionesComision()
+                ->whereIn('estado', ['inscripto', 'confirmado'])
+                ->with('comision')
+                ->get();
+
+            foreach ($inscripcionesComision as $inscripcionComision) {
+                // Cambiar estado de la inscripción a comisión
+                $inscripcionComision->update([
+                    'estado' => 'cancelado',
+                    'observaciones' => $motivoCancelacion . ' - Fecha: ' . now()->format('d/m/Y H:i'),
+                ]);
+
+                // Dar de baja la cursada asociada (si existe y está activa)
+                $cursadaActiva = Cursada::where('inscripcion_id', $inscripcion->id)
+                    ->where('comision_id', $inscripcionComision->comision_id)
+                    ->whereIn('estado', [Cursada::ESTADO_CURSANDO])
+                    ->first();
+
+                if ($cursadaActiva) {
+                    $cursadaActiva->update([
+                        'estado' => Cursada::ESTADO_BAJA,
+                        'fecha_fin' => now(),
+                        'usuario_cambio_estado_id' => auth()->id(),
+                        'fecha_cambio_estado' => now(),
+                        'observaciones' => $motivoCancelacion,
+                    ]);
+                }
+
+                // Decrementar cupo de la comisión
+                if ($inscripcionComision->comision) {
+                    $inscripcionComision->comision->decrementarCupo();
+                }
+            }
+
+            // 2. Actualizar estados de la inscripción
+            $inscripcion->update([
+                'estado' => Inscripcion::ESTADO_CANCELADO,
+                'estado_ingreso' => Inscripcion::INGRESO_CANCELADO,
+                'observaciones' => $motivoCancelacion,
+            ]);
+
+            // 3. Registrar en trayectoria
+            \App\Models\Trayectoria::registrarEvento(
+                $inscripcion->id,
+                \App\Models\Trayectoria::ESTADO_CANCELADO,
+                $motivoCancelacion,
+                true, // Es voluntaria
+                auth()->id()
+            );
+        });
 
         return redirect()
             ->route('inscripciones.index')
-            ->with('success', 'Inscripción cancelada exitosamente.');
+            ->with('success', 'Inscripción cancelada exitosamente. El alumno fue dado de baja de las comisiones asignadas.');
+    }
+
+    /**
+     * Reactivar una inscripción cancelada
+     * - Cambia el estado a 'confirmado' o 'documentacion_ok' según documentación
+     * - Registra el evento de reincorporación en la trayectoria
+     * - El alumno deberá ser asignado a una comisión manualmente
+     */
+    public function reactivar(Request $request, Inscripcion $inscripcion): RedirectResponse
+    {
+        // Solo se pueden reactivar inscripciones canceladas
+        if ($inscripcion->estado !== Inscripcion::ESTADO_CANCELADO) {
+            return redirect()
+                ->route('inscripciones.show', $inscripcion)
+                ->with('error', 'Solo se pueden reactivar inscripciones que estén canceladas.');
+        }
+
+        $motivoReactivacion = $request->input('motivo_reactivacion', 'Reactivación de inscripción');
+
+        DB::transaction(function () use ($inscripcion, $motivoReactivacion) {
+            // Determinar el nuevo estado según la documentación
+            $nuevoEstado = $inscripcion->documentacionCompleta() 
+                ? Inscripcion::ESTADO_DOCUMENTACION_OK 
+                : Inscripcion::ESTADO_PENDIENTE;
+            
+            $nuevoEstadoIngreso = Inscripcion::INGRESO_INSCRIPTO;
+
+            // Actualizar estados de la inscripción
+            $inscripcion->update([
+                'estado' => $nuevoEstado,
+                'estado_ingreso' => $nuevoEstadoIngreso,
+                'observaciones' => $motivoReactivacion . ' - Reactivada el ' . now()->format('d/m/Y H:i'),
+            ]);
+
+            // Registrar en trayectoria como reincorporación
+            \App\Models\Trayectoria::registrarEvento(
+                $inscripcion->id,
+                \App\Models\Trayectoria::ESTADO_REINCORPORADO,
+                $motivoReactivacion,
+                null, // No aplica es_voluntaria para reincorporación
+                auth()->id()
+            );
+        });
+
+        return redirect()
+            ->route('inscripciones.show', $inscripcion)
+            ->with('success', 'Inscripción reactivada exitosamente. Ahora puede asignar una comisión al alumno.');
     }
 
     /**
@@ -680,6 +859,9 @@ class InscripcionController extends Controller
         $duplicados = 0;
         $sinDatosAcademicos = 0;
 
+        // Inicializar servicio de normalización
+        $normalizador = new DataNormalizationService();
+
         DB::beginTransaction();
 
         try {
@@ -710,16 +892,22 @@ class InscripcionController extends Controller
                     continue;
                 }
 
-                // Crear inscripción con TODOS los datos del alumno desde alumnos_utn
+                // Normalizar datos antes de crear la inscripción
+                $modalidadNormalizada = $normalizador->normalizarModalidad($datosAcademicos->modalidad);
+                $turnoIngresoNormalizado = $normalizador->normalizarTurno($datosAcademicos->turno_ingreso);
+                $turnoCarreraNormalizado = $normalizador->normalizarTurno($datosAcademicos->turno_carrera);
+                $tipoIngresoNormalizado = $normalizador->normalizarTipoIngreso($datosAcademicos->tipo_ingreso);
+
+                // Crear inscripción con datos normalizados
                 Inscripcion::create([
                     'person_id' => $personId,
                     'anio_ingreso' => $anioIngreso,
                     'especialidad_id_sysacad' => $datosAcademicos->especialidad_id,
                     'especialidad_alternativa_id_sysacad' => $datosAcademicos->especialidad_alternativa_id,
-                    'modalidad' => $datosAcademicos->modalidad ?? 'Presencial',
-                    'turno_ingreso' => $datosAcademicos->turno_ingreso,
-                    'turno_carrera' => $datosAcademicos->turno_carrera,
-                    'tipo_ingreso' => $datosAcademicos->tipo_ingreso ?? 'Extensivo',
+                    'modalidad' => $modalidadNormalizada,
+                    'turno_ingreso' => $turnoIngresoNormalizado,
+                    'turno_carrera' => $turnoCarreraNormalizado,
+                    'tipo_ingreso' => $tipoIngresoNormalizado,
                     'estado' => Inscripcion::ESTADO_PENDIENTE,
                     'estado_documentacion' => Inscripcion::DOC_PENDIENTE,
                     'estado_ingreso' => Inscripcion::INGRESO_INSCRIPTO,
@@ -740,6 +928,12 @@ class InscripcionController extends Controller
             }
             if ($errores > 0) {
                 $mensaje .= " {$errores} errores.";
+            }
+
+            // Agregar mensaje de correcciones si hay
+            $mensajeCorrecciones = $normalizador->getMensajeCorrecciones();
+            if ($mensajeCorrecciones) {
+                $mensaje .= "\n\n" . $mensajeCorrecciones;
             }
 
             return redirect()
@@ -1034,95 +1228,250 @@ class InscripcionController extends Controller
     public function crearSolicitud(Request $request, Inscripcion $inscripcion): RedirectResponse
     {
         $request->validate([
-            'tipo' => 'required|in:comision,modalidad,turno',
+            'tipo' => 'required|in:comision',
             'motivo' => 'required|string|min:10',
-            'comision_destino_id' => 'nullable|exists:comisiones,id',
-            'modalidad_destino' => 'nullable|string',
-            'turno_destino' => 'nullable|string',
+            'comision_destino_id' => 'required|exists:comisiones,id',
         ]);
 
-        // Obtener comisión actual del alumno (a través de inscripcionesComision)
+        // Verificar límite configurable de solicitudes por año
+        $maxSolicitudes = config('paicat.max_solicitudes_cambio', 3);
+        if ($maxSolicitudes > 0) {
+            $solicitudesAnio = $inscripcion->solicitudesCambio()
+                ->whereYear('created_at', now()->year)
+                ->whereNotIn('estado', [\App\Models\SolicitudCambio::ESTADO_CANCELADA])
+                ->count();
+
+            if ($solicitudesAnio >= $maxSolicitudes) {
+                return back()
+                    ->withInput()
+                    ->with('error', "Se alcanzó el límite de {$maxSolicitudes} solicitudes de cambio por año para este alumno (ya tiene {$solicitudesAnio}).");
+            }
+        }
+
+        // Obtener comisión actual del alumno
         $inscripcionComisionActual = $inscripcion->inscripcionesComision()
             ->whereIn('estado', ['inscripto', 'confirmado'])
             ->with('comision')
             ->first();
 
         $comisionActual = $inscripcionComisionActual?->comision;
-        $comisionOrigenId = $comisionActual?->id;
 
-        // Validaciones específicas para cambio de comisión
-        if ($request->tipo === 'comision') {
-            // Debe estar en una comisión para solicitar cambio
-            if (!$comisionActual) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'El alumno debe estar asignado a una comisión para solicitar un cambio.');
-            }
-
-            // La comisión destino es requerida
-            if (!$request->comision_destino_id) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'Debe seleccionar una comisión destino.');
-            }
-
-            // No puede solicitar cambio a la misma comisión
-            if ($comisionActual->id == $request->comision_destino_id) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'No puede solicitar cambio a la misma comisión en la que ya está inscripto.');
-            }
-
-            // Verificar si ya tiene una solicitud pendiente del mismo tipo
-            $solicitudPendiente = $inscripcion->solicitudesCambio()
-                ->where('tipo', 'comision')
-                ->whereIn('estado', [
-                    \App\Models\SolicitudCambio::ESTADO_PENDIENTE,
-                    \App\Models\SolicitudCambio::ESTADO_EN_REVISION,
-                    \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
-                ])
-                ->exists();
-
-            if ($solicitudPendiente) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'Ya existe una solicitud de cambio de comisión pendiente para este alumno.');
-            }
+        if (!$comisionActual) {
+            return back()
+                ->withInput()
+                ->with('error', 'El alumno debe estar asignado a una comisión para solicitar un cambio.');
         }
+
+        if ($comisionActual->id == $request->comision_destino_id) {
+            return back()
+                ->withInput()
+                ->with('error', 'No puede solicitar cambio a la misma comisión en la que ya está inscripto.');
+        }
+
+        // Verificar si ya tiene una solicitud pendiente
+        $solicitudPendiente = $inscripcion->solicitudesCambio()
+            ->where('tipo', 'comision')
+            ->whereIn('estado', [
+                \App\Models\SolicitudCambio::ESTADO_PENDIENTE,
+                \App\Models\SolicitudCambio::ESTADO_EN_REVISION,
+                \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+            ])
+            ->exists();
+
+        if ($solicitudPendiente) {
+            return back()
+                ->withInput()
+                ->with('error', 'Ya existe una solicitud de cambio pendiente para este alumno.');
+        }
+
+        // Obtener comisión destino para guardar datos de referencia
+        $comisionDestino = \App\Models\Comision::find($request->comision_destino_id);
 
         // Crear la solicitud
         $solicitud = $inscripcion->solicitudesCambio()->create([
-            'tipo' => $request->tipo,
+            'tipo' => 'comision',
             'motivo' => $request->motivo,
-            'comision_origen_id' => $comisionOrigenId,
+            'comision_origen_id' => $comisionActual->id,
             'comision_destino_id' => $request->comision_destino_id,
-            'modalidad_origen' => $comisionActual?->modalidad ?? $inscripcion->modalidad,
-            'modalidad_destino' => $request->modalidad_destino,
-            'turno_origen' => $comisionActual?->turno ?? $inscripcion->turno_carrera,
-            'turno_destino' => $request->turno_destino,
+            'modalidad_origen' => $comisionActual->modalidad,
+            'modalidad_destino' => $comisionDestino?->modalidad,
+            'turno_origen' => $comisionActual->turno,
+            'turno_destino' => $comisionDestino?->turno,
             'estado' => \App\Models\SolicitudCambio::ESTADO_PENDIENTE,
         ]);
 
         // Detectar posible trueque automáticamente
-        $mensaje = 'Solicitud de cambio creada correctamente.';
-        if ($request->tipo === 'comision' && $request->comision_destino_id) {
-            $trueque = \App\Models\SolicitudCambio::detectarTrueque($solicitud);
-            if ($trueque) {
-                // Vincular ambas solicitudes y marcar como trueque detectado
-                $solicitud->update([
-                    'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
-                    'solicitud_trueque_id' => $trueque->id,
-                ]);
-                $trueque->update([
-                    'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
-                    'solicitud_trueque_id' => $solicitud->id,
-                ]);
-                $mensaje = '¡Trueque detectado! Se encontró una solicitud inversa compatible. Ambas solicitudes requieren aprobación.';
-            }
+        $mensaje = 'Solicitud de cambio de comisión creada correctamente.';
+        $trueque = \App\Models\SolicitudCambio::detectarTrueque($solicitud);
+        if ($trueque) {
+            $solicitud->update([
+                'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+                'solicitud_trueque_id' => $trueque->id,
+            ]);
+            $trueque->update([
+                'estado' => \App\Models\SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+                'solicitud_trueque_id' => $solicitud->id,
+            ]);
+            $mensaje = '¡Trueque detectado! Se encontró una solicitud inversa compatible. Ambas solicitudes requieren aprobación.';
         }
 
         return redirect()
             ->route('inscripciones.show', $inscripcion)
             ->with('success', $mensaje);
+    }
+
+    /**
+     * Mostrar listado de estudiantes inactivos
+     */
+    public function inactivos(Request $request): View
+    {
+        $diasLimite = $request->input('dias', config('paicat.dias_inactividad', 30));
+        $fechaLimite = now()->subDays($diasLimite);
+
+        // Obtener inscripciones cursando con comisión activa
+        $inscripcionesCursando = Inscripcion::where('estado_ingreso', Inscripcion::INGRESO_CURSANDO)
+            ->whereHas('inscripcionesComision', function ($q) {
+                $q->whereIn('estado', ['inscripto', 'confirmado']);
+            })
+            ->with(['inscripcionesComision' => function ($q) {
+                $q->whereIn('estado', ['inscripto', 'confirmado'])->with('comision');
+            }])
+            ->get();
+
+        $inactivos = collect();
+
+        foreach ($inscripcionesCursando as $inscripcion) {
+            $inscripcionComision = $inscripcion->inscripcionesComision->first();
+            if (!$inscripcionComision) {
+                continue;
+            }
+
+            // Buscar última actividad: asistencia o nota
+            $ultimaAsistencia = DB::table('asistencias')
+                ->where('inscripcion_id', $inscripcion->id)
+                ->max('fecha');
+
+            $ultimaNota = DB::table('notas')
+                ->where('inscripcion_id', $inscripcion->id)
+                ->max('updated_at');
+
+            $ultimaActividad = collect([$ultimaAsistencia, $ultimaNota])
+                ->filter()
+                ->max();
+
+            // Si no tiene ninguna actividad, usar la fecha de inscripción a comisión
+            if (!$ultimaActividad) {
+                $ultimaActividad = $inscripcionComision->fecha_inscripcion
+                    ?? $inscripcionComision->created_at;
+            }
+
+            if ($ultimaActividad && $ultimaActividad < $fechaLimite) {
+                $person = $inscripcion->getPerson();
+                $inactivos->push([
+                    'inscripcion' => $inscripcion,
+                    'persona' => $person,
+                    'comision' => $inscripcionComision->comision,
+                    'ultima_actividad' => \Carbon\Carbon::parse($ultimaActividad),
+                    'dias_sin_actividad' => now()->diffInDays($ultimaActividad),
+                ]);
+            }
+        }
+
+        // Ordenar por más días inactivos primero
+        $inactivos = $inactivos->sortByDesc('dias_sin_actividad')->values();
+
+        return view('inscripciones.inactivos', compact('inactivos', 'diasLimite'));
+    }
+
+    /**
+     * Dar de baja estudiantes inactivos seleccionados
+     */
+    public function bajaInactivos(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'inscripcion_ids' => 'required|array|min:1',
+            'inscripcion_ids.*' => 'integer|exists:inscripciones,id',
+            'motivo' => 'required|string|min:5',
+        ]);
+
+        $count = 0;
+        foreach ($request->inscripcion_ids as $id) {
+            $inscripcion = Inscripcion::find($id);
+            if ($inscripcion && $inscripcion->estado_ingreso === Inscripcion::INGRESO_CURSANDO) {
+                $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_LIBRE]);
+
+                \App\Models\Trayectoria::registrarEvento(
+                    $inscripcion->id,
+                    \App\Models\Trayectoria::ESTADO_LIBRE,
+                    $request->motivo,
+                    false,
+                    auth()->id()
+                );
+                $count++;
+            }
+        }
+
+        return redirect()
+            ->route('inscripciones.inactivos')
+            ->with('success', "Se marcaron {$count} estudiantes como 'libre' por inactividad.");
+    }
+
+    /**
+     * RF15: Aprobar trayectoria de forma excepcional (sin completar todos los espacios)
+     */
+    public function aprobarExcepcional(Request $request, Inscripcion $inscripcion): RedirectResponse
+    {
+        $request->validate([
+            'motivo' => 'required|string|min:10',
+        ]);
+
+        // No se puede aprobar si ya está aprobado
+        if ($inscripcion->estado_ingreso === Inscripcion::INGRESO_APROBADO) {
+            return redirect()
+                ->route('inscripciones.show', $inscripcion)
+                ->with('info', 'La cursada ya fue aprobada anteriormente.');
+        }
+
+        // Obtener inscripción a comisión activa
+        $inscripcionComision = $inscripcion->inscripcionesComision()
+            ->whereIn('estado', ['inscripto', 'confirmado'])
+            ->first();
+
+        // Actualizar estado de la inscripción
+        $inscripcion->update([
+            'estado_ingreso' => Inscripcion::INGRESO_APROBADO,
+            'estado' => Inscripcion::ESTADO_CONFIRMADO,
+        ]);
+
+        // Actualizar inscripción a comisión
+        if ($inscripcionComision) {
+            $inscripcionComision->update(['estado' => 'aprobado']);
+        }
+
+        // Actualizar cursada si existe
+        $cursada = \App\Models\Cursada::where('inscripcion_id', $inscripcion->id)
+            ->whereIn('estado', [\App\Models\Cursada::ESTADO_CURSANDO])
+            ->first();
+
+        if ($cursada) {
+            $cursada->cambiarEstado(
+                \App\Models\Cursada::ESTADO_APROBADO,
+                auth()->id(),
+                'Aprobación excepcional: ' . $request->motivo
+            );
+        }
+
+        // Registrar en trayectoria
+        \App\Models\Trayectoria::registrarEvento(
+            $inscripcion->id,
+            \App\Models\Trayectoria::ESTADO_APROBADO,
+            'Aprobación excepcional: ' . $request->motivo,
+            null,
+            auth()->id()
+        );
+
+        return redirect()
+            ->route('inscripciones.show', $inscripcion)
+            ->with('success', 'Trayectoria aprobada de forma excepcional. Motivo registrado en el historial.');
     }
 }

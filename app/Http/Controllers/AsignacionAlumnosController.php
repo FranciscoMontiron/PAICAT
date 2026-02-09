@@ -126,12 +126,9 @@ class AsignacionAlumnosController extends Controller
         }
 
         try {
-            // Usar la conexión específica de paicat para la transacción
-            DB::connection('paicat')->beginTransaction();
-
-            $resultado = $this->ejecutarAsignacionEquitativa($comisiones, $excluirIds, $distribuirPorCarrera, $filtrarEspecialidad);
-
-            DB::connection('paicat')->commit();
+            $resultado = DB::transaction(function () use ($comisiones, $excluirIds, $distribuirPorCarrera, $filtrarEspecialidad) {
+                return $this->ejecutarAsignacionEquitativa($comisiones, $excluirIds, $distribuirPorCarrera, $filtrarEspecialidad);
+            });
 
             $mensaje = "Se asignaron {$resultado['total']} alumnos a {$resultado['comisiones']} comisiones.";
             if ($distribuirPorCarrera) {
@@ -141,42 +138,54 @@ class AsignacionAlumnosController extends Controller
             return redirect()->route('asignacion-alumnos.index')
                 ->with('success', $mensaje);
         } catch (\Exception $e) {
-            DB::connection('paicat')->rollBack();
             return redirect()->route('asignacion-alumnos.index')
                 ->with('error', 'Error al ejecutar la asignación: ' . $e->getMessage());
         }
     }
 
     /**
-     * Obtener inscripciones sin asignar a ninguna comisión
+     * Obtener inscripciones sin asignar a NINGUNA comisión activa
+     * Solo considera inscripciones_comision activas (no canceladas ni trasladadas)
+     * Un alumno ya asignado a cualquier comisión NO aparece como disponible
      */
     private function obtenerAlumnosSinAsignar(?array $comisionesIds = null, ?int $filtrarEspecialidad = null)
     {
         return Inscripcion::activas()
-            ->whereDoesntHave('inscripcionesComision', function ($q) use ($comisionesIds) {
-                if ($comisionesIds) {
-                    $q->whereIn('comision_id', $comisionesIds);
-                }
+            ->whereDoesntHave('inscripcionesComision', function ($q) {
+                // Solo considerar inscripciones_comision activas en CUALQUIER comisión
+                $q->whereIn('estado', ['inscripto', 'confirmado', 'aprobado']);
             })
             ->when($filtrarEspecialidad, fn($q) => $q->where('especialidad_id_sysacad', $filtrarEspecialidad))
             ->get();
     }
 
     /**
-     * Filtrar alumnos elegibles por requisitos (Modalidad)
+     * Filtrar alumnos elegibles por requisitos (Turno, Modalidad, Tipo Ingreso)
      * Ignora especialidad según reglas de ingreso.
      */
     private function filtrarPorRequisitos($inscripciones, Comision $comision)
     {
         return $inscripciones->filter(function ($inscripcion) use ($comision) {
-            // Regla 1: La modalidad debe coincidir (Presencial/Virtual)
-            if ($inscripcion->modalidad !== $comision->modalidad) {
-                return false;
+            // Regla 1: La modalidad debe coincidir (Presencial/Virtual/Semipresencial)
+            if ($inscripcion->modalidad && $comision->modalidad) {
+                if (strtolower($inscripcion->modalidad) !== strtolower($comision->modalidad)) {
+                    return false;
+                }
             }
 
-            // Regla 2: Ignorar especialidad (cualquiera puede ir a cualquier comisión de su modalidad)
+            // Regla 2: El tipo de ingreso debe coincidir (Intensivo/Extensivo)
+            if ($inscripcion->tipo_ingreso && $comision->periodo) {
+                if (strtolower($inscripcion->tipo_ingreso) !== strtolower($comision->periodo)) {
+                    return false;
+                }
+            }
 
-            // Regla 3: Turno (Opcional, por ahora ignorado hasta confirmar formato)
+            // Regla 3: El turno debe coincidir (Mañana/TardeNoche)
+            if ($inscripcion->turno_ingreso && $comision->turno) {
+                if (strtolower($inscripcion->turno_ingreso) !== strtolower($comision->turno)) {
+                    return false;
+                }
+            }
 
             return true;
         });
@@ -398,38 +407,86 @@ class AsignacionAlumnosController extends Controller
                     ? 'Asignación aleatoria automática (distribución por carrera)'
                     : 'Asignación aleatoria automática';
 
-                InscripcionComision::create([
-                    'inscripcion_id' => $inscripcion->id,
-                    'academico_dato_id' => $academicoDato?->id,
-                    'comision_id' => $data['comision']->id,
-                    'fecha_inscripcion' => now(),
-                    'estado' => 'inscripto',
-                    'observaciones' => $observacion,
-                ]);
+                // Buscar si existe una inscripción_comision cancelada para reactivarla
+                $inscripcionComisionExistente = InscripcionComision::where('inscripcion_id', $inscripcion->id)
+                    ->where('comision_id', $data['comision']->id)
+                    ->whereIn('estado', ['cancelado', 'trasladado'])
+                    ->first();
 
-                // Crear registro de cursada
+                if ($inscripcionComisionExistente) {
+                    // Reactivar la inscripción existente
+                    $inscripcionComisionExistente->update([
+                        'estado' => 'inscripto',
+                        'fecha_inscripcion' => now(),
+                        'observaciones' => $observacion . ' - Reactivada',
+                    ]);
+                } else {
+                    // Crear nueva inscripción a comisión
+                    InscripcionComision::create([
+                        'inscripcion_id' => $inscripcion->id,
+                        'academico_dato_id' => $academicoDato?->id,
+                        'comision_id' => $data['comision']->id,
+                        'fecha_inscripcion' => now(),
+                        'estado' => 'inscripto',
+                        'observaciones' => $observacion,
+                    ]);
+                }
+
+                // Crear o reactivar registro de cursada
                 $anioActual = date('Y');
                 $esRecursante = Cursada::where('inscripcion_id', $inscripcion->id)
                     ->where('anio', '<', $anioActual)
                     ->whereIn('estado', [Cursada::ESTADO_DESAPROBADO, Cursada::ESTADO_LIBRE])
                     ->exists();
 
-                Cursada::firstOrCreate(
-                    [
+                // Buscar cursada existente (puede estar dada de baja por cancelación previa)
+                $cursadaExistente = Cursada::where('inscripcion_id', $inscripcion->id)
+                    ->where('comision_id', $data['comision']->id)
+                    ->where('anio', $anioActual)
+                    ->first();
+
+                if ($cursadaExistente) {
+                    if ($cursadaExistente->estado === Cursada::ESTADO_BAJA) {
+                        $cursadaExistente->update([
+                            'estado' => Cursada::ESTADO_CURSANDO,
+                            'fecha_inicio' => now(),
+                            'fecha_fin' => null,
+                            'usuario_cambio_estado_id' => auth()->id(),
+                            'fecha_cambio_estado' => now(),
+                            'observaciones' => 'Reactivada por reasignación automática',
+                        ]);
+                    }
+                } else {
+                    Cursada::create([
                         'inscripcion_id' => $inscripcion->id,
                         'comision_id' => $data['comision']->id,
                         'anio' => $anioActual,
-                    ],
-                    [
                         'estado' => Cursada::ESTADO_CURSANDO,
                         'modalidad' => $data['comision']->modalidad,
                         'es_recursante' => $esRecursante,
                         'fecha_inicio' => now(),
-                    ]
-                );
+                    ]);
+                }
 
                 // Actualizar estado de la inscripción a 'cursando'
+                $estadoAnterior = $inscripcion->estado_ingreso;
                 $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_CURSANDO]);
+
+                // Registrar en trayectoria solo si cambió el estado
+                if ($estadoAnterior !== Inscripcion::INGRESO_CURSANDO) {
+                    try {
+                        \App\Models\Trayectoria::registrarEvento(
+                            $inscripcion->id,
+                            \App\Models\Trayectoria::ESTADO_ACTIVO,
+                            'Asignado a comisión ' . $data['comision']->nombre,
+                            null,
+                            auth()->id()
+                        );
+                    } catch (\Exception $e) {
+                        // Si falla por concurrencia, continuar sin detener todo el proceso
+                        \Log::warning("No se pudo crear trayectoria para inscripción {$inscripcion->id}: " . $e->getMessage());
+                    }
+                }
 
                 $data['comision']->incrementarCupo();
                 $totalAsignados++;

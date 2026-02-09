@@ -179,8 +179,31 @@ class Comision extends Model
     }
 
     /**
+     * Obtener el cupo actual REAL contando inscripciones activas
+     * No depende del campo cupo_actual (desnormalizado), lo calcula de verdad
+     */
+    public function getCupoRealAttribute(): int
+    {
+        return $this->inscripciones()
+            ->whereIn('estado', ['inscripto', 'confirmado', 'aprobado'])
+            ->count();
+    }
+
+    /**
+     * Sincronizar el campo cupo_actual con la cantidad real de inscripciones activas
+     */
+    public function sincronizarCupo(): void
+    {
+        $cupoReal = $this->cupo_real;
+        if ($this->cupo_actual !== $cupoReal) {
+            $this->update(['cupo_actual' => $cupoReal]);
+        }
+    }
+
+    /**
      * Verificar si la comisión tiene cupos disponibles
      * Las comisiones virtuales no tienen límite de cupo
+     * Usa el cupo real calculado desde inscripciones activas
      */
     public function tieneCuposDisponibles(): bool
     {
@@ -189,26 +212,26 @@ class Comision extends Model
             return true;
         }
 
-        // Si cupo_maximo es null o 0, es sin límite
-        if (!$this->cupo_maximo) {
+        // Si cupo_maximo es null, 0, o muy alto (9999 = sin límite), es sin límite
+        if (!$this->cupo_maximo || $this->cupo_maximo >= 9999) {
             return true;
         }
 
-        return $this->cupo_actual < $this->cupo_maximo;
+        return $this->cupo_real < $this->cupo_maximo;
     }
 
     /**
-     * Obtener cupos disponibles
+     * Obtener cupos disponibles (basado en cupo real)
      * Retorna null para comisiones sin límite
      */
     public function getCuposDisponiblesAttribute(): ?int
     {
-        // Virtual o sin límite definido
-        if ($this->esVirtual() || !$this->cupo_maximo) {
+        // Virtual o sin límite definido (9999 = sin límite)
+        if ($this->esVirtual() || !$this->cupo_maximo || $this->cupo_maximo >= 9999) {
             return null; // Sin límite
         }
 
-        return max(0, $this->cupo_maximo - $this->cupo_actual);
+        return max(0, $this->cupo_maximo - $this->cupo_real);
     }
 
     /**
@@ -244,34 +267,30 @@ class Comision extends Model
     }
 
     /**
-     * Incrementar cupo actual
+     * Incrementar cupo actual (sincroniza con la realidad)
      */
     public function incrementarCupo(): void
     {
-        if ($this->cupo_actual < $this->cupo_maximo) {
-            $this->increment('cupo_actual');
-        }
+        $this->sincronizarCupo();
     }
 
     /**
-     * Decrementar cupo actual
+     * Decrementar cupo actual (sincroniza con la realidad)
      */
     public function decrementarCupo(): void
     {
-        if ($this->cupo_actual > 0) {
-            $this->decrement('cupo_actual');
-        }
+        $this->sincronizarCupo();
     }
 
     /**
-     * Obtener porcentaje de ocupación
+     * Obtener porcentaje de ocupación (basado en cupo real)
      */
     public function getPorcentajeOcupacionAttribute(): float
     {
         if ($this->cupo_maximo == 0) {
             return 0;
         }
-        return round(($this->cupo_actual / $this->cupo_maximo) * 100, 2);
+        return round(($this->cupo_real / $this->cupo_maximo) * 100, 2);
     }
 
     /**
@@ -300,10 +319,13 @@ class Comision extends Model
 
     /**
      * Scope para comisiones con cupos disponibles
+     * Usa subquery para contar inscripciones activas reales
      */
     public function scopeConCuposDisponibles($query)
     {
-        return $query->whereRaw('cupo_actual < cupo_maximo');
+        return $query->where(function ($q) {
+            $q->whereRaw('cupo_maximo > (SELECT COUNT(*) FROM inscripcion_comisiones WHERE inscripcion_comisiones.comision_id = comisiones.id AND inscripcion_comisiones.estado IN (?, ?, ?) AND inscripcion_comisiones.deleted_at IS NULL)', ['inscripto', 'confirmado', 'aprobado']);
+        });
     }
 
     public function calcularPromedioAsistencia()

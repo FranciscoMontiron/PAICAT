@@ -53,16 +53,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/importar', [InscripcionController::class, 'showImportar'])->middleware('permission:inscripciones.crear')->name('importar.show');
         Route::post('/importar', [InscripcionController::class, 'importar'])->middleware('permission:inscripciones.crear')->name('importar');
         Route::get('/exportar', [InscripcionController::class, 'exportar'])->name('exportar');
+        Route::get('/inactivos', [InscripcionController::class, 'inactivos'])->middleware('permission:inscripciones.editar')->name('inactivos');
+        Route::post('/inactivos/baja', [InscripcionController::class, 'bajaInactivos'])->middleware('permission:inscripciones.editar')->name('baja-inactivos');
         Route::get('/{inscripcion}', [InscripcionController::class, 'show'])->name('show');
         Route::get('/{inscripcion}/edit', [InscripcionController::class, 'edit'])->middleware('permission:inscripciones.editar')->name('edit');
         Route::put('/{inscripcion}', [InscripcionController::class, 'update'])->middleware('permission:inscripciones.editar')->name('update');
         Route::post('/{inscripcion}/validar-documentacion', [InscripcionController::class, 'validarDocumentacion'])->middleware('permission:inscripciones.editar')->name('validar-documentacion');
         Route::post('/{inscripcion}/confirmar', [InscripcionController::class, 'confirmar'])->middleware('permission:inscripciones.editar')->name('confirmar');
         Route::post('/{inscripcion}/cancelar', [InscripcionController::class, 'cancelar'])->middleware('permission:inscripciones.editar')->name('cancelar');
+        Route::post('/{inscripcion}/reactivar', [InscripcionController::class, 'reactivar'])->middleware('permission:inscripciones.editar')->name('reactivar');
         Route::post('/{inscripcion}/aprobar-cursada', [InscripcionController::class, 'aprobarCursada'])->middleware('permission:inscripciones.editar')->name('aprobar-cursada');
+        Route::post('/{inscripcion}/aprobar-excepcional', [InscripcionController::class, 'aprobarExcepcional'])->middleware('permission:inscripciones.editar')->name('aprobar-excepcional');
         Route::post('/{inscripcion}/agregar-condicion', [InscripcionController::class, 'agregarCondicion'])->middleware('permission:inscripciones.editar')->name('agregar-condicion');
         Route::delete('/condicion/{condicion}', [InscripcionController::class, 'desactivarCondicion'])->middleware('permission:inscripciones.editar')->name('desactivar-condicion');
-        Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.editar')->name('crear-solicitud');
+        Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.ver')->name('crear-solicitud');
         Route::delete('/{inscripcion}', [InscripcionController::class, 'destroy'])->middleware('permission:inscripciones.eliminar')->name('destroy');
     });
 
