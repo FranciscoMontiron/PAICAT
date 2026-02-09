@@ -24,7 +24,7 @@ class AsistenciaController extends Controller
         $user = auth()->user();
         
         // Administrador tiene acceso total
-        if ($user->hasRole('Administrador')) {
+        if ($user->hasAnyRole(['Administrador', 'Admin', 'administrador', 'admin'])) {
             return true;
         }
         
@@ -44,8 +44,7 @@ class AsistenciaController extends Controller
         $user = auth()->user();
         
         // Si es docente (no admin), filtrar por sus comisiones
-        if ($user->hasRole('Docente') && !$user->hasRole('Administrador')) {
-            $query->where('docente_id', $user->id);
+        if (!$user->hasAnyRole(['Administrador', 'Admin', 'administrador', 'admin']) && ($user->hasRole('Docente') || $user->hasRole('docente'))) {            $query->where('docente_id', $user->id);
         }
         
         return $query;
@@ -58,8 +57,7 @@ class AsistenciaController extends Controller
     {
         $user = auth()->user();
         
-        if ($user->hasRole('Docente') && !$user->hasRole('Administrador')) {
-            return Comision::where('docente_id', $user->id)->pluck('id');
+            if (!$user->hasAnyRole(['Administrador', 'Admin', 'administrador', 'admin']) && ($user->hasRole('Docente') || $user->hasRole('docente'))) {            return Comision::where('docente_id', $user->id)->pluck('id');
         }
         
         return Comision::pluck('id');
@@ -72,8 +70,7 @@ class AsistenciaController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
-        
+        $esDocente = !$user->hasAnyRole(['Administrador', 'Admin', 'administrador', 'admin']) && ($user->hasRole('Docente') || $user->hasRole('docente'));        
         $query = Comision::with(['docente', 'inscripciones.asistencias', 'materias']);
 
         // FILTRO PRINCIPAL: Si es docente, solo mostrar sus comisiones
@@ -689,7 +686,7 @@ class AsistenciaController extends Controller
     public function alertas(Request $request)
     {
         $user = auth()->user();
-        $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
+        $esDocente = $user->hasRole('Docente') && !$user->hasAnyRole(['Administrador', 'Admin', 'administrador', 'admin']);
         
         $comisionId = $request->input('comision_id');
         
@@ -742,7 +739,7 @@ class AsistenciaController extends Controller
     public function porMateria(Request $request)
     {
         $user = auth()->user();
-        $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
+        $esDocente = $user->hasRole('Docente') && !$user->hasAnyRole(['Administrador', 'Admin', 'administrador', 'admin']);
 
         // Obtener materias disponibles
         $materiasQuery = Materia::with('comisiones')->where('activa', true);
@@ -1110,7 +1107,7 @@ class AsistenciaController extends Controller
     public function buscarAlumno(Request $request)
 {
     $user = auth()->user();
-    $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
+    $esDocente = $user->hasRole('Docente') && !$user->hasAnyRole(['Administrador', 'Admin', 'administrador', 'admin']);
     
     $search = $request->get('search', '');
     $comisionId = $request->get('comision_id');
