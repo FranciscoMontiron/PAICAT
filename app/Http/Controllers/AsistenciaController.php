@@ -15,20 +15,73 @@ use Carbon\Carbon;
 class AsistenciaController extends Controller
 {
     /**
+     * Método helper para verificar acceso a comisión
+     * Admin: siempre true
+     * Docente: solo si es el docente_id de la comisión
+     */
+    protected function verificarAccesoComision(Comision $comision): bool
+    {
+        $user = auth()->user();
+        
+        // Administrador tiene acceso total
+        if ($user->hasRole('Administrador')) {
+            return true;
+        }
+        
+        // Docente: verificar si es el docente asignado
+        if ($user->hasRole('Docente')) {
+            return $comision->docente_id === $user->id;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Método helper para aplicar filtro de comisiones según rol
+     */
+    protected function aplicarFiltroDocente($query)
+    {
+        $user = auth()->user();
+        
+        // Si es docente (no admin), filtrar por sus comisiones
+        if ($user->hasRole('Docente') && !$user->hasRole('Administrador')) {
+            $query->where('docente_id', $user->id);
+        }
+        
+        return $query;
+    }
+    
+    /**
+     * Método helper para obtener IDs de comisiones accesibles
+     */
+    protected function obtenerComisionesAccesibles()
+    {
+        $user = auth()->user();
+        
+        if ($user->hasRole('Docente') && !$user->hasRole('Administrador')) {
+            return Comision::where('docente_id', $user->id)->pluck('id');
+        }
+        
+        return Comision::pluck('id');
+    }
+
+    /**
      * Listado de comisiones para asistencias
      * Si es docente, solo ve sus comisiones asignadas
      */
     public function index(Request $request)
     {
         $user = auth()->user();
+        $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
+        
         $query = Comision::with(['docente', 'inscripciones.asistencias', 'materias']);
 
-        // Si es docente, solo mostrar sus comisiones
-        if ($user->hasRole('Docente')) {
+        // FILTRO PRINCIPAL: Si es docente, solo mostrar sus comisiones
+        if ($esDocente) {
             $query->where('docente_id', $user->id);
         }
 
-        // Filtros
+        // Filtros adicionales
         if ($request->filled('anio')) {
             $query->where('anio', $request->anio);
         }
@@ -80,14 +133,31 @@ class AsistenciaController extends Controller
         
         $promedioGeneral = $comisionesConAlumnos > 0 ? $sumaPromedios / $comisionesConAlumnos : 0;
 
-        // Estadísticas generales
-        $stats = [
-            'comisiones_total' => $todasComisiones->count(),
-            'comisiones_activas' => $todasComisiones->where('estado', 'activa')->count(),
-            'total_alumnos' => $totalAlumnos,
-            'promedio_asistencia' => round($promedioGeneral, 1),
-            'alumnos_en_riesgo' => $totalAlumnosEnRiesgo,
-        ];
+        // Estadísticas según el rol
+        if ($esDocente) {
+            $stats = [
+                'comisiones_total' => $todasComisiones->count(),
+                'comisiones_activas' => $todasComisiones->where('estado', 'activa')->count(),
+                'total_alumnos' => $totalAlumnos,
+                'promedio_asistencia' => round($promedioGeneral, 1),
+                'alumnos_en_riesgo' => $totalAlumnosEnRiesgo,
+                'tipo_usuario' => 'docente',
+                'info_adicional' => 'Viendo solo sus comisiones asignadas'
+            ];
+        } else {
+            // Administrador ve todo
+            $stats = [
+                'comisiones_total' => Comision::count(),
+                'comisiones_activas' => Comision::where('estado', 'activa')->count(),
+                'total_alumnos' => User::whereHas('roles', function ($q) {
+                    $q->where('nombre', 'Alumno');
+                })->count(),
+                'promedio_asistencia' => round($promedioGeneral, 1),
+                'alumnos_en_riesgo' => $totalAlumnosEnRiesgo,
+                'tipo_usuario' => 'administrador',
+                'info_adicional' => 'Viendo todas las comisiones del sistema'
+            ];
+        }
 
         // Paginar comisiones
         $comisiones = $query->orderBy('codigo')->paginate(12)->appends($request->all());
@@ -117,7 +187,7 @@ class AsistenciaController extends Controller
             $comision->alumnos_en_riesgo = $alumnosEnRiesgo;
         }
 
-        return view('asistencias.index', compact('comisiones', 'stats'));
+        return view('asistencias.index', compact('comisiones', 'stats', 'esDocente'));
     }
 
     /**
@@ -132,8 +202,9 @@ class AsistenciaController extends Controller
             abort(403);
         }
 
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403, 'No tienes permiso para ver esta comisión.');
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Cargar todas las relaciones necesarias (EAGER LOADING)
@@ -184,8 +255,9 @@ class AsistenciaController extends Controller
             abort(403);
         }
 
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403, 'No tienes permiso para ver esta comisión.');
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Obtener todas las fechas con asistencia registrada para esta materia
@@ -284,8 +356,9 @@ class AsistenciaController extends Controller
             abort(403, 'No tienes permiso para registrar asistencias');
         }
 
-        if (auth()->user()->hasRole('Docente') && $comision->docente_id !== auth()->id()) {
-            abort(403, 'No tienes permiso para esta comisión.');
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Obtener fecha (hoy por defecto, o la que venga por parámetro)
@@ -323,8 +396,9 @@ class AsistenciaController extends Controller
             abort(403, 'No tienes permiso para registrar asistencias');
         }
 
-        if (auth()->user()->hasRole('Docente') && $comision->docente_id !== auth()->id()) {
-            abort(403, 'No tienes permiso para esta comisión.');
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Validar datos
@@ -402,8 +476,9 @@ class AsistenciaController extends Controller
             abort(403, 'No tienes permiso para registrar asistencias.');
         }
 
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403, 'No tienes permiso para esta comisión.');
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Obtener la fecha (hoy por defecto o la enviada)
@@ -434,8 +509,9 @@ class AsistenciaController extends Controller
             abort(403, 'No tienes permiso para registrar asistencias.');
         }
 
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403, 'No tienes permiso para esta comisión.');
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         $validated = $request->validate([
@@ -486,6 +562,11 @@ class AsistenciaController extends Controller
             abort(403, 'No tienes permiso para editar asistencias.');
         }
 
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
+        }
+
         $fecha = $request->get('fecha', today()->format('Y-m-d'));
 
         // Obtener inscripciones con sus asistencias para esta fecha y materia
@@ -510,6 +591,11 @@ class AsistenciaController extends Controller
         // Verificar permisos
         if (!$user->hasPermission('asistencias.editar')) {
             abort(403, 'No tienes permiso para editar asistencias.');
+        }
+
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         $validated = $request->validate([
@@ -559,9 +645,9 @@ class AsistenciaController extends Controller
             abort(403);
         }
 
-        // Verificar que el docente solo pueda acceder a sus comisiones
-        if (auth()->user()->hasRole('Docente') && $comision->docente_id !== auth()->id()) {
-            abort(403, 'No tienes permiso para esta comisión.');
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Obtener inscripciones con ausencias sin justificar para esta materia
@@ -594,9 +680,21 @@ class AsistenciaController extends Controller
      */
     public function alertas(Request $request)
     {
+        $user = auth()->user();
+        $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
+        
         $comisionId = $request->input('comision_id');
+        
+        // Construir query base
         $query = InscripcionComision::with(['inscripcion', 'academicoDato', 'comision', 'asistencias'])
             ->whereIn('estado', ['inscripto', 'confirmado']);
+
+        // FILTRO: Si es docente, solo alumnos de sus comisiones
+        if ($esDocente) {
+            $query->whereHas('comision', function($q) use ($user) {
+                $q->where('docente_id', $user->id);
+            });
+        }
 
         if ($comisionId) {
             $query->where('comision_id', $comisionId);
@@ -618,9 +716,16 @@ class AsistenciaController extends Controller
             return $this->calcularPorcentajeAsistencia($inscripcion);
         });
 
-        $comisiones = Comision::where('estado', 'activa')->orderBy('codigo')->get();
+        // Obtener comisiones disponibles según rol
+        $comisionesQuery = Comision::where('estado', 'activa');
+        
+        if ($esDocente) {
+            $comisionesQuery->where('docente_id', $user->id);
+        }
+        
+        $comisiones = $comisionesQuery->orderBy('codigo')->get();
 
-        return view('asistencias.alertas', compact('alumnosEnRiesgo', 'comisiones', 'comisionId'));
+        return view('asistencias.alertas', compact('alumnosEnRiesgo', 'comisiones', 'comisionId', 'esDocente'));
     }
 
     /**
@@ -629,12 +734,13 @@ class AsistenciaController extends Controller
     public function porMateria(Request $request)
     {
         $user = auth()->user();
+        $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
 
         // Obtener materias disponibles
         $materiasQuery = Materia::with('comisiones')->where('activa', true);
 
         // Si es docente, solo mostrar materias de sus comisiones
-        if ($user->hasRole('Docente')) {
+        if ($esDocente) {
             $materiasQuery->whereHas('comisiones', function ($q) use ($user) {
                 $q->where('docente_id', $user->id);
             });
@@ -661,7 +767,7 @@ class AsistenciaController extends Controller
                 $comisionesQuery = $materiaSeleccionada->comisiones()
                     ->where('estado', 'activa');
 
-                if ($user->hasRole('Docente')) {
+                if ($esDocente) {
                     $comisionesQuery->where('docente_id', $user->id);
                 }
 
@@ -732,7 +838,8 @@ class AsistenciaController extends Controller
             'materiaId',
             'comisionId',
             'fechaDesde',
-            'fechaHasta'
+            'fechaHasta',
+            'esDocente'
         ));
     }
 
@@ -741,6 +848,11 @@ class AsistenciaController extends Controller
      */
     public function comision(Comision $comision)
     {
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
+        }
+        
         // Redirigir a la nueva vista de materias
         return redirect()->route('asistencias.comision.materias', $comision);
     }
@@ -750,6 +862,11 @@ class AsistenciaController extends Controller
      */
     public function historial(Comision $comision)
     {
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
+        }
+        
         // Redirigir a la vista de materias de la comisión
         return redirect()->route('asistencias.comision.materias', $comision);
     }
@@ -766,8 +883,9 @@ class AsistenciaController extends Controller
             abort(403);
         }
 
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403, 'No tienes permiso para pasar asistencia en esta comisión.');
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Obtener materia si viene por parámetro
@@ -819,8 +937,9 @@ class AsistenciaController extends Controller
             abort(403);
         }
 
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403);
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         $validated = $request->validate([
@@ -886,6 +1005,11 @@ class AsistenciaController extends Controller
             abort(403, 'No tienes permiso para editar asistencias.');
         }
 
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
+        }
+
         $inscripciones = $comision->inscripciones()
             ->with(['inscripcion', 'academicoDato', 'asistencias' => function ($query) use ($fecha) {
                 $query->where('fecha', $fecha);
@@ -906,6 +1030,11 @@ class AsistenciaController extends Controller
 
         if (!$user->hasPermission('asistencias.editar')) {
             abort(403, 'No tienes permiso para editar asistencias.');
+        }
+
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         $validated = $request->validate([
@@ -976,6 +1105,9 @@ class AsistenciaController extends Controller
      */
     public function buscarAlumno(Request $request)
     {
+        $user = auth()->user();
+        $esDocente = $user->hasRole('Docente') && !$user->hasRole('Administrador');
+        
         $search = $request->get('search', '');
         $comisionId = $request->get('comision_id');
         $filtroAusencias = $request->get('filtro_ausencias'); // 'con_ausencias', 'sin_ausencias'
@@ -996,18 +1128,35 @@ class AsistenciaController extends Controller
             });
         }
 
+        // FILTRO: Si es docente, solo alumnos de sus comisiones
+        if ($esDocente) {
+            // Obtener IDs de comisiones del docente
+            $comisionesDocenteIds = Comision::where('docente_id', $user->id)->pluck('id');
+            
+            // Obtener usuarios que tienen inscripciones en esas comisiones
+            $query->whereHas('academicoDato.inscripcionesComisiones', function ($q) use ($comisionesDocenteIds) {
+                $q->whereIn('comision_id', $comisionesDocenteIds);
+            });
+        }
+
         $alumnos = $query->orderBy('name')->paginate(20);
 
         // Obtener inscripciones desde AcademicoDato
         $alumnosIds = $alumnos->pluck('id');
         
         // Obtener academico_datos de estos usuarios
-        // NOTA: La relación se llama 'inscripcionesComisiones' (plural) en el modelo
         $academicoDatosQuery = AcademicoDato::whereIn('user_id', $alumnosIds)
-            ->with(['inscripcionesComisiones' => function ($q) use ($comisionId) {
+            ->with(['inscripcionesComisiones' => function ($q) use ($comisionId, $esDocente, $user) {
                 if ($comisionId) {
                     $q->where('comision_id', $comisionId);
                 }
+                
+                // Si es docente, filtrar solo sus comisiones
+                if ($esDocente) {
+                    $comisionesDocenteIds = Comision::where('docente_id', $user->id)->pluck('id');
+                    $q->whereIn('comision_id', $comisionesDocenteIds);
+                }
+                
                 $q->whereIn('estado', ['inscripto', 'confirmado'])
                     ->with(['comision', 'asistencias']);
             }])
@@ -1038,7 +1187,7 @@ class AsistenciaController extends Controller
                 $totalAusencias += $ausencias;
 
                 // Verificar si está en riesgo
-                $porcentaje = $inscripcion->calcularPorcentajeAsistencia();
+                $porcentaje = $this->calcularPorcentajeAsistencia($inscripcion);
                 if ($porcentaje < $minimoAsistencia) {
                     $enRiesgo = true;
                 }
@@ -1073,9 +1222,14 @@ class AsistenciaController extends Controller
         }
 
         // Obtener comisiones para el filtro
-        $comisiones = Comision::activas()
-            ->orderBy('codigo')
-            ->get();
+        $comisionesQuery = Comision::activas();
+        
+        // Si es docente, solo sus comisiones
+        if ($esDocente) {
+            $comisionesQuery->where('docente_id', $user->id);
+        }
+        
+        $comisiones = $comisionesQuery->orderBy('codigo')->get();
 
         return view('asistencias.buscar-alumno', compact(
             'alumnos',
@@ -1083,7 +1237,8 @@ class AsistenciaController extends Controller
             'comisiones',
             'comisionId',
             'filtroAusencias',
-            'filtroRiesgo'
+            'filtroRiesgo',
+            'esDocente'
         ));
     }
 
@@ -1095,8 +1250,8 @@ class AsistenciaController extends Controller
         $user = auth()->user();
 
         // Verificar permisos
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403);
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Obtener solo alumnos con ausencias sin justificar
@@ -1124,9 +1279,9 @@ class AsistenciaController extends Controller
     {
         $user = auth()->user();
 
-        // Verificar permisos
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403);
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Verificar que la inscripción pertenece a la comisión
@@ -1167,9 +1322,9 @@ class AsistenciaController extends Controller
     {
         $user = auth()->user();
 
-        // Verificar permisos
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403);
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Verificar que la inscripción pertenece a la comisión
@@ -1292,9 +1447,9 @@ class AsistenciaController extends Controller
     {
         $user = auth()->user();
 
-        // Verificar permisos
-        if ($user->hasRole('Docente') && $comision->docente_id !== $user->id) {
-            abort(403);
+        // VERIFICACIÓN DE ACCESO A COMISIÓN
+        if (!$this->verificarAccesoComision($comision)) {
+            abort(403, 'No tienes permiso para acceder a esta comisión.');
         }
 
         // Verificar que la inscripción pertenece a la comisión

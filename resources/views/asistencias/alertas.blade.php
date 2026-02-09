@@ -18,7 +18,13 @@
                 </div>
                 <div>
                     <h1 class="text-3xl font-bold text-red-600">Alumnos en Riesgo por Asistencia</h1>
-                    <p class="text-gray-600 mt-1">Alumnos con porcentaje de asistencia menor al 75%</p>
+                    <p class="text-gray-600 mt-1">
+                        @if(isset($esDocente) && $esDocente)
+                        Alumnos de tus comisiones con porcentaje de asistencia menor al 75%
+                        @else
+                        Alumnos con porcentaje de asistencia menor al 75%
+                        @endif
+                    </p>
                 </div>
             </div>
             <a href="{{ route('asistencias.index') }}" 
@@ -70,7 +76,11 @@
                 </svg>
                 <div>
                     <p class="text-red-800 font-semibold">
+                        @if(isset($esDocente) && $esDocente)
+                        Se encontraron {{ $alumnosEnRiesgo->count() }} alumno{{ $alumnosEnRiesgo->count() != 1 ? 's' : '' }} en riesgo en tus comisiones
+                        @else
                         Se encontraron {{ $alumnosEnRiesgo->count() }} alumno{{ $alumnosEnRiesgo->count() != 1 ? 's' : '' }} en riesgo
+                        @endif
                     </p>
                     <p class="text-red-700 text-sm">Es necesario tomar acción inmediata para evitar que pierdan por faltas</p>
                 </div>
@@ -179,7 +189,13 @@
                 </svg>
             </div>
             <h3 class="text-2xl font-bold text-gray-800 mb-2">¡Excelente!</h3>
-            <p class="text-gray-600 mb-1">No hay alumnos en riesgo por asistencia</p>
+            <p class="text-gray-600 mb-1">
+                @if(isset($esDocente) && $esDocente)
+                No hay alumnos en riesgo por asistencia en tus comisiones
+                @else
+                No hay alumnos en riesgo por asistencia
+                @endif
+            </p>
             <p class="text-sm text-gray-500">
                 @if($comisionId)
                     en la comisión seleccionada

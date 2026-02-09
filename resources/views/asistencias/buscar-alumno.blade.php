@@ -7,7 +7,13 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Buscar Alumno</h1>
-                <p class="text-gray-600 mt-2">Busca alumnos para ver su historial de asistencias</p>
+                <p class="text-gray-600 mt-2">
+                    @if(isset($esDocente) && $esDocente)
+                    Busca alumnos de tus comisiones para ver su historial de asistencias
+                    @else
+                    Busca alumnos para ver su historial de asistencias
+                    @endif
+                </p>
             </div>
             <a href="{{ route('asistencias.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-200">
                 <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,6 +23,24 @@
             </a>
         </div>
     </div>
+
+    <!-- Información contextual para docentes -->
+    @if(isset($esDocente) && $esDocente)
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        <strong>Búsqueda limitada:</strong> Solo puedes buscar alumnos que están inscritos en tus comisiones.
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Buscador Simple -->
     <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
@@ -52,7 +76,11 @@
                 @if($search)
                     Resultados de búsqueda ({{ $alumnos->total() }})
                 @else
+                    @if(isset($esDocente) && $esDocente)
+                    Alumnos de tus comisiones ({{ $alumnos->total() }})
+                    @else
                     Todos los Alumnos ({{ $alumnos->total() }})
+                    @endif
                 @endif
             </h2>
         </div>
@@ -155,7 +183,11 @@
                     @if($search)
                         No se encontraron resultados
                     @else
+                        @if(isset($esDocente) && $esDocente)
+                        No hay alumnos en tus comisiones
+                        @else
                         No hay alumnos registrados
+                        @endif
                     @endif
                 </h3>
                 <p class="mt-2 text-sm text-gray-500">
@@ -174,7 +206,11 @@
             <li>• Busca por nombre, apellido, email o DNI del alumno</li>
             <li>• Cada botón morado muestra el código de la comisión</li>
             <li>• Click en el botón para ver el historial de asistencias en esa comisión</li>
-            <li>• Se muestran todos los alumnos registrados en el sistema</li>
+            @if(isset($esDocente) && $esDocente)
+                <li>• Solo puedes ver alumnos de tus comisiones asignadas</li>
+            @else
+                <li>• Se muestran todos los alumnos registrados en el sistema</li>
+            @endif
         </ul>
     </div>
 </div>
