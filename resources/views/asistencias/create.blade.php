@@ -41,13 +41,12 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de la Clase *</label>
-                        <input type="date"
-                            name="fecha"
-                            value="{{ $fecha }}"
-                            max="{{ date('Y-m-d') }}"
-                            class="w-full rounded-lg border-gray-300"
-                            required>
+                        <p class="text-sm font-medium text-gray-700 mb-2">Fecha de la Clase</p>
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-900 font-semibold text-lg">{{ \Carbon\Carbon::today()->format('d/m/Y') }}</span>
+                            <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Hoy</span>
+                        </div>
+                        <input type="hidden" name="fecha" value="{{ date('Y-m-d') }}">
                     </div>
                     @if(isset($materia))
                     <div>
@@ -210,8 +209,7 @@
 
     // Confirmación antes de enviar
     document.getElementById('asistenciaForm').addEventListener('submit', function(e) {
-        const fecha = document.querySelector('input[name="fecha"]').value;
-        const confirm = window.confirm(`¿Confirmar asistencia para el día ${fecha}?`);
+        const confirm = window.confirm('¿Confirmar el registro de asistencia para hoy?');
         if (!confirm) {
             e.preventDefault();
         }

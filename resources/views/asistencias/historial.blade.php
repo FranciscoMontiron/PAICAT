@@ -250,6 +250,83 @@
         @endif
     </div>
 
+    <!-- Clases Registradas -->
+    @if(isset($fechasClases) && $fechasClases->count() > 0)
+    <div class="bg-white rounded-lg shadow overflow-hidden mt-6">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800">Clases Registradas</h2>
+                <p class="text-sm text-gray-500 mt-1">{{ $fechasClases->count() }} clase(s) en el historial</p>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materia</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Presentes</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ausentes</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tardanzas</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Justificados</th>
+                        @if(auth()->user()->hasPermission('asistencias.editar'))
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        @endif
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach($fechasClases as $clase)
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <p class="text-sm font-semibold text-gray-900">{{ \Carbon\Carbon::parse($clase->fecha)->format('d/m/Y') }}</p>
+                            <p class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($clase->fecha)->isoFormat('dddd') }}</p>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            @if($clase->materia)
+                                {{ $clase->materia->nombre }}
+                            @else
+                                <span class="text-gray-400 italic">General</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">
+                                {{ $clase->presentes }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800">
+                                {{ $clase->ausentes }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                                {{ $clase->tardanzas }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                                {{ $clase->justificados }}
+                            </span>
+                        </td>
+                        @if(auth()->user()->hasPermission('asistencias.editar'))
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <a href="{{ route('asistencias.edit', [$comision, $clase->fecha]) }}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-xs font-semibold rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Editar
+                            </a>
+                        </td>
+                        @endif
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
     <!-- Leyenda -->
     <div class="bg-white rounded-lg shadow p-6 mt-6">
         <h3 class="text-sm font-semibold text-gray-800 mb-3">Leyenda</h3>
