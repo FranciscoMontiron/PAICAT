@@ -43,10 +43,14 @@
                     <div>
                         <p class="text-sm font-medium text-gray-700 mb-2">Fecha de la Clase</p>
                         <div class="flex items-center gap-2">
-                            <span class="text-gray-900 font-semibold text-lg">{{ \Carbon\Carbon::today()->format('d/m/Y') }}</span>
-                            <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Hoy</span>
+                            <span class="text-gray-900 font-semibold text-lg">{{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}</span>
+                            @if($fecha === date('Y-m-d'))
+                                <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Hoy</span>
+                            @else
+                                <span class="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2 py-1 rounded-full">Fecha pasada</span>
+                            @endif
                         </div>
-                        <input type="hidden" name="fecha" value="{{ date('Y-m-d') }}">
+                        <input type="hidden" name="fecha" value="{{ $fecha }}">
                     </div>
                     @if(isset($materia))
                     <div>
@@ -209,9 +213,12 @@
 
     // Confirmación antes de enviar
     document.getElementById('asistenciaForm').addEventListener('submit', function(e) {
-        const confirm = window.confirm('¿Confirmar el registro de asistencia para hoy?');
-        if (!confirm) {
-            e.preventDefault();
+        const fecha = document.querySelector('input[name="fecha"]').value;
+        const esHoy = fecha === new Date().toISOString().split('T')[0];
+        const msg = esHoy
+            ? '¿Confirmar el registro de asistencia para hoy?'
+            : `¿Confirmar el registro de asistencia para el ${fecha.split('-').reverse().join('/')}?`;
+        if (!window.confirm(msg)) e.preventDefault();
         }
     });
 </script>

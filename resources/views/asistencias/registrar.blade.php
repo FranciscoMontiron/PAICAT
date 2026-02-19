@@ -67,6 +67,9 @@
 
             <form method="POST" action="{{ route('asistencias.guardar', $comision->id) }}" id="asistenciaForm">
                 @csrf
+                @if(isset($materia))
+                    <input type="hidden" name="materia_id" value="{{ $materia->id }}">
+                @endif
                 
                 <!-- Selector de fecha -->
                 <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
