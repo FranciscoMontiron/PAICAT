@@ -41,16 +41,13 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div>
-                        <p class="text-sm font-medium text-gray-700 mb-2">Fecha de la Clase</p>
-                        <div class="flex items-center gap-2">
-                            <span class="text-gray-900 font-semibold text-lg">{{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}</span>
-                            @if($fecha === date('Y-m-d'))
-                                <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Hoy</span>
-                            @else
-                                <span class="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2 py-1 rounded-full">Fecha pasada</span>
-                            @endif
-                        </div>
-                        <input type="hidden" name="fecha" value="{{ $fecha }}">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de la Clase *</label>
+                        <input type="date"
+                            name="fecha"
+                            value="{{ $fecha }}"
+                            max="{{ date('Y-m-d') }}"
+                            class="w-full rounded-lg border-gray-300"
+                            required>
                     </div>
                     @if(isset($materia))
                     <div>
@@ -205,9 +202,13 @@
 
 <script>
     function marcarTodos(estado) {
-        const radios = document.querySelectorAll(`input[type="radio"][value="${estado}"]`);
-        radios.forEach(radio => {
-            radio.checked = true;
+        // Obtener todos los nombres de grupo únicos (asistencias[0][estado], asistencias[1][estado], etc.)
+        const grupos = new Set();
+        document.querySelectorAll('input[type="radio"][name*="[estado]"]').forEach(r => grupos.add(r.name));
+
+        grupos.forEach(nombre => {
+            const radio = document.querySelector(`input[type="radio"][name="${nombre}"][value="${estado}"]`);
+            if (radio) radio.click();
         });
     }
 
@@ -219,7 +220,6 @@
             ? '¿Confirmar el registro de asistencia para hoy?'
             : `¿Confirmar el registro de asistencia para el ${fecha.split('-').reverse().join('/')}?`;
         if (!window.confirm(msg)) e.preventDefault();
-        }
     });
 </script>
 @endsection
