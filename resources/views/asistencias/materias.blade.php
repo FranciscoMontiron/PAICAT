@@ -51,6 +51,7 @@
         <div class="bg-red-50 border border-red-200 rounded-lg p-4">
             <p class="text-sm text-red-700 font-medium mb-1">Alumnos en Riesgo</p>
             <p class="text-3xl font-bold text-red-900">{{ $alumnosEnRiesgo }}</p>
+            <p class="text-xs text-red-400 mt-1">con &lt;75% en alguna materia</p>
         </div>
     </div>
 
@@ -221,7 +222,7 @@
 <!-- Modal: Pasar Asistencia -->
 <div id="modalAsistencia" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50">
     <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-        <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center justify-between mb-5">
             <h3 class="text-lg font-semibold text-gray-800">Pasar Asistencia</h3>
             <button onclick="cerrarModal()" class="text-gray-400 hover:text-gray-600 transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +230,6 @@
                 </svg>
             </button>
         </div>
-        <p id="modalMateriaNombre" class="text-sm text-gray-500 mb-5"></p>
 
         <!-- Opción: Hoy -->
         <button onclick="irHoy()"
@@ -284,8 +284,6 @@ let urlBaseModal = '';
 
 function abrirModal(urlBase, materiaNombre) {
     urlBaseModal = urlBase;
-    document.getElementById('modalMateriaNombre').textContent = materiaNombre;
-    document.getElementById('inputFechaPasada').value = '';
     document.getElementById('modalAsistencia').classList.remove('hidden');
 }
 
