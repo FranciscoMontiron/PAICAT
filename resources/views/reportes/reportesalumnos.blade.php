@@ -84,7 +84,7 @@
                                 Año de Ingreso
                             </label>
                             <select name="anio_ingreso"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                 <option value="">Todos los años</option>
                                 
                                 @foreach($anio_ingreso as $anio)
@@ -102,7 +102,7 @@
                                 </label>
                                 <select name="comision_id"
                                         class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                            focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                     <option value="">Todas</option>
                                     @foreach($comisiones as $comision)
                                         <option value="{{ $comision->id }}"
@@ -122,7 +122,7 @@
                     </a>
 
                     <button type="submit"
-                            class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800">
+                            class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark">
                         Filtrar
                     </button>
                 </div>
@@ -152,8 +152,8 @@
                         {{-- Alumno --}}
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-3">
-                                <div class="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center">
-                                    <span class="text-indigo-600 font-semibold text-xs">
+                                <div class="h-9 w-9 rounded-full bg-utn-blue/10 flex items-center justify-center">
+                                    <span class="text-utn-blue-dark font-semibold text-xs">
                                         {{ strtoupper(substr($alumno->nombre, 0, 1)) }}
                                         {{ strtoupper(substr($alumno->apellido, 0, 1)) }}
                                     </span>

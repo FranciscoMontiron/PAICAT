@@ -3,14 +3,15 @@
 @section('title', 'Historial - ' . $materia->nombre)
 
 @section('content')
+@php $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75); @endphp
 <div class="container mx-auto px-4 py-6">
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-sm text-gray-600 mb-6">
-        <a href="{{ route('asistencias.index') }}" class="hover:text-blue-600 transition">Asistencias</a>
+        <a href="{{ route('asistencias.index') }}" class="hover:text-utn-blue-dark transition">Asistencias</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
-        <a href="{{ route('asistencias.comision.materias', $comision) }}" class="hover:text-blue-600 transition">{{ $comision->codigo }}</a>
+        <a href="{{ route('asistencias.comision.materias', $comision) }}" class="hover:text-utn-blue-dark transition">{{ $comision->codigo }}</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
@@ -27,7 +28,7 @@
             <div class="flex gap-3">
                 @if(auth()->user()->hasPermission('asistencias.crear'))
                 <a href="{{ route('asistencias.materia.registrar', [$comision, $materia]) }}" 
-                   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">
+                   class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg transition">
                     Pasar Asistencia
                 </a>
                 @endif
@@ -110,7 +111,7 @@
                                 @if($estado == 'presente') bg-green-100 text-green-800
                                 @elseif($estado == 'ausente') bg-red-100 text-red-800
                                 @elseif($estado == 'tardanza') bg-yellow-100 text-yellow-800
-                                @else bg-blue-100 text-blue-800 @endif">
+                                @else bg-utn-blue/10 text-utn-blue-dark @endif">
                                 @if($estado == 'presente') P
                                 @elseif($estado == 'ausente') A
                                 @elseif($estado == 'tardanza') T
@@ -122,7 +123,7 @@
                         </td>
                         @endforeach
                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold
-                            @if($porcentaje >= 75) text-green-600
+                            @if($porcentaje >= $asistenciaMinima) text-green-600
                             @elseif($porcentaje >= 50) text-yellow-600
                             @else text-red-600 @endif">
                             {{ round($porcentaje, 1) }}%

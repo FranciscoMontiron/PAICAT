@@ -12,7 +12,7 @@
         </div>
         @if(auth()->user()->hasPermission('comisiones.crear'))
         <a href="{{ route('municipios.create') }}"
-           class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center gap-2">
+           class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-utn-dark transition-colors duration-200 flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
@@ -59,18 +59,18 @@
                 <label for="buscar" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
                 <input type="text" name="buscar" id="buscar" value="{{ request('buscar') }}"
                        placeholder="Nombre, código o dirección..."
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
             </div>
             <div class="w-32">
                 <label for="activo" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select name="activo" id="activo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                <select name="activo" id="activo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todos</option>
                     <option value="1" {{ request('activo') === '1' ? 'selected' : '' }}>Activos</option>
                     <option value="0" {{ request('activo') === '0' ? 'selected' : '' }}>Inactivos</option>
                 </select>
             </div>
             <div class="flex gap-2">
-                <button type="submit" class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-200">
+                <button type="submit" class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-utn-dark transition-colors duration-200">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
@@ -101,8 +101,8 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
-                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-utn-blue/10 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>
@@ -119,7 +119,7 @@
                         <span class="text-sm text-gray-600">{{ $municipio->direccion ?? '-' }}</span>
                     </td>
                     <td class="px-6 py-4 text-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-utn-blue/10 text-utn-blue-dark">
                             {{ $municipio->comisiones_count }}
                         </span>
                     </td>
@@ -140,7 +140,7 @@
                             </a>
                             @if(auth()->user()->hasPermission('comisiones.editar'))
                             <a href="{{ route('municipios.edit', $municipio) }}"
-                               class="p-1.5 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                               class="p-1.5 rounded bg-utn-blue/10 text-utn-blue-dark hover:bg-utn-blue/20 transition-colors"
                                title="Editar">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -166,7 +166,7 @@
                             @endif
                             @if(auth()->user()->hasPermission('comisiones.eliminar') && $municipio->comisiones_count === 0)
                             <form action="{{ route('municipios.destroy', $municipio) }}" method="POST" class="inline"
-                                  onsubmit="return confirm('¿Está seguro de eliminar este municipio?')">
+                                  data-confirm="¿Está seguro de eliminar este municipio?" data-confirm-type="danger" data-confirm-title="Eliminar municipio" data-confirm-text="Eliminar">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit"
@@ -190,7 +190,7 @@
                         </svg>
                         <p class="mt-2">No hay municipios registrados</p>
                         @if(auth()->user()->hasPermission('comisiones.crear'))
-                        <a href="{{ route('municipios.create') }}" class="mt-2 inline-block text-utn-blue hover:text-blue-800 text-sm">
+                        <a href="{{ route('municipios.create') }}" class="mt-2 inline-block text-utn-blue-dark hover:text-utn-blue-dark text-sm">
                             Crear primer municipio
                         </a>
                         @endif

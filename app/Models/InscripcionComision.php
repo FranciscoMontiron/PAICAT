@@ -131,7 +131,7 @@ class InscripcionComision extends Model
     {
         $promedio = $this->calcularPromedioPonderado();
         $porcentajeAsistencia = $this->calcularPorcentajeAsistencia();
-        $minimoAsistencia = config('paicat.porcentaje_asistencia_minimo', 75);
+        $minimoAsistencia = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
         
         // Sin notas cargadas
         if ($promedio === null) {
@@ -146,19 +146,22 @@ class InscripcionComision extends Model
         $cumpleAsistencia = $porcentajeAsistencia >= $minimoAsistencia;
 
         // Lógica de condición
-        if ($promedio >= 6 && $cumpleAsistencia) {
+        $notaAprobacion = \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+        $notaMinimaRegular = \App\Services\ConfiguracionService::get('nota_minima_regular', 4);
+
+        if ($promedio >= $notaAprobacion && $cumpleAsistencia) {
             return [
                 'condicion' => 'Promocionado',
                 'color' => 'green',
                 'descripcion' => "Promedio: $promedio - Asistencia: {$porcentajeAsistencia}%",
             ];
-        } elseif ($promedio >= 4 && $cumpleAsistencia) {
+        } elseif ($promedio >= $notaMinimaRegular && $cumpleAsistencia) {
             return [
                 'condicion' => 'Regular',
                 'color' => 'blue',
                 'descripcion' => "Promedio: $promedio - Debe rendir final",
             ];
-        } elseif ($promedio >= 4 && !$cumpleAsistencia) {
+        } elseif ($promedio >= $notaMinimaRegular && !$cumpleAsistencia) {
             return [
                 'condicion' => 'Libre por asistencia',
                 'color' => 'yellow',
@@ -187,7 +190,8 @@ class InscripcionComision extends Model
     public function puedeRendirRecuperatorio(): bool
     {
         $promedio = $this->calcularPromedioPonderado();
-        return $promedio !== null && $promedio < 6;
+        $notaAprobacion = \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+        return $promedio !== null && $promedio < $notaAprobacion;
     }
 
     /**
@@ -220,7 +224,7 @@ class InscripcionComision extends Model
      */
     public function estaEnRiesgo(): bool
     {
-        $minimo = config('paicat.porcentaje_asistencia_minimo', 75);
+        $minimo = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
         return $this->calcularPorcentajeAsistencia() < $minimo;
     }
 

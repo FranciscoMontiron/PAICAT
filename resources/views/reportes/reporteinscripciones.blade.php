@@ -4,7 +4,7 @@
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-utn-blue">
+        <h1 class="text-3xl font-bold text-utn-blue-dark">
             Módulo de Reportes de inscripciones
         </h1>
     </div>
@@ -38,7 +38,7 @@
                                 Año de Ingreso
                             </label>
                             <select name="anio_ingreso"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                 <option value="">Todos los años</option>
                                 
                                 @foreach($anio_ingreso as $anio)
@@ -59,7 +59,7 @@
                     </a>
 
                     <button type="submit"
-                            class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800">
+                            class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark">
                         Filtrar
                     </button>
                 </div>

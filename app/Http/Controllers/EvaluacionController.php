@@ -11,7 +11,10 @@ use App\Models\Evaluacion;
 use App\Models\Comision;
 use App\Models\InscripcionComision;
 use App\Models\Nota;
+use App\Models\NotaFinalMateria;
 use App\Models\AcademicoDato;
+use App\Exports\PlanillaNotasExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 
 class EvaluacionController extends Controller
@@ -45,33 +48,184 @@ class EvaluacionController extends Controller
 
         $comisiones = $query->paginate(12);
 
-        return view('evaluaciones.index', compact('comisiones'));
+        $aniosDisponibles = Comision::select('anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
+
+        return view('evaluaciones.index', compact('comisiones', 'aniosDisponibles'));
     }
 
     /**
-     * Mostrar evaluaciones de una comisión específica
+     * Vista unificada de planilla docente para una comisión
+     * Muestra materias con grilla de notas, evaluaciones y nota final
      */
     public function showComision(Comision $comision): View
     {
-        $comision->load(['materias', 'municipio']);
+        $comision->load(['materias', 'municipio', 'docentesActivos.docente']);
 
-        // Evaluaciones agrupadas por materia
-        $evaluaciones = Evaluacion::where('comision_id', $comision->id)
-            ->with(['materia', 'notas'])
-            ->orderBy('materia_id')
-            ->orderBy('fecha', 'asc')
-            ->get()
-            ->groupBy('materia_id');
-
-        // Materias de la comisión (para crear nuevas evaluaciones)
         $materias = $comision->materias;
 
-        // Alumnos inscriptos
-        $alumnosCount = $comision->inscripciones()
-            ->whereIn('estado', ['inscripto', 'confirmado'])
-            ->count();
+        // Inscripciones (alumnos) de la comisión
+        $inscripciones = InscripcionComision::where('comision_id', $comision->id)
+            ->whereIn('estado', ['inscripto', 'confirmado', 'regular'])
+            ->with(['inscripcion', 'academicoDato'])
+            ->get()
+            ->sortBy(function ($ic) {
+                $p = $ic->inscripcion?->getPerson();
+                return $p->apellido ?? $ic->academicoDato->apellido ?? '';
+            })
+            ->values();
 
-        return view('evaluaciones.comision', compact('comision', 'evaluaciones', 'materias', 'alumnosCount'));
+        // Estructura de datos por materia
+        $dataMateria = [];
+
+        foreach ($materias as $materia) {
+            // Evaluaciones de esta materia en esta comisión
+            $evaluaciones = Evaluacion::where('materia_id', $materia->id)
+                ->where(function ($q) use ($comision) {
+                    $q->where('comision_id', $comision->id)
+                        ->orWhereNull('comision_id');
+                })
+                ->orderBy('fecha', 'asc')
+                ->get();
+
+            // Notas: mapa [inscripcion_id][evaluacion_id] => nota
+            $notasMap = [];
+            $evaluacionIds = $evaluaciones->pluck('id');
+            $inscripcionIds = $inscripciones->pluck('inscripcion_id');
+
+            $notasRaw = Nota::whereIn('evaluacion_id', $evaluacionIds)
+                ->whereIn('inscripcion_id', $inscripcionIds)
+                ->get();
+
+            foreach ($notasRaw as $nota) {
+                $notasMap[$nota->inscripcion_id][$nota->evaluacion_id] = $nota;
+            }
+
+            // Notas finales por materia
+            $notasFinales = NotaFinalMateria::where('comision_id', $comision->id)
+                ->where('materia_id', $materia->id)
+                ->whereIn('inscripcion_id', $inscripcionIds)
+                ->get()
+                ->keyBy('inscripcion_id');
+
+            // Calcular promedio sugerido por alumno
+            $promedios = [];
+            foreach ($inscripciones as $ic) {
+                $notasAlumno = $notasRaw->where('inscripcion_id', $ic->inscripcion_id);
+                if ($notasAlumno->isNotEmpty()) {
+                    $promedios[$ic->inscripcion_id] = round($notasAlumno->avg('nota'), 2);
+                }
+            }
+
+            $dataMateria[$materia->id] = [
+                'materia' => $materia,
+                'evaluaciones' => $evaluaciones,
+                'notasMap' => $notasMap,
+                'notasFinales' => $notasFinales,
+                'promedios' => $promedios,
+            ];
+        }
+
+        $alumnosCount = $inscripciones->count();
+
+        return view('evaluaciones.comision', compact(
+            'comision', 'materias', 'inscripciones', 'dataMateria', 'alumnosCount'
+        ));
+    }
+
+    /**
+     * Guardar notas de una materia en la planilla (AJAX/POST)
+     */
+    public function storeNotasMateria(Request $request, Comision $comision): RedirectResponse
+    {
+        $materiaId = $request->input('materia_id');
+        $notasMatrix = $request->input('notas', []);
+        $notasFinalesInput = $request->input('notas_finales', []);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($notasMatrix, $notasFinalesInput, $comision, $materiaId) {
+            // Guardar notas de evaluaciones
+            foreach ($notasMatrix as $inscripcionId => $evals) {
+                foreach ($evals as $evaluacionId => $valor) {
+                    $nota = Nota::where('evaluacion_id', $evaluacionId)
+                        ->where('inscripcion_id', $inscripcionId)
+                        ->first();
+
+                    if ($valor === null || $valor === '') {
+                        if ($nota) $nota->delete();
+                        continue;
+                    }
+
+                    if (!is_numeric($valor) || $valor < 0 || $valor > 10) continue;
+
+                    if ($nota) {
+                        if ((float)$nota->nota != (float)$valor) {
+                            $nota->update(['nota' => $valor]);
+                        }
+                    } else {
+                        $ic = InscripcionComision::where('comision_id', $comision->id)
+                            ->where('inscripcion_id', $inscripcionId)
+                            ->first();
+
+                        Nota::create([
+                            'evaluacion_id' => $evaluacionId,
+                            'inscripcion_id' => $inscripcionId,
+                            'inscripcion_comision_id' => $ic?->id,
+                            'nota' => $valor,
+                            'cargado_por' => auth()->id(),
+                        ]);
+                    }
+                }
+            }
+
+            // Guardar notas finales de materia
+            foreach ($notasFinalesInput as $inscripcionId => $valor) {
+                if ($valor === null || $valor === '') {
+                    NotaFinalMateria::where('inscripcion_id', $inscripcionId)
+                        ->where('comision_id', $comision->id)
+                        ->where('materia_id', $materiaId)
+                        ->delete();
+                    continue;
+                }
+
+                if (!is_numeric($valor) || $valor < 0 || $valor > 10) continue;
+
+                NotaFinalMateria::updateOrCreate(
+                    [
+                        'inscripcion_id' => $inscripcionId,
+                        'comision_id' => $comision->id,
+                        'materia_id' => $materiaId,
+                    ],
+                    [
+                        'nota_final' => $valor,
+                        'cargado_por' => auth()->id(),
+                    ]
+                );
+            }
+        });
+
+        return redirect()
+            ->route('evaluaciones.comision', $comision)
+            ->with('success', 'Notas guardadas correctamente.');
+    }
+
+    /**
+     * Exportar planilla de notas a Excel
+     * Acepta ?materia=ID para exportar solo una materia
+     */
+    public function exportPlanilla(Request $request, Comision $comision)
+    {
+        $materiaId = $request->query('materia');
+        $filename = 'Planilla_Notas_' . preg_replace('/[^A-Za-z0-9_]/', '_', $comision->nombre) . '_' . $comision->anio;
+
+        if ($materiaId) {
+            $materia = $comision->materias()->where('materias.id', $materiaId)->first();
+            if ($materia) {
+                $filename .= '_' . preg_replace('/[^A-Za-z0-9_]/', '_', $materia->nombre);
+            }
+        }
+
+        $filename .= '.xlsx';
+
+        return Excel::download(new PlanillaNotasExport($comision, $materiaId), $filename);
     }
 
     /**
@@ -106,7 +260,7 @@ class EvaluacionController extends Controller
 
 
         return redirect()
-            ->route('evaluaciones.index')
+            ->route('evaluaciones.comision', $data['comision'])
             ->with('success', 'Evaluacion creada exitosamente.');
     }
 
@@ -141,8 +295,8 @@ class EvaluacionController extends Controller
         ]);
 
         return redirect()
-            ->route('evaluaciones.index')
-            ->with('success', 'Evalu actualizado exitosamente.');
+            ->route('evaluaciones.comision', $evaluacion->comision_id)
+            ->with('success', 'Evaluación actualizada exitosamente.');
     }
 
 
@@ -151,10 +305,11 @@ class EvaluacionController extends Controller
      */
     public function destroy(Evaluacion $evaluacion): RedirectResponse
     {
+        $comisionId = $evaluacion->comision_id;
         $evaluacion->delete();
 
         return redirect()
-            ->route('evaluaciones.index')
+            ->route('evaluaciones.comision', $comisionId)
             ->with('success', 'Evaluacion eliminada exitosamente.');
     }
 
@@ -428,7 +583,7 @@ class EvaluacionController extends Controller
         $evaluacionesRecuperables = Evaluacion::where(function ($q) use ($comision) {
             $q->where('comision_id', $comision->id)->orWhereNull('comision_id');
         })
-            ->whereIn('tipo', ['parcial', 'examen_final'])
+            ->whereIn('tipo', [Evaluacion::TIPO_PARCIAL, Evaluacion::TIPO_EXAMEN_FINAL, Evaluacion::TIPO_INTEGRADOR])
             ->orderBy('fecha', 'desc')
             ->get();
 
@@ -455,7 +610,7 @@ class EvaluacionController extends Controller
             [
                 'nombre' => 'Recuperatorio - ' . $evaluacionOriginal->nombre,
                 'comision_id' => $comision->id,
-                'tipo' => 'recuperatorio',
+                'tipo' => Evaluacion::TIPO_RECUPERATORIO,
             ],
             [
                 'descripcion' => 'Recuperatorio de ' . $evaluacionOriginal->nombre,
@@ -673,6 +828,6 @@ class EvaluacionController extends Controller
             }
         });
 
-        return redirect()->route('evaluaciones.index')->with('success', 'Notas cargadas exitosamente.');
+        return redirect()->route('evaluaciones.comision', $evaluacion->comision_id)->with('success', 'Notas cargadas exitosamente.');
     }
 }

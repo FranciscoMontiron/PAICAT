@@ -12,6 +12,7 @@ use App\Http\Controllers\AsignacionAlumnosController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\AulaController;
+use App\Http\Controllers\ConfiguracionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,6 +65,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/{inscripcion}/reactivar', [InscripcionController::class, 'reactivar'])->middleware('permission:inscripciones.editar')->name('reactivar');
         Route::post('/{inscripcion}/aprobar-cursada', [InscripcionController::class, 'aprobarCursada'])->middleware('permission:inscripciones.editar')->name('aprobar-cursada');
         Route::post('/{inscripcion}/aprobar-excepcional', [InscripcionController::class, 'aprobarExcepcional'])->middleware('permission:inscripciones.editar')->name('aprobar-excepcional');
+        Route::post('/{inscripcion}/nota-final-materia', [InscripcionController::class, 'guardarNotaFinalMateria'])->middleware('permission:evaluaciones.editar')->name('nota-final-materia');
+        Route::delete('/{inscripcion}/nota-final-materia', [InscripcionController::class, 'eliminarNotaFinalMateria'])->middleware('permission:evaluaciones.editar')->name('nota-final-materia.destroy');
         Route::post('/{inscripcion}/agregar-condicion', [InscripcionController::class, 'agregarCondicion'])->middleware('permission:inscripciones.editar')->name('agregar-condicion');
         Route::delete('/condicion/{condicion}', [InscripcionController::class, 'desactivarCondicion'])->middleware('permission:inscripciones.editar')->name('desactivar-condicion');
         Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.ver')->name('crear-solicitud');
@@ -220,8 +223,10 @@ Route::middleware('auth')->group(function () {
         Route::put('/{evaluacion}', [EvaluacionController::class, 'update'])->middleware('permission:evaluaciones.editar')->name('update');
         Route::delete('/{evaluacion}', [EvaluacionController::class, 'destroy'])->middleware('permission:evaluaciones.eliminar')->name('destroy');
 
-        // Vista de evaluaciones por comisión
+        // Vista de evaluaciones por comisión (planilla docente unificada)
         Route::get('/comision/{comision}', [EvaluacionController::class, 'showComision'])->name('comision');
+        Route::post('/comision/{comision}/notas-materia', [EvaluacionController::class, 'storeNotasMateria'])->middleware('permission:evaluaciones.crear')->name('notas-materia.store');
+        Route::get('/comision/{comision}/exportar-planilla', [EvaluacionController::class, 'exportPlanilla'])->name('exportar-planilla');
 
         // NOTAS - Gestión de notas por comisión
         Route::get('/notas/{comision}', [EvaluacionController::class, 'indexNota'])->name('notas.index');
@@ -332,5 +337,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/{solicitud}/rechazar', [App\Http\Controllers\SolicitudCambioController::class, 'rechazar'])->name('rechazar');
         Route::post('/detectar-trueques', [App\Http\Controllers\SolicitudCambioController::class, 'detectarTrueques'])->name('detectar-trueques');
         Route::get('/comision/{comision}/cupos', [App\Http\Controllers\SolicitudCambioController::class, 'verificarCupos'])->name('verificar-cupos');
+    });
+
+    // Módulo: Configuración del Sistema
+    Route::prefix('configuracion')->name('configuracion.')->middleware('permission:usuarios.ver')->group(function () {
+        Route::get('/', [ConfiguracionController::class, 'index'])->name('index');
+        Route::put('/{variable}', [ConfiguracionController::class, 'update'])->middleware('permission:usuarios.editar')->name('update');
+        Route::post('/{variable}/sincronizar', [ConfiguracionController::class, 'sincronizar'])->middleware('permission:usuarios.editar')->name('sincronizar');
+        Route::get('/{variable}/historial', [ConfiguracionController::class, 'historial'])->name('historial');
     });
 }); // Cierre del middleware auth

@@ -10,7 +10,7 @@
         </div>
         @if(auth()->user()->hasPermission('usuarios.crear'))
         <a href="{{ route('usuarios.create') }}"
-           class="bg-utn-blue text-white px-6 py-3 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center gap-2">
+           class="bg-utn-blue text-white px-6 py-3 rounded-lg hover:bg-utn-dark transition-colors duration-200 flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
@@ -54,8 +54,8 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 h-10 w-10">
-                                <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                                    <span class="text-indigo-600 font-semibold">
+                                <div class="h-10 w-10 rounded-full bg-utn-blue/10 flex items-center justify-center">
+                                    <span class="text-utn-blue-dark font-semibold">
                                         {{ strtoupper(substr($usuario->name, 0, 1)) }}{{ strtoupper(substr($usuario->apellido, 0, 1)) }}
                                     </span>
                                 </div>
@@ -83,7 +83,7 @@
                                 <span class="px-2 py-1 text-xs rounded-full
                                     @if($role->slug === 'admin') bg-red-100 text-red-800
                                     @elseif($role->slug === 'coordinador') bg-purple-100 text-purple-800
-                                    @elseif($role->slug === 'docente') bg-blue-100 text-blue-800
+                                    @elseif($role->slug === 'docente') bg-utn-blue/10 text-utn-blue-dark
                                     @else bg-gray-100 text-gray-800
                                     @endif">
                                     {{ $role->nombre }}
@@ -111,12 +111,12 @@
                             </form>
                             @endif
                         @else
-                            <a href="{{ route('usuarios.show', $usuario) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Ver</a>
+                            <a href="{{ route('usuarios.show', $usuario) }}" class="text-utn-blue-dark hover:text-indigo-900 mr-3">Ver</a>
                             @if(auth()->user()->hasPermission('usuarios.editar'))
-                            <a href="{{ route('usuarios.edit', $usuario) }}" class="text-blue-600 hover:text-blue-900 mr-3">Editar</a>
+                            <a href="{{ route('usuarios.edit', $usuario) }}" class="text-utn-blue-dark hover:text-utn-dark mr-3">Editar</a>
                             @endif
                             @if(auth()->user()->hasPermission('usuarios.eliminar'))
-                            <form action="{{ route('usuarios.destroy', $usuario) }}" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar este usuario?');">
+                            <form action="{{ route('usuarios.destroy', $usuario) }}" method="POST" class="inline" data-confirm="¿Estás seguro de eliminar este usuario?" data-confirm-type="danger" data-confirm-title="Eliminar usuario" data-confirm-text="Eliminar">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:text-red-900">Eliminar</button>
@@ -133,7 +133,7 @@
                         </svg>
                         <p class="mt-2">No hay usuarios registrados</p>
                         @if(auth()->user()->hasPermission('usuarios.crear'))
-                        <a href="{{ route('usuarios.create') }}" class="mt-4 inline-block text-utn-blue hover:text-blue-800">
+                        <a href="{{ route('usuarios.create') }}" class="mt-4 inline-block text-utn-blue-dark hover:text-utn-blue-dark">
                             Crear el primer usuario
                         </a>
                         @endif

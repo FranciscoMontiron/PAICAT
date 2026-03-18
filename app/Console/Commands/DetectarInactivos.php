@@ -17,7 +17,7 @@ class DetectarInactivos extends Command
 
     public function handle()
     {
-        $diasLimite = $this->option('dias') ?? config('paicat.dias_inactividad', 30);
+        $diasLimite = $this->option('dias') ?? \App\Services\ConfiguracionService::get('dias_inactividad', 30);
         $marcar = $this->option('marcar');
         $fechaLimite = now()->subDays($diasLimite);
 

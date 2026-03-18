@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Comisiones')
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="container mx-auto px-4 py-8">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
         <div>
@@ -18,7 +18,7 @@
             </a>
             @endif
             @if(auth()->user()->hasPermission('comisiones.crear'))
-            <a href="{{ route('comisiones.create') }}" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition duration-200 flex items-center shadow-md">
+            <a href="{{ route('comisiones.create') }}" class="bg-green-700 hover:bg-green-800 text-white font-semibold px-6 py-3 rounded-lg transition duration-200 flex items-center shadow-md">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -36,8 +36,8 @@
                     <p class="text-sm text-gray-600">Total Comisiones</p>
                     <p class="text-2xl font-bold text-gray-800">{{ $stats['total'] }}</p>
                 </div>
-                <div class="bg-blue-100 p-3 rounded-full">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-utn-blue/10 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                     </svg>
                 </div>
@@ -87,132 +87,127 @@
         </div>
     </div>
 
-    <!-- Filtros y Búsqueda -->
-    <div class="bg-white rounded-lg shadow mb-6 p-6">
-        <form method="GET" action="{{ route('comisiones.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
+    <!-- Filtros -->
+    <div class="bg-white shadow-md rounded-lg p-4 mb-6">
+        <form method="GET" action="{{ route('comisiones.index') }}" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Nombre o código..."
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                <div class="relative">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="Nombre o código de comisión..."
+                           class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
+                </div>
             </div>
-            <div>
+            <div class="w-28">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Año</label>
-                <select name="anio" class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                <select name="anio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todos</option>
-                    @for($year = date('Y'); $year >= 2020; $year--)
-                    <option value="{{ $year }}" {{ request('anio') == $year ? 'selected' : '' }}>{{ $year }}</option>
-                    @endfor
+                    @foreach($aniosDisponibles as $anio)
+                        <option value="{{ $anio }}" {{ request('anio') == $anio ? 'selected' : '' }}>{{ $anio }}</option>
+                    @endforeach
                 </select>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Periodo</label>
-                <select name="periodo" class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+            <div class="w-36">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Período</label>
+                <select name="periodo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todos</option>
-                    <option value="Verano" {{ request('periodo') == 'Verano' ? 'selected' : '' }}>Verano</option>
-                    <option value="Invierno" {{ request('periodo') == 'Invierno' ? 'selected' : '' }}>Invierno</option>
-                    <option value="Anual" {{ request('periodo') == 'Anual' ? 'selected' : '' }}>Anual</option>
+                    @foreach(\App\Models\Comision::getTiposIngreso() as $clave => $label)
+                        <option value="{{ $label }}" {{ request('periodo') == $label ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
-            <div>
+            <div class="w-36">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select name="estado" class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todos</option>
-                    <option value="activa" {{ request('estado') == 'activa' ? 'selected' : '' }}>Activa</option>
-                    <option value="cerrada" {{ request('estado') == 'cerrada' ? 'selected' : '' }}>Cerrada</option>
-                    <option value="finalizada" {{ request('estado') == 'finalizada' ? 'selected' : '' }}>Finalizada</option>
-                    <option value="cancelada" {{ request('estado') == 'cancelada' ? 'selected' : '' }}>Cancelada</option>
+                    @foreach(\App\Models\Comision::getEstados() as $clave => $label)
+                        <option value="{{ $clave }}" {{ request('estado') == $clave ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
-            <div class="flex items-end space-x-2">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200 flex-1">
-                    Filtrar
-                </button>
-                <a href="{{ route('comisiones.index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md transition duration-200">
+            <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors">
+                Filtrar
+            </button>
+            @if(request()->hasAny(['search', 'anio', 'periodo', 'estado']))
+                <a href="{{ route('comisiones.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                     Limpiar
                 </a>
-            </div>
+            @endif
         </form>
     </div>
 
     <!-- Tabla de Comisiones -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        @if($comisiones->count() > 0)
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materia</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Año/Periodo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turno</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Docente</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cupos</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($comisiones as $comision)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-mono text-sm font-medium text-gray-900">{{ $comision->codigo }}</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            @if($comision->materias->count() > 0)
-                            @foreach($comision->materias->take(2) as $materia)
-                            <div class="text-sm text-gray-900">{{ $materia->nombre }}</div>
-                            @endforeach
-                            @if($comision->materias->count() > 2)
-                            <span class="text-xs text-gray-500">+{{ $comision->materias->count() - 2 }} más</span>
-                            @endif
-                            @else
-                            <span class="text-gray-400 italic text-sm">Sin materias</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900">{{ $comision->nombre }}</div>
-                            @if($comision->modalidad)
-                            <div class="text-sm text-gray-500">{{ $comision->modalidad }}</div>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $comision->anio }} - {{ $comision->periodo }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $comision->turno }}
-                        </td>
-                        <td class="px-6 py-4">
-                            @if($comision->docente)
-                            <div class="text-sm text-gray-900">{{ $comision->docente->nombre_completo }}</div>
-                            @else
-                            <span class="text-sm text-gray-400 italic">Sin asignar</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <span class="text-sm font-medium text-gray-900">{{ $comision->cupo_real }}/{{ $comision->cupo_maximo }}</span>
-                                <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
-                                    <div class="bg-green-600 h-2 rounded-full" style="width: {{ min($comision->porcentaje_ocupacion, 100) }}%"></div>
+    <div class="bg-white shadow-md rounded-xl overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Comisión</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Período</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Cupos</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @forelse($comisiones as $comision)
+                    <tr class="hover:bg-gray-50 transition-colors cursor-pointer group" onclick="window.location='{{ route('comisiones.show', $comision) }}'">
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-utn-blue/10 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-gray-900 group-hover:text-utn-blue-dark transition-colors">{{ $comision->nombre }}</p>
+                                    <p class="text-xs text-gray-500 truncate">
+                                        <span class="font-mono">{{ $comision->codigo }}</span>
+                                        {{ $comision->turno ? '&bull; ' . ucfirst($comision->turno) : '' }}
+                                        {{ $comision->modalidad ? '&bull; ' . $comision->modalidad : '' }}
+                                        @if($comision->docente)
+                                            &bull; {{ $comision->docente->nombre_completo }}
+                                        @endif
+                                    </p>
+                                    @if($comision->materias->count() > 0)
+                                        <p class="text-xs text-gray-400 mt-0.5 truncate">
+                                            {{ $comision->materias->pluck('nombre')->implode(', ') }}
+                                        </p>
+                                    @endif
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 py-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-utn-blue/10 text-utn-blue-dark">
+                                {{ $comision->periodo }} {{ $comision->anio }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="text-sm font-semibold text-gray-700">{{ $comision->cupo_real }}/{{ $comision->cupo_maximo }}</span>
+                                <div class="w-12 bg-gray-200 rounded-full h-1.5">
+                                    <div class="bg-green-600 h-1.5 rounded-full" style="width: {{ min($comision->porcentaje_ocupacion, 100) }}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-center">
                             @php
                             $estadoClasses = [
-                            'activa' => 'bg-green-100 text-green-800',
-                            'cerrada' => 'bg-yellow-100 text-yellow-800',
-                            'finalizada' => 'bg-blue-100 text-blue-800',
-                            'cancelada' => 'bg-red-100 text-red-800',
+                                'activa' => 'bg-green-100 text-green-800',
+                                'cerrada' => 'bg-yellow-100 text-yellow-800',
+                                'finalizada' => 'bg-utn-blue/10 text-utn-blue-dark',
+                                'cancelada' => 'bg-red-100 text-red-800',
                             ];
                             @endphp
                             <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $estadoClasses[$comision->estado] ?? 'bg-gray-100 text-gray-800' }}">
                                 {{ ucfirst($comision->estado) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td class="px-4 py-4 text-right" onclick="event.stopPropagation()">
                             <div class="flex items-center justify-end space-x-2">
-                                <a href="{{ route('comisiones.show', $comision) }}" class="text-blue-600 hover:text-blue-900" title="Ver detalles">
+                                <a href="{{ route('comisiones.show', $comision) }}" class="text-utn-blue-dark hover:text-utn-dark" title="Ver detalles">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -226,7 +221,7 @@
                                 </a>
                                 @endif
                                 @if(auth()->user()->hasPermission('comisiones.eliminar'))
-                                <form action="{{ route('comisiones.destroy', $comision) }}" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar esta comisión?')">
+                                <form action="{{ route('comisiones.destroy', $comision) }}" method="POST" class="inline" data-confirm="¿Estás seguro de eliminar esta comisión?" data-confirm-type="danger" data-confirm-title="Eliminar comisión" data-confirm-text="Eliminar">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:text-red-900" title="Eliminar">
@@ -239,34 +234,34 @@
                             </div>
                         </td>
                     </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Paginación -->
-        <div class="px-6 py-4 border-t border-gray-200">
-            {{ $comisiones->links() }}
-        </div>
-        @else
-        <div class="text-center py-12">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No hay comisiones</h3>
-            <p class="mt-1 text-sm text-gray-500">Comienza creando una nueva comisión.</p>
-            @if(auth()->user()->hasPermission('comisiones.crear'))
-            <div class="mt-6">
-                <a href="{{ route('comisiones.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
-                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Nueva Comisión
-                </a>
-            </div>
-            @endif
-        </div>
-        @endif
+                @empty
+                    <tr>
+                        <td colspan="5" class="px-5 py-16 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <p class="mt-3 text-gray-500">No se encontraron comisiones con los filtros seleccionados.</p>
+                            @if(auth()->user()->hasPermission('comisiones.crear'))
+                            <div class="mt-4">
+                                <a href="{{ route('comisiones.create') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-green-700 hover:bg-green-800">
+                                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Nueva Comisión
+                                </a>
+                            </div>
+                            @endif
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
+
+    @if($comisiones->hasPages())
+    <div class="mt-6">
+        {{ $comisiones->withQueryString()->links() }}
+    </div>
+    @endif
 </div>
 @endsection

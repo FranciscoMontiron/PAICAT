@@ -20,7 +20,7 @@
     @php
     $totalAsignar = collect($simulacion)->sum('cantidadAsignados');
     @endphp
-    <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg p-6 mb-6 text-white">
+    <div class="bg-gradient-to-r from-utn-dark to-utn-dark-light rounded-lg shadow-lg p-6 mb-6 text-white">
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold">{{ $totalAsignar }} alumnos serán asignados</h2>
@@ -51,7 +51,8 @@
     </div>
 
     <!-- Formulario de confirmación -->
-    <form method="POST" action="{{ route('asignacion-alumnos.ejecutar') }}" id="formConfirmar">
+    <form method="POST" action="{{ route('asignacion-alumnos.ejecutar') }}" id="formConfirmar"
+          data-confirm="¿Estás seguro de ejecutar la asignación de {{ $totalAsignar }} alumnos?" data-confirm-title="Confirmar asignación">
         @csrf
         @foreach($comisionesIds as $id)
         <input type="hidden" name="comisiones[]" value="{{ $id }}">
@@ -90,7 +91,7 @@
                     <div class="mt-3 pt-3 border-t border-gray-200">
                         <span class="text-xs font-medium text-gray-500 mr-2">Distribución por carrera:</span>
                         @foreach($item['distribucionPorCarrera'] as $espId => $cantidad)
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 mr-1">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-utn-blue/10 text-utn-dark mr-1">
                             {{ isset($especialidades[$espId]) ? Str::limit($especialidades[$espId], 20) : 'Sin carrera' }}: {{ $cantidad }}
                         </span>
                         @endforeach
@@ -155,8 +156,8 @@
                 </a>
                 @if($totalAsignar > 0)
                 <button type="submit"
-                    class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition duration-200 flex items-center shadow-md"
-                    onclick="return confirm('¿Estás seguro de ejecutar la asignación de {{ $totalAsignar }} alumnos?')">
+                    class="bg-green-700 hover:bg-green-800 text-white font-semibold px-6 py-3 rounded-lg transition duration-200 flex items-center shadow-md"
+                    >
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>

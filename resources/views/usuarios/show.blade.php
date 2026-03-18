@@ -9,7 +9,7 @@
             <p class="text-gray-600 mt-1">Información completa y permisos del usuario</p>
         </div>
         <a href="{{ route('usuarios.edit', $usuario) }}"
-           class="bg-utn-blue text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-200">
+           class="bg-utn-blue text-white px-6 py-2 rounded-lg hover:bg-utn-dark transition-colors duration-200">
             Editar Usuario
         </a>
     </div>
@@ -21,8 +21,8 @@
         </div>
         <div class="p-6">
             <div class="flex items-center mb-6">
-                <div class="h-20 w-20 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <span class="text-indigo-600 font-bold text-2xl">
+                <div class="h-20 w-20 rounded-full bg-utn-blue/10 flex items-center justify-center">
+                    <span class="text-utn-blue-dark font-bold text-2xl">
                         {{ strtoupper(substr($usuario->name, 0, 1)) }}{{ strtoupper(substr($usuario->apellido, 0, 1)) }}
                     </span>
                 </div>
@@ -75,7 +75,7 @@
                         <span class="inline-block px-3 py-1 text-sm rounded-full
                             @if($role->slug === 'admin') bg-red-100 text-red-800
                             @elseif($role->slug === 'coordinador') bg-purple-100 text-purple-800
-                            @elseif($role->slug === 'docente') bg-blue-100 text-blue-800
+                            @elseif($role->slug === 'docente') bg-utn-blue/10 text-utn-blue-dark
                             @else bg-gray-100 text-gray-800
                             @endif">
                             {{ $role->nombre }}

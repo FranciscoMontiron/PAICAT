@@ -29,12 +29,12 @@
         <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
             <div class="flex">
                 <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="h-5 w-5 text-utn-blue-dark" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z"/>
                     </svg>
                 </div>
                 <div class="ml-3">
-                    <p class="text-sm text-blue-700">
+                    <p class="text-sm text-utn-blue-dark">
                         <strong>Búsqueda limitada:</strong> Solo puedes buscar alumnos que están inscritos en tus comisiones.
                     </p>
                 </div>
@@ -103,7 +103,7 @@
                                         <p class="text-sm text-gray-600">{{ $alumno->email }}</p>
                                         <div class="flex items-center gap-3 mt-2">
                                             @if($alumno->dni)
-                                                <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                                                <span class="px-2 py-1 text-xs font-semibold rounded bg-utn-blue/10 text-utn-blue-dark">
                                                     DNI: {{ $alumno->dni }}
                                                 </span>
                                             @endif

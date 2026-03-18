@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ConfiguracionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,6 +41,31 @@ class Comision extends Model
         'Virtual' => 'Virtual',
         'Semipresencial' => 'Semipresencial',
     ];
+
+    public static function getTiposIngreso(): array
+    {
+        return self::TIPOS_INGRESO;
+    }
+
+    public static function getTurnos(): array
+    {
+        return self::TURNOS;
+    }
+
+    public static function getModalidades(): array
+    {
+        return self::MODALIDADES;
+    }
+
+    public static function getEstados(): array
+    {
+        return ConfiguracionService::get('estados_comision', [
+            'activa' => 'Activa',
+            'cerrada' => 'Cerrada',
+            'finalizada' => 'Finalizada',
+            'cancelada' => 'Cancelada',
+        ]);
+    }
 
     protected $fillable = [
         'nombre',

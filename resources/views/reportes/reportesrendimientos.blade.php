@@ -3,7 +3,7 @@
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-utn-blue">
+        <h1 class="text-3xl font-bold text-utn-blue-dark">
             Módulo de Reportes de Rendimientos
         </h1>
     </div>
@@ -36,7 +36,7 @@
                                     </label>
                                     <select name="especialidad_id"
                                             class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                         <option value="">Todas</option>
                                         @foreach($especialidades as $esp)
                                             <option value="{{ $esp->id_sysacad }}"
@@ -54,7 +54,7 @@
                                 </label>
                                 <select name="materia_id"
                                         class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                            focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                     <option value="">Todas</option>
                                     @foreach($materias as $materia)
                                         <option value="{{ $materia->id }}"
@@ -72,7 +72,7 @@
                                 </label>
                                 <select name="comision_id"
                                         class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                            focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                     <option value="">Todas</option>
                                     @foreach($comisiones as $comision)
                                         <option value="{{ $comision->id }}"
@@ -91,7 +91,7 @@
                                 <input type="date" name="fecha_desde"
                                     value="{{ request('fecha_desde') }}"
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                            focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                             </div>
 
                             {{-- Hasta --}}
@@ -102,7 +102,7 @@
                                 <input type="date" name="fecha_hasta"
                                     value="{{ request('fecha_hasta') }}"
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                            focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                             </div>
 
                         </div>
@@ -117,7 +117,7 @@
                         </a>
                         <button type="submit"
                                 class="px-6 py-2 bg-utn-blue text-white rounded-lg
-                                    hover:bg-blue-800 transition-colors duration-200">
+                                    hover:bg-utn-dark transition-colors duration-200">
                             Filtrar
                         </button>
                     </div>

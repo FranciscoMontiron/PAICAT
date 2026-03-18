@@ -54,6 +54,11 @@ class Trayectoria extends Model
         self::ESTADO_CANCELADO => 'Cancelado',
     ];
 
+    public static function getEstados(): array
+    {
+        return self::ESTADOS;
+    }
+
     /**
      * Relación con la inscripción
      */
@@ -75,7 +80,7 @@ class Trayectoria extends Model
      */
     public function getEstadoNombreAttribute(): string
     {
-        return self::ESTADOS[$this->estado] ?? $this->estado;
+        return static::getEstados()[$this->estado] ?? $this->estado;
     }
 
     /**

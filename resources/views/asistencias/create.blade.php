@@ -9,7 +9,7 @@
                 <h1 class="text-3xl font-bold text-gray-800">Pasar Asistencia</h1>
                 <p class="text-gray-600 mt-2">{{ $comision->codigo }} - {{ $comision->nombre }}</p>
                 @if(isset($materia))
-                <p class="text-indigo-600 mt-1 font-medium">
+                <p class="text-utn-blue-dark mt-1 font-medium">
                     <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                     </svg>
@@ -154,7 +154,7 @@
                                 <input type="radio"
                                     name="asistencias[{{ $index }}][estado]"
                                     value="justificado"
-                                    class="w-5 h-5 text-blue-600 focus:ring-blue-500"
+                                    class="w-5 h-5 text-utn-blue-dark focus:ring-utn-blue-dark"
                                     {{ $estadoActual == 'justificado' ? 'checked' : '' }}>
                             </td>
                             <td class="px-6 py-4">
@@ -179,7 +179,7 @@
                     <a href="{{ route('asistencias.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
                         Cancelar
                     </a>
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition duration-200 font-medium">
+                    <button type="submit" class="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded-lg transition duration-200 font-medium">
                         <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
@@ -209,11 +209,18 @@
     }
 
     // Confirmación antes de enviar
-    document.getElementById('asistenciaForm').addEventListener('submit', function(e) {
+    document.getElementById('asistenciaForm').addEventListener('submit', async function(e) {
+        if (this.dataset.confirmBypassed) return;
+        e.preventDefault();
         const fecha = document.querySelector('input[name="fecha"]').value;
-        const confirm = window.confirm(`¿Confirmar asistencia para el día ${fecha}?`);
-        if (!confirm) {
-            e.preventDefault();
+        const ok = await paiConfirm({
+            title: 'Confirmar asistencia',
+            message: `¿Confirmar asistencia para el día ${fecha}?`
+        });
+        if (ok) {
+            this.dataset.confirmBypassed = 'true';
+            this.requestSubmit ? this.requestSubmit() : this.submit();
+            delete this.dataset.confirmBypassed;
         }
     });
 </script>

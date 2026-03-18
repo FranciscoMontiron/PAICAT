@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Services\ConfiguracionService;
 
 class Cursada extends Model
 {
@@ -33,6 +34,11 @@ class Cursada extends Model
         self::ESTADO_ABANDONO => 'Abandonó',
         self::ESTADO_BAJA => 'Baja',
     ];
+
+    public static function getEstados(): array
+    {
+        return self::ESTADOS;
+    }
 
     /**
      * Nota mínima para aprobar (ingreso UTN)
@@ -231,7 +237,8 @@ class Cursada extends Model
      */
     public function determinaAprobacion(): bool
     {
-        return $this->nota_final !== null && $this->nota_final >= self::NOTA_APROBACION;
+        $notaMinima = ConfiguracionService::get('nota_aprobacion', 6);
+        return $this->nota_final !== null && $this->nota_final >= $notaMinima;
     }
 
     /**

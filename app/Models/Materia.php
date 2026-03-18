@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ConfiguracionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -47,6 +48,11 @@ class Materia extends Model
         self::TIPO_OPTATIVA => 'Optativa',
         self::TIPO_NIVELACION => 'Nivelación',
     ];
+
+    public static function getTipos(): array
+    {
+        return ConfiguracionService::get('tipos_materia', self::TIPOS);
+    }
 
     /**
      * Relación N:M con comisiones (una materia puede estar en varias comisiones)
@@ -165,7 +171,7 @@ class Materia extends Model
         // Calcular alumnos en riesgo (< 75% de asistencia)
         $inscripciones = $asistencias->pluck('inscripcion_comision_id')->unique();
         $alumnosEnRiesgo = 0;
-        $minimoAsistencia = config('paicat.porcentaje_asistencia_minimo', 75);
+        $minimoAsistencia = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
 
         foreach ($inscripciones as $inscripcionId) {
             $asistenciasAlumno = $asistencias->where('inscripcion_comision_id', $inscripcionId);

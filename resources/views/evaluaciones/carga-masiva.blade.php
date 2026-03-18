@@ -10,13 +10,13 @@
         <nav class="flex mb-3" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 text-sm">
                 <li>
-                    <a href="{{ route('evaluaciones.index') }}" class="text-gray-500 hover:text-utn-blue">Evaluaciones</a>
+                    <a href="{{ route('evaluaciones.index') }}" class="text-gray-500 hover:text-utn-blue-dark">Evaluaciones</a>
                 </li>
                 <li class="flex items-center">
                     <svg class="w-4 h-4 text-gray-400 mx-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                     </svg>
-                    <a href="{{ route('evaluaciones.comision', $comision) }}" class="text-gray-500 hover:text-utn-blue">{{ $comision->nombre }}</a>
+                    <a href="{{ route('evaluaciones.comision', $comision) }}" class="text-gray-500 hover:text-utn-blue-dark">{{ $comision->nombre }}</a>
                 </li>
                 <li class="flex items-center">
                     <svg class="w-4 h-4 text-gray-400 mx-1" fill="currentColor" viewBox="0 0 20 20">
@@ -33,7 +33,7 @@
                 <div class="flex items-center gap-3 mt-1">
                     <span class="px-2.5 py-0.5 text-xs font-medium rounded-full
                         @switch($evaluacion->tipo)
-                            @case('parcial') bg-blue-100 text-blue-700 @break
+                            @case('parcial') bg-utn-blue/10 text-utn-blue-dark @break
                             @case('recuperatorio') bg-orange-100 text-orange-700 @break
                             @case('trabajo_practico') bg-green-100 text-green-700 @break
                             @case('examen_final') bg-red-100 text-red-700 @break
@@ -69,10 +69,11 @@
 
     {{-- Estadísticas rápidas --}}
     @php
+        $notaMinimaRegular = \App\Services\ConfiguracionService::get('nota_minima_regular', 4);
         $totalAlumnos = $inscripciones->count();
         $notasCargadas = collect($notas)->count();
-        $aprobados = collect($notas)->filter(fn($n) => $n && $n->nota >= 4)->count();
-        $desaprobados = collect($notas)->filter(fn($n) => $n && $n->nota < 4)->count();
+        $aprobados = collect($notas)->filter(fn($n) => $n && $n->nota >= $notaMinimaRegular)->count();
+        $desaprobados = collect($notas)->filter(fn($n) => $n && $n->nota < $notaMinimaRegular)->count();
     @endphp
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-lg shadow p-4 text-center">
@@ -80,12 +81,12 @@
             <p class="text-xs text-gray-500">Total Alumnos</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4 text-center">
-            <p class="text-2xl font-bold text-blue-600">{{ $notasCargadas }}</p>
+            <p class="text-2xl font-bold text-utn-blue-dark">{{ $notasCargadas }}</p>
             <p class="text-xs text-gray-500">Notas Cargadas</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4 text-center">
             <p class="text-2xl font-bold text-green-600">{{ $aprobados }}</p>
-            <p class="text-xs text-gray-500">Aprobados (>=4)</p>
+            <p class="text-xs text-gray-500">Aprobados (>={{ $notaMinimaRegular }})</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4 text-center">
             <p class="text-2xl font-bold text-red-600">{{ $desaprobados }}</p>
@@ -102,7 +103,7 @@
                 <div class="flex items-center gap-4">
                     <div class="relative">
                         <input type="text" id="buscarAlumno" placeholder="Buscar alumno..."
-                               class="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent w-64">
+                               class="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent w-64">
                         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
@@ -111,7 +112,7 @@
                         <span id="contadorVisibles">{{ $totalAlumnos }}</span> de {{ $totalAlumnos }} alumnos
                     </span>
                 </div>
-                <button type="submit" class="inline-flex items-center px-5 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                <button type="submit" class="inline-flex items-center px-5 py-2 bg-green-700 text-white font-medium rounded-lg hover:bg-green-800 transition-colors">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
@@ -165,7 +166,7 @@
                                 <td class="px-5 py-3 whitespace-nowrap text-center">
                                     @if($notaActual)
                                         <span class="inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold
-                                            {{ $valorNota >= 4 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
+                                            {{ $valorNota >= $notaMinimaRegular ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
                                             {{ number_format($valorNota, 1) }}
                                         </span>
                                     @else
@@ -179,7 +180,7 @@
                                            min="0"
                                            max="10"
                                            step="0.5"
-                                           class="w-24 text-center py-2 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent nota-input"
+                                           class="w-24 text-center py-2 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent nota-input"
                                            placeholder="-"
                                            tabindex="{{ $loop->iteration }}">
                                 </td>
@@ -215,7 +216,7 @@
                         Todos 7
                     </button>
                 </div>
-                <button type="submit" class="inline-flex items-center px-6 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                <button type="submit" class="inline-flex items-center px-6 py-2.5 bg-green-700 text-white font-medium rounded-lg hover:bg-green-800 transition-colors">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
@@ -245,8 +246,14 @@ document.getElementById('buscarAlumno').addEventListener('input', function() {
 });
 
 // Limpiar notas
-function limpiarNotas() {
-    if (confirm('¿Limpiar todas las notas?')) {
+async function limpiarNotas() {
+    const ok = await paiConfirm({
+        title: 'Limpiar notas',
+        message: '¿Limpiar todas las notas?',
+        type: 'danger',
+        confirmText: 'Limpiar'
+    });
+    if (ok) {
         document.querySelectorAll('.nota-input').forEach(input => {
             input.value = '';
         });
@@ -272,7 +279,7 @@ document.querySelectorAll('.nota-input').forEach(input => {
         const valor = parseFloat(this.value);
         this.classList.remove('bg-green-50', 'bg-red-50', 'text-green-700', 'text-red-700');
         if (!isNaN(valor)) {
-            if (valor >= 4) {
+            if (valor >= {{ $notaMinimaRegular }}) {
                 this.classList.add('bg-green-50', 'text-green-700');
             } else {
                 this.classList.add('bg-red-50', 'text-red-700');

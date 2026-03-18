@@ -41,6 +41,11 @@ class Asistencia extends Model
         self::ESTADO_JUSTIFICADO => 'Justificado',
     ];
 
+    public static function getEstados(): array
+    {
+        return self::ESTADOS;
+    }
+
     /**
      * Relación con la inscripción (alumno + año) - NUEVA RELACIÓN PRINCIPAL
      */
@@ -79,7 +84,7 @@ class Asistencia extends Model
      */
     public function getEstadoNombreAttribute(): string
     {
-        return self::ESTADOS[$this->estado] ?? $this->estado;
+        return static::getEstados()[$this->estado] ?? $this->estado;
     }
 
     /**

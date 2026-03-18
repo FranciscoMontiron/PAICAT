@@ -17,7 +17,7 @@
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Nombre *</label>
                     <input type="text" name="name" id="name" value="{{ old('name', $evaluacion->nombre) }}" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('name') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('name') border-red-500 @enderror">
                     @error('name')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -27,7 +27,7 @@
                 <div>
                     <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-2">Descripcion</label>
                     <input type="text" name="descripcion" id="descripcion" value="{{ old('descripcion', $evaluacion->descripcion) }}"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('descripcion') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('descripcion') border-red-500 @enderror">
                     @error('descripcion')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -38,10 +38,10 @@
                 <div>
                     <label for="tipo" class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
                     <select name="tipo" id="tipo" required value="{{ old('tipo', $evaluacion->tipo) }}"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('tipo') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('tipo') border-red-500 @enderror">
                         <option value="">Seleccione una opción...</option>
                         @php
-                        $tipos = ['parcial', 'recuperatorio', 'examen_final', 'otro'];
+                        $tipos = array_keys(\App\Services\ConfiguracionService::get('tipos_evaluacion', config('paicat.tipos_evaluacion')));
                         @endphp
                         @foreach ($tipos as $t)
                         <option value="{{ $t }}"
@@ -60,7 +60,7 @@
                 <div>
                     <label for="fecha" class="block text-sm font-medium text-gray-700 mb-2">Fecha *</label>
                     <input type="date" name="fecha" id="fecha" value="{{ old('fecha', optional($evaluacion->fecha)->format('Y-m-d')) }}" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('fecha') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('fecha') border-red-500 @enderror">
                     @error('fecha')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -70,7 +70,7 @@
                 <div>
                     <label for="porcentual" class="block text-sm font-medium text-gray-700 mb-2">Peso porcentual *</label>
                     <input type="number" name="porcentual" id="porcentual" value="{{ old('porcentual', $evaluacion->peso_porcentual) }}" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('porcentual') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('porcentual') border-red-500 @enderror">
                     @error('porcentual')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -80,7 +80,7 @@
                 <div>
                     <label for="comision" class="block text-sm font-medium text-gray-700 mb-2">Comisión</label>
                     <select name="comision" id="comision"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('comision') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('comision') border-red-500 @enderror">
                         <option value="">Seleccione una comisión...</option>
                         @foreach ($comisiones as $comision)
                         <option value="{{ $comision->id }}" {{ old('comision', $evaluacion->comision_id) == $comision->id ? 'selected' : '' }}>
@@ -97,7 +97,7 @@
                 <div>
                     <label for="materia_id" class="block text-sm font-medium text-gray-700 mb-2">Materia *</label>
                     <select name="materia_id" id="materia_id" required disabled
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent bg-gray-100">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent bg-gray-100">
                         <option value="">Cargando...</option>
                     </select>
                     @error('materia_id')
@@ -109,7 +109,7 @@
                 <div>
                     <label for="anio" class="block text-sm font-medium text-gray-700 mb-2">Año</label>
                     <input type="number" name="anio" id="anio" value="{{ old('anio', $evaluacion->anio) }}" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('anio') border-red-500 @enderror">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('anio') border-red-500 @enderror">
                     @error('anio')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -124,7 +124,7 @@
                     Cancelar
                 </a>
                 <button type="submit"
-                    class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors duration-200">
+                    class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors duration-200">
                     Editar Evaluacion
                 </button>
             </div>

@@ -6,9 +6,9 @@
     {{-- Breadcrumb --}}
     <nav class="mb-4 text-sm">
         <ol class="flex items-center space-x-2">
-            <li><a href="{{ route('evaluaciones.index') }}" class="text-utn-blue hover:underline">Evaluaciones</a></li>
+            <li><a href="{{ route('evaluaciones.index') }}" class="text-utn-blue-dark hover:underline">Evaluaciones</a></li>
             <li><span class="text-gray-400">/</span></li>
-            <li><a href="{{ route('evaluaciones.notas.index', $comision) }}" class="text-utn-blue hover:underline">Notas - {{ $comision->nombre }}</a></li>
+            <li><a href="{{ route('evaluaciones.notas.index', $comision) }}" class="text-utn-blue-dark hover:underline">Notas - {{ $comision->nombre }}</a></li>
             <li><span class="text-gray-400">/</span></li>
             <li class="text-gray-500">Nueva Nota</li>
         </ol>
@@ -44,7 +44,7 @@
                 <div>
                     <label for="inscripcion_comision_id" class="block text-sm font-medium text-gray-700 mb-2">Alumno *</label>
                     <select name="inscripcion_comision_id" id="inscripcion_comision_id" required 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('inscripcion_comision_id') border-red-500 @enderror">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('inscripcion_comision_id') border-red-500 @enderror">
                         <option value="">Seleccione un alumno...</option>
                         @foreach ($inscripciones as $inscripcion)
                             @php
@@ -79,7 +79,7 @@
                 <div>
                     <label for="evaluacion_id" class="block text-sm font-medium text-gray-700 mb-2">Evaluación *</label>
                     <select name="evaluacion_id" id="evaluacion_id" required 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('evaluacion_id') border-red-500 @enderror">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('evaluacion_id') border-red-500 @enderror">
                         <option value="">Seleccione una evaluación...</option>
                         @foreach ($evaluaciones as $evaluacion)
                             <option value="{{ $evaluacion->id }}"
@@ -98,7 +98,7 @@
                     <label for="nota" class="block text-sm font-medium text-gray-700 mb-2">Nota (0-10) *</label>
                     <input type="number" name="nota" id="nota" value="{{ old('nota') }}" required
                            step="0.01" min="0" max="10"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('nota') border-red-500 @enderror">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('nota') border-red-500 @enderror">
                     @error('nota')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -108,7 +108,7 @@
                 <div class="md:col-span-2">
                     <label for="observaciones" class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
                     <textarea name="observaciones" id="observaciones" rows="3"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('observaciones') border-red-500 @enderror">{{ old('observaciones') }}</textarea>
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('observaciones') border-red-500 @enderror">{{ old('observaciones') }}</textarea>
                     @error('observaciones')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -122,7 +122,7 @@
                     Cancelar
                 </a>
                 <button type="submit"
-                        class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors duration-200">
+                        class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors duration-200">
                     Guardar Nota
                 </button>
             </div>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ConfiguracionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -59,6 +60,11 @@ class CondicionParticular extends Model
         self::TIPO_OTRA => 'Otra',
     ];
 
+    public static function getTipos(): array
+    {
+        return ConfiguracionService::get('tipos_condicion', self::TIPOS);
+    }
+
     /**
      * Relación con la inscripción
      */
@@ -88,7 +94,7 @@ class CondicionParticular extends Model
      */
     public function getTipoNombreAttribute(): string
     {
-        return self::TIPOS[$this->tipo] ?? $this->tipo;
+        return static::getTipos()[$this->tipo] ?? $this->tipo;
     }
 
     /**

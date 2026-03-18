@@ -1,15 +1,16 @@
 @extends('layouts.app')
 @section('title', 'Historial de Asistencias - ' . $materia->nombre)
 @section('content')
+@php $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75); @endphp
 <div class="container mx-auto px-4 py-6">
     
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-sm text-gray-600 mb-6">
-        <a href="{{ route('asistencias.index') }}" class="hover:text-blue-600 transition">Asistencias</a>
+        <a href="{{ route('asistencias.index') }}" class="hover:text-utn-blue-dark transition">Asistencias</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
-        <a href="{{ route('asistencias.comision.materias', $comision) }}" class="hover:text-blue-600 transition">{{ $comision->codigo }}</a>
+        <a href="{{ route('asistencias.comision.materias', $comision) }}" class="hover:text-utn-blue-dark transition">{{ $comision->codigo }}</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
@@ -21,8 +22,8 @@
         <div class="flex items-center justify-between">
             <div>
                 <div class="flex items-center gap-3 mb-2">
-                    <div class="p-3 bg-indigo-100 rounded-lg">
-                        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-3 bg-utn-blue/10 rounded-lg">
+                        <svg class="w-8 h-8 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                         </svg>
                     </div>
@@ -35,7 +36,7 @@
             </div>
             <div class="flex gap-3">
                 @if(auth()->user()->hasPermission('asistencias.crear') && $comision->estado == 'activa')
-                    <a href="{{ route('asistencias.materia.registrar', [$comision, $materia]) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200">
+                    <a href="{{ route('asistencias.materia.registrar', [$comision, $materia]) }}" class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg transition duration-200">
                         <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>
@@ -56,8 +57,8 @@
     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center">
-                <div class="bg-blue-100 rounded-full p-3 mr-4">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-utn-blue/10 rounded-full p-3 mr-4">
+                    <svg class="w-6 h-6 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
                 </div>
@@ -147,7 +148,7 @@
                         Alumnos en Riesgo de Deserción en esta Materia
                     </h3>
                     <p class="mt-1 text-sm text-red-700">
-                        Hay {{ $estadisticas->where('en_riesgo', true)->count() }} alumno(s) con menos del 75% de asistencia en {{ $materia->nombre }}.
+                        Hay {{ $estadisticas->where('en_riesgo', true)->count() }} alumno(s) con menos del {{ $asistenciaMinima }}% de asistencia en {{ $materia->nombre }}.
                     </p>
                 </div>
             </div>
@@ -168,7 +169,7 @@
                     <input type="date" name="fecha_hasta" id="fecha_hasta" value="{{ request('fecha_hasta') }}" 
                            class="w-full rounded-lg border-gray-300">
                 </div>
-                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                <button type="submit" class="px-6 py-2 bg-utn-blue-darker hover:bg-utn-dark-light text-white rounded-lg transition">
                     Filtrar
                 </button>
                 @if(request('fecha_desde') || request('fecha_hasta'))
@@ -187,7 +188,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <h2 class="text-lg font-semibold text-gray-800">Lista de Alumnos</h2>
-                    <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                    <span class="px-2 py-1 text-xs font-semibold rounded bg-utn-blue/10 text-utn-blue-dark">
                         {{ $estadisticas->count() }} alumnos
                     </span>
                 </div>
@@ -271,7 +272,7 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
-                                        <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded bg-utn-blue/10 text-utn-blue-dark">
                                             {{ $stat['justificados'] }}
                                         </span>
                                     </td>
@@ -279,14 +280,14 @@
                                         <div class="flex items-center justify-center">
                                             <div class="w-20">
                                                 <div class="text-sm font-bold
-                                                    @if($stat['porcentaje'] >= 75) text-green-600
+                                                    @if($stat['porcentaje'] >= $asistenciaMinima) text-green-600
                                                     @elseif($stat['porcentaje'] >= 50) text-yellow-600
                                                     @else text-red-600 @endif">
                                                     {{ $stat['porcentaje'] }}%
                                                 </div>
                                                 <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
                                                     <div class="h-1.5 rounded-full
-                                                        @if($stat['porcentaje'] >= 75) bg-green-600
+                                                        @if($stat['porcentaje'] >= $asistenciaMinima) bg-green-700
                                                         @elseif($stat['porcentaje'] >= 50) bg-yellow-600
                                                         @else bg-red-600 @endif"
                                                         style="width: {{ $stat['porcentaje'] }}%"></div>
@@ -308,7 +309,7 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <div class="flex flex-col gap-1 items-center">
                                             <a href="{{ route('asistencias.alumno.historial', [$comision, $stat['inscripcion']]) }}" 
-                                               class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                               class="text-utn-blue-dark hover:text-utn-blue-dark text-sm font-medium">
                                                 Ver detalle
                                             </a>
                                             @if($stat['ausentes'] > 0)
@@ -333,7 +334,7 @@
                     <p class="mt-2 text-sm text-gray-500">Aún no se ha registrado ninguna asistencia para esta materia.</p>
                     @if(auth()->user()->hasPermission('asistencias.crear'))
                         <div class="mt-6">
-                            <a href="{{ route('asistencias.materia.registrar', [$comision, $materia]) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                            <a href="{{ route('asistencias.materia.registrar', [$comision, $materia]) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-800">
                                 <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                 </svg>
@@ -374,7 +375,7 @@
                         </div>
                         @if(auth()->user()->hasPermission('asistencias.editar'))
                         <a href="{{ route('asistencias.materia.editar', [$comision, $materia, 'fecha' => $fecha]) }}" 
-                           class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                           class="text-utn-blue-dark hover:text-utn-blue-dark text-sm font-medium">
                             Editar
                         </a>
                         @endif
@@ -393,8 +394,8 @@
                             <p class="text-lg font-bold text-red-800">{{ $asistencias->where('estado', 'ausente')->count() }}</p>
                         </div>
                         <div class="text-center p-2 bg-blue-50 rounded">
-                            <p class="text-xs text-blue-700">Justificados</p>
-                            <p class="text-lg font-bold text-blue-800">{{ $asistencias->where('estado', 'justificado')->count() }}</p>
+                            <p class="text-xs text-utn-blue-dark">Justificados</p>
+                            <p class="text-lg font-bold text-utn-blue-dark">{{ $asistencias->where('estado', 'justificado')->count() }}</p>
                         </div>
                     </div>
                 </div>
@@ -406,7 +407,7 @@
 
     <!-- Botones de expansión rápida -->
     <div class="flex justify-center gap-4 mb-6">
-        <button onclick="expandAll()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+        <button onclick="expandAll()" class="px-4 py-2 bg-utn-blue-darker hover:bg-utn-dark-light text-white rounded-lg transition">
             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"></path>
             </svg>
@@ -426,17 +427,17 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
                 <p class="text-gray-700"><span class="font-semibold">% Asistencia:</span> (Presentes + Tardanzas + Justificados) / Total Clases</p>
-                <p class="text-gray-700 mt-2"><span class="font-semibold">En Riesgo:</span> Menos del 75% de asistencia o 3+ ausencias consecutivas</p>
+                <p class="text-gray-700 mt-2"><span class="font-semibold">En Riesgo:</span> Menos del {{ $asistenciaMinima }}% de asistencia o 3+ ausencias consecutivas</p>
             </div>
             <div>
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center">
-                        <span class="w-3 h-3 bg-green-600 rounded-full mr-2"></span>
-                        <span class="text-gray-700">≥75% Asistencia</span>
+                        <span class="w-3 h-3 bg-green-700 rounded-full mr-2"></span>
+                        <span class="text-gray-700">≥{{ $asistenciaMinima }}% Asistencia</span>
                     </div>
                     <div class="flex items-center">
                         <span class="w-3 h-3 bg-yellow-600 rounded-full mr-2"></span>
-                        <span class="text-gray-700">50-74% Asistencia</span>
+                        <span class="text-gray-700">50-{{ $asistenciaMinima - 1 }}% Asistencia</span>
                     </div>
                     <div class="flex items-center">
                         <span class="w-3 h-3 bg-red-600 rounded-full mr-2"></span>

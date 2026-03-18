@@ -17,7 +17,7 @@
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Nombre *</label>
                     <input type="text" name="name" id="name" value="{{ old('name', $usuario->name) }}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('name') border-red-500 @enderror">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('name') border-red-500 @enderror">
                     @error('name')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -27,7 +27,7 @@
                 <div>
                     <label for="apellido" class="block text-sm font-medium text-gray-700 mb-2">Apellido *</label>
                     <input type="text" name="apellido" id="apellido" value="{{ old('apellido', $usuario->apellido) }}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('apellido') border-red-500 @enderror">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('apellido') border-red-500 @enderror">
                     @error('apellido')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -37,7 +37,7 @@
                 <div>
                     <label for="dni" class="block text-sm font-medium text-gray-700 mb-2">DNI</label>
                     <input type="text" name="dni" id="dni" value="{{ old('dni', $usuario->dni) }}"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('dni') border-red-500 @enderror">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('dni') border-red-500 @enderror">
                     @error('dni')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -47,7 +47,7 @@
                 <div>
                     <label for="telefono" class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
                     <input type="text" name="telefono" id="telefono" value="{{ old('telefono', $usuario->telefono) }}"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('telefono') border-red-500 @enderror">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('telefono') border-red-500 @enderror">
                     @error('telefono')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -57,7 +57,7 @@
                 <div class="md:col-span-2">
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico *</label>
                     <input type="email" name="email" id="email" value="{{ old('email', $usuario->email) }}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('email') border-red-500 @enderror">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('email') border-red-500 @enderror">
                     @error('email')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -67,7 +67,7 @@
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Nueva Contraseña</label>
                     <input type="password" name="password" id="password"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('password') border-red-500 @enderror">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('password') border-red-500 @enderror">
                     <p class="mt-1 text-xs text-gray-500">Dejar en blanco para mantener la contraseña actual</p>
                     @error('password')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -78,17 +78,17 @@
                 <div>
                     <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">Confirmar Nueva Contraseña</label>
                     <input type="password" name="password_confirmation" id="password_confirmation"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                 </div>
 
                 {{-- Estado --}}
                 <div>
                     <label for="estado" class="block text-sm font-medium text-gray-700 mb-2">Estado *</label>
                     <select name="estado" id="estado" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('estado') border-red-500 @enderror">
-                        <option value="activo" {{ old('estado', $usuario->estado) === 'activo' ? 'selected' : '' }}>Activo</option>
-                        <option value="inactivo" {{ old('estado', $usuario->estado) === 'inactivo' ? 'selected' : '' }}>Inactivo</option>
-                        <option value="suspendido" {{ old('estado', $usuario->estado) === 'suspendido' ? 'selected' : '' }}>Suspendido</option>
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('estado') border-red-500 @enderror">
+                        @foreach(['activo' => 'Activo', 'inactivo' => 'Inactivo', 'suspendido' => 'Suspendido'] as $key => $label)
+                            <option value="{{ $key }}" {{ old('estado', $usuario->estado) === $key ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
                     </select>
                     @error('estado')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -103,7 +103,7 @@
                         <div class="flex items-center">
                             <input type="checkbox" name="roles[]" value="{{ $role->id }}" id="role_{{ $role->id }}"
                                    {{ in_array($role->id, old('roles', $usuario->roles->pluck('id')->toArray())) ? 'checked' : '' }}
-                                   class="h-4 w-4 text-utn-blue border-gray-300 rounded focus:ring-utn-blue">
+                                   class="h-4 w-4 text-utn-blue-dark border-gray-300 rounded focus:ring-utn-blue-dark">
                             <label for="role_{{ $role->id }}" class="ml-2 text-sm text-gray-700">{{ $role->nombre }}</label>
                         </div>
                         @endforeach
@@ -121,7 +121,7 @@
                     Cancelar
                 </a>
                 <button type="submit"
-                        class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors duration-200">
+                        class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors duration-200">
                     Actualizar Usuario
                 </button>
             </div>

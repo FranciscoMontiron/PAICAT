@@ -26,9 +26,9 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Tipo <span class="text-red-500">*</span></label>
                         <select name="tipo" required class="w-full rounded-lg border-gray-300">
-                            <option value="obligatoria" {{ old('tipo', $materia->tipo) == 'obligatoria' ? 'selected' : '' }}>Obligatoria</option>
-                            <option value="optativa" {{ old('tipo', $materia->tipo) == 'optativa' ? 'selected' : '' }}>Optativa</option>
-                            <option value="nivelacion" {{ old('tipo', $materia->tipo) == 'nivelacion' ? 'selected' : '' }}>Nivelación</option>
+                            @foreach(\App\Models\Materia::getTipos() as $key => $label)
+                                <option value="{{ $key }}" {{ old('tipo', $materia->tipo) == $key ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -66,7 +66,7 @@
 
             <div class="flex justify-end gap-3 mt-8 pt-6 border-t">
                 <a href="{{ route('materias.index') }}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Cancelar</a>
-                <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Actualizar Materia</button>
+                <button type="submit" class="px-6 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 font-medium">Actualizar Materia</button>
             </div>
         </form>
     </div>

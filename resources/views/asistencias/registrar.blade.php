@@ -5,11 +5,11 @@
 
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
-        <a href="{{ route('asistencias.index') }}" class="hover:text-blue-600">Asistencias</a>
+        <a href="{{ route('asistencias.index') }}" class="hover:text-utn-blue-dark">Asistencias</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
-        <a href="{{ route('asistencias.comision', $comision->id) }}" class="hover:text-blue-600">{{ $comision->nombre }}</a>
+        <a href="{{ route('asistencias.comision', $comision->id) }}" class="hover:text-utn-blue-dark">{{ $comision->nombre }}</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
@@ -53,7 +53,7 @@
             <!-- Encabezado -->
             <div class="flex justify-between items-start mb-6">
                 <div>
-                    <h1 class="text-3xl font-bold text-utn-blue mb-1">Registrar Asistencia</h1>
+                    <h1 class="text-3xl font-bold text-utn-blue-dark mb-1">Registrar Asistencia</h1>
                     <p class="text-gray-600">{{ $comision->nombre }} - {{ $comision->turno }}</p>
                 </div>
                 <a href="{{ route('asistencias.comision', $comision->id) }}" 
@@ -70,7 +70,7 @@
                 
                 <!-- Selector de fecha -->
                 <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <label for="fecha" class="block text-sm font-semibold text-blue-900 mb-2">
+                    <label for="fecha" class="block text-sm font-semibold text-utn-dark mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                             <line x1="16" y1="2" x2="16" y2="6"/>
@@ -85,11 +85,11 @@
                                id="fecha" 
                                value="{{ old('fecha', $fecha) }}" 
                                max="{{ today()->format('Y-m-d') }}"
-                               class="border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               class="border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-utn-blue-dark focus:border-blue-500"
                                onchange="this.form.submit()">
-                        <span class="text-sm text-blue-700">
+                        <span class="text-sm text-utn-blue-dark">
                             @if($fecha === today()->format('Y-m-d'))
-                                <span class="bg-blue-100 px-3 py-1 rounded-full font-semibold">📅 Hoy</span>
+                                <span class="bg-utn-blue/10 px-3 py-1 rounded-full font-semibold">📅 Hoy</span>
                             @else
                                 Modificando asistencia anterior
                             @endif
@@ -131,7 +131,7 @@
                                     <span class="text-yellow-600">⏱</span> Tardanza
                                 </th>
                                 <th class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 w-16">
-                                    <span class="text-blue-600">📝</span> Justificado
+                                    <span class="text-utn-blue-dark">📝</span> Justificado
                                 </th>
                                 <th class="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700">Observaciones</th>
                             </tr>
@@ -169,7 +169,7 @@
                                                name="asistencias[{{ $loop->index }}][observaciones]" 
                                                value="{{ old('asistencias.'.$loop->index.'.observaciones', $asistencia->observaciones ?? '') }}" 
                                                placeholder="Ej: Llegó 10 min tarde"
-                                               class="border border-gray-300 rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                               class="border border-gray-300 rounded px-3 py-2 w-full focus:ring-2 focus:ring-utn-blue-dark focus:border-blue-500 text-sm">
                                         <input type="hidden" 
                                                name="asistencias[{{ $loop->index }}][inscripcion_comision_id]" 
                                                value="{{ $i->id }}">
@@ -187,7 +187,7 @@
                         Cancelar
                     </a>
                     <button type="submit" 
-                            class="px-8 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium shadow-sm flex items-center gap-2">
+                            class="px-8 py-3 bg-green-500 text-white rounded-lg hover:bg-green-800 transition font-medium shadow-sm flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
                             <polyline points="17 21 17 13 7 13 7 21"/>

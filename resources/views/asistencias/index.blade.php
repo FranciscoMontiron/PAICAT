@@ -3,6 +3,7 @@
 @section('title', 'Gestión de Asistencias')
 
 @section('content')
+@php $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75); @endphp
 <div class="container mx-auto px-4 py-6">
 
     <!-- Header -->
@@ -40,12 +41,12 @@
         <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
             <div class="flex">
                 <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="h-5 w-5 text-utn-blue-dark" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z"/>
                     </svg>
                 </div>
                 <div class="ml-3">
-                    <p class="text-sm text-blue-700">
+                    <p class="text-sm text-utn-blue-dark">
                         <strong>Vista del Docente:</strong> Mostrando solo las comisiones en las que estás asignado como docente.
                     </p>
                 </div>
@@ -61,8 +62,8 @@
                     <p class="text-sm text-gray-600">Comisiones Activas</p>
                     <p class="text-3xl font-bold text-gray-800">{{ $stats['comisiones_activas'] }}</p>
                 </div>
-                <div class="bg-blue-100 rounded-full p-3">
-                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-utn-blue/10 rounded-full p-3">
+                    <svg class="w-8 h-8 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                     </svg>
                 </div>
@@ -87,10 +88,10 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600">Asistencia Promedio</p>
-                    <p class="text-3xl font-bold text-indigo-600">{{ $stats['promedio_asistencia'] }}%</p>
+                    <p class="text-3xl font-bold text-utn-blue-dark">{{ $stats['promedio_asistencia'] }}%</p>
                 </div>
-                <div class="bg-indigo-100 rounded-full p-3">
-                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-utn-blue/10 rounded-full p-3">
+                    <svg class="w-8 h-8 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
                 </div>
@@ -113,175 +114,163 @@
     </div>
 
     <!-- Filtros -->
-    <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
-        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800">Filtros</h2>
-        </div>
-        <div class="p-6">
-            <form method="GET" action="{{ route('asistencias.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Año</label>
-                    <select name="anio" class="w-full rounded-lg border-gray-300">
-                        <option value="">Todos</option>
-                        @for($i = date('Y'); $i >= 2020; $i--)
-                        <option value="{{ $i }}" {{ request('anio') == $i ? 'selected' : '' }}>{{ $i }}</option>
-                        @endfor
-                    </select>
+    <div class="bg-white shadow-md rounded-lg p-4 mb-6">
+        <form method="GET" action="{{ route('asistencias.index') }}" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                <div class="relative">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" name="buscar" value="{{ request('buscar') }}"
+                           placeholder="Nombre o código de comisión..."
+                           class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                 </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Período</label>
-                    <select name="periodo" class="w-full rounded-lg border-gray-300">
-                        <option value="">Todos</option>
-                        <option value="Verano" {{ request('periodo') == 'Verano' ? 'selected' : '' }}>Verano</option>
-                        <option value="Invierno" {{ request('periodo') == 'Invierno' ? 'selected' : '' }}>Invierno</option>
-                        <option value="Anual" {{ request('periodo') == 'Anual' ? 'selected' : '' }}>Anual</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                    <select name="estado" class="w-full rounded-lg border-gray-300">
-                        <option value="">Todos</option>
-                        <option value="activa" {{ request('estado') == 'activa' || !request()->has('estado') ? 'selected' : '' }}>Activa</option>
-                        <option value="finalizada" {{ request('estado') == 'finalizada' ? 'selected' : '' }}>Finalizada</option>
-                        <option value="cerrada" {{ request('estado') == 'cerrada' ? 'selected' : '' }}>Cerrada</option>
-                    </select>
-                </div>
-
-                <div class="flex items-end">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">
-                        Aplicar Filtros
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div class="w-28">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Año</label>
+                <select name="anio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
+                    <option value="">Todos</option>
+                    @foreach($aniosDisponibles as $anio)
+                        <option value="{{ $anio }}" {{ request('anio') == $anio ? 'selected' : '' }}>{{ $anio }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="w-36">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Período</label>
+                <select name="periodo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
+                    <option value="">Todos</option>
+                    @foreach(\App\Models\Comision::getTiposIngreso() as $clave => $label)
+                        <option value="{{ $label }}" {{ request('periodo') == $label ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="w-36">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
+                    <option value="">Todos</option>
+                    @foreach(\App\Models\Comision::getEstados() as $clave => $label)
+                        <option value="{{ $clave }}" {{ request('estado') == $clave || (!request()->has('estado') && $clave == 'activa') ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors">
+                Filtrar
+            </button>
+            @if(request()->hasAny(['buscar', 'anio', 'periodo', 'estado']))
+                <a href="{{ route('asistencias.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Limpiar
+                </a>
+            @endif
+        </form>
     </div>
 
     <!-- Listado de Comisiones -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800">Comisiones ({{ $comisiones->total() }})</h2>
-        </div>
-        <div class="p-6">
-            @if($comisiones->count() > 0)
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @foreach($comisiones as $comision)
-                @php
-                    $esPresencial = strtolower($comision->modalidad ?? '') === 'presencial';
-                @endphp
-                <a href="{{ route('asistencias.comision.materias', $comision) }}" 
-                   class="block border-2 border-gray-200 rounded-lg p-5 hover:shadow-xl hover:border-blue-500 transition-all duration-200 group {{ $esPresencial ? '' : 'bg-gray-50' }}">
-                    
-                    <!-- Header Comisión -->
-                    <div class="mb-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-xl font-bold text-gray-800 group-hover:text-blue-600">{{ $comision->codigo }}</h3>
-                            <div class="flex items-center gap-1.5">
-                                <span class="px-2 py-1 text-xs font-semibold rounded
-                                    @if($comision->modalidad === 'Presencial') bg-blue-100 text-blue-800
-                                    @elseif($comision->modalidad === 'Semipresencial') bg-purple-100 text-purple-800
-                                    @else bg-gray-100 text-gray-600
-                                    @endif">
-                                    {{ $comision->modalidad ?? 'Sin modalidad' }}
-                                </span>
-                                <span class="px-2 py-1 text-xs font-semibold rounded
-                                    @if($comision->estado == 'activa') bg-green-100 text-green-800
-                                    @elseif($comision->estado == 'finalizada') bg-gray-100 text-gray-800
-                                    @else bg-yellow-100 text-yellow-800 @endif">
-                                    {{ ucfirst($comision->estado) }}
-                                </span>
+    <div class="bg-white shadow-md rounded-xl overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Comisión</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Período</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Alumnos</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Materias</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Asistencia</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">En Riesgo</th>
+                    <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @forelse($comisiones as $comision)
+                    @php
+                        $alumnosCount = $comision->inscripciones->count();
+                        $materiasCount = $comision->materias->count();
+                    @endphp
+                    <tr class="hover:bg-gray-50 transition-colors cursor-pointer group" onclick="window.location='{{ route('asistencias.comision.materias', $comision) }}'">
+                        <td class="px-5 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-utn-blue/10 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900 group-hover:text-utn-blue-dark transition-colors">{{ $comision->nombre }}</p>
+                                    <p class="text-xs text-gray-500">
+                                        {{ $comision->codigo ?? '' }}
+                                        {{ $comision->turno ? '&bull; ' . ucfirst($comision->turno) : '' }}
+                                        {{ $comision->modalidad ? '&bull; ' . $comision->modalidad : '' }}
+                                        @if($comision->estado != 'activa')
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                                                @if($comision->estado == 'finalizada') bg-gray-100 text-gray-600
+                                                @elseif($comision->estado == 'cerrada') bg-yellow-100 text-yellow-700
+                                                @else bg-red-100 text-red-700
+                                                @endif">
+                                                {{ ucfirst($comision->estado) }}
+                                            </span>
+                                        @endif
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                        <p class="text-sm text-gray-600">{{ $comision->nombre }}</p>
-                    </div>
-
-                    <!-- Información -->
-                    <div class="space-y-3 mb-4">
-                        <div class="flex items-center text-sm text-gray-600">
-                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
-                            <span>{{ $comision->docente->name ?? 'Sin docente' }}</span>
-                        </div>
-                        <div class="flex items-center text-sm text-gray-600">
-                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                            </svg>
-                            <span>{{ $comision->inscripciones->count() }} alumnos</span>
-                        </div>
-                        <div class="flex items-center text-sm text-gray-600">
-                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                            </svg>
-                            <span>{{ $comision->materias->count() }} materias</span>
-                        </div>
-                        <div class="flex items-center text-sm text-gray-600">
-                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                            <span>{{ $comision->anio }} - {{ $comision->periodo }} - {{ $comision->turno }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Estadísticas -->
-                    <div class="grid grid-cols-2 gap-3 pt-4 border-t border-gray-200">
-                        <div class="text-center">
-                            <p class="text-xs text-gray-500">Asistencia</p>
-                            <p class="text-lg font-bold 
-                                @if($comision->promedio_asistencia >= 75) text-green-600
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-utn-blue/10 text-utn-blue-dark">
+                                {{ $comision->periodo }} {{ $comision->anio }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="text-sm font-semibold text-gray-700">{{ $alumnosCount }}</span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="text-sm font-semibold text-gray-700">{{ $materiasCount }}</span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="text-sm font-bold
+                                @if($comision->promedio_asistencia >= $asistenciaMinima) text-green-600
                                 @elseif($comision->promedio_asistencia >= 50) text-yellow-600
-                                @else text-red-600 @endif">
+                                @else text-red-600
+                                @endif">
                                 {{ round($comision->promedio_asistencia, 1) }}%
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="text-sm font-semibold {{ $comision->alumnos_en_riesgo > 0 ? 'text-red-600' : 'text-gray-400' }}">
+                                {{ $comision->alumnos_en_riesgo }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-right">
+                            <span class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-utn-blue-dark opacity-0 group-hover:opacity-100 transition-opacity">
+                                Abrir
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </span>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="px-5 py-16 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            <p class="mt-3 text-gray-500">
+                                @if(isset($esDocente) && $esDocente)
+                                    No tienes comisiones asignadas actualmente.
+                                @else
+                                    No se encontraron comisiones con los filtros seleccionados.
+                                @endif
                             </p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-xs text-gray-500">En Riesgo</p>
-                            <p class="text-lg font-bold text-red-600">{{ $comision->alumnos_en_riesgo }}</p>
-                        </div>
-                    </div>
-
-                    <!-- Mensaje para modalidades no presenciales -->
-                    @if(!$esPresencial)
-                    <div class="mt-3 pt-3 border-t border-gray-100">
-                        <p class="text-xs text-gray-500 text-center">
-                            No se registra asistencia en comisiones {{ strtolower($comision->modalidad ?? 'no presenciales') }}
-                        </p>
-                    </div>
-                    @endif
-
-                    <!-- Indicador de acción -->
-                    <div class="mt-4 flex items-center justify-center text-gray-400 group-hover:text-blue-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                        <span class="ml-1 text-sm">Ver materias y asistencias</span>
-                    </div>
-                </a>
-                @endforeach
-            </div>
-
-            <!-- Paginación -->
-            <div class="mt-6">
-                {{ $comisiones->links() }}
-            </div>
-            @else
-            <div class="text-center py-12">
-                <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                </svg>
-                <h3 class="mt-4 text-lg font-medium text-gray-900">No hay comisiones</h3>
-                <p class="mt-2 text-sm text-gray-500">
-                    @if(isset($esDocente) && $esDocente)
-                    No tienes comisiones asignadas actualmente.
-                    @else
-                    No hay comisiones que cumplan con los filtros seleccionados.
-                    @endif
-                </p>
-            </div>
-            @endif
-        </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
+
+    @if($comisiones->hasPages())
+    <div class="mt-6">
+        {{ $comisiones->withQueryString()->links() }}
+    </div>
+    @endif
 
 </div>
 @endsection

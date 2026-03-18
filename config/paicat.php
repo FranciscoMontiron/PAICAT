@@ -14,6 +14,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Nota mínima para regularidad
+    |--------------------------------------------------------------------------
+    |
+    | Nota mínima para alcanzar condición de regular (debe rendir final).
+    | Por defecto es 4.
+    |
+    */
+    'nota_minima_regular' => env('NOTA_MINIMA_REGULAR', 4),
+
+    /*
+    |--------------------------------------------------------------------------
     | Porcentaje mínimo de asistencia
     |--------------------------------------------------------------------------
     |
@@ -96,4 +107,24 @@ return [
     |--------------------------------------------------------------------------
     */
     'porcentaje_asistencia_minimo' => env('ASISTENCIA_MINIMA', 75),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nombre de la institución
+    |--------------------------------------------------------------------------
+    |
+    | Nombre de la facultad/institución que aparece en exports y documentos.
+    |
+    */
+    'nombre_institucion' => env('NOMBRE_INSTITUCION', 'FACULTAD REGIONAL LA PLATA'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sigla de la institución
+    |--------------------------------------------------------------------------
+    |
+    | Abreviatura de la facultad (ej: FRLP, FRA, FRBA) para uso en títulos cortos.
+    |
+    */
+    'sigla_institucion' => env('SIGLA_INSTITUCION', 'FRLP'),
 ];

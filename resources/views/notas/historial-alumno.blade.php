@@ -16,6 +16,10 @@
         $apellido = 'Alumno';
         $dni = 'N/A';
     }
+
+    $notaAprobacion = \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+    $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
+    $notaMinimaRegular = \App\Services\ConfiguracionService::get('nota_minima_regular', 4);
 @endphp
 
 @section('title', 'Historial de Notas - ' . $apellido)
@@ -25,9 +29,9 @@
     {{-- Breadcrumb --}}
     <nav class="mb-6" aria-label="Breadcrumb">
         <ol class="flex items-center space-x-2 text-sm text-gray-500">
-            <li><a href="{{ route('evaluaciones.index') }}" class="hover:text-utn-blue">Evaluaciones</a></li>
+            <li><a href="{{ route('evaluaciones.index') }}" class="hover:text-utn-blue-dark">Evaluaciones</a></li>
             <li><span class="mx-2">/</span></li>
-            <li><a href="{{ route('evaluaciones.notas.index', $comision) }}" class="hover:text-utn-blue">Notas {{ $comision->codigo }}</a></li>
+            <li><a href="{{ route('evaluaciones.notas.index', $comision) }}" class="hover:text-utn-blue-dark">Notas {{ $comision->codigo }}</a></li>
             <li><span class="mx-2">/</span></li>
             <li class="text-gray-900 font-medium">Historial del Alumno</li>
         </ol>
@@ -64,7 +68,7 @@
         {{-- Promedio Ponderado --}}
         <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-utn-blue">
             <p class="text-sm text-gray-600">Promedio Ponderado</p>
-            <p class="text-3xl font-bold {{ $promedioPonderado >= 6 ? 'text-green-600' : ($promedioPonderado >= 4 ? 'text-blue-600' : 'text-red-600') }}">
+            <p class="text-3xl font-bold {{ $promedioPonderado >= $notaAprobacion ? 'text-green-600' : ($promedioPonderado >= $notaMinimaRegular ? 'text-utn-blue-dark' : 'text-red-600') }}">
                 {{ $promedioPonderado !== null ? number_format($promedioPonderado, 2) : '-' }}
             </p>
         </div>
@@ -80,7 +84,7 @@
         {{-- Asistencia --}}
         <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-purple-500">
             <p class="text-sm text-gray-600">Asistencia</p>
-            <p class="text-3xl font-bold {{ $porcentajeAsistencia >= 75 ? 'text-green-600' : 'text-yellow-600' }}">
+            <p class="text-3xl font-bold {{ $porcentajeAsistencia >= $asistenciaMinima ? 'text-green-600' : 'text-yellow-600' }}">
                 {{ $porcentajeAsistencia }}%
             </p>
         </div>
@@ -96,7 +100,7 @@
             <p class="text-sm text-gray-600">Condición Final</p>
             <p class="text-xl font-bold 
                 @if($condicion['color'] === 'green') text-green-600
-                @elseif($condicion['color'] === 'blue') text-blue-600
+                @elseif($condicion['color'] === 'blue') text-utn-blue-dark
                 @elseif($condicion['color'] === 'yellow') text-yellow-600
                 @elseif($condicion['color'] === 'red') text-red-600
                 @else text-gray-600
@@ -132,7 +136,7 @@
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500">
                         <span class="px-2 py-1 text-xs rounded-full
-                            @if($nota->evaluacion->tipo === 'parcial') bg-blue-100 text-blue-800
+                            @if($nota->evaluacion->tipo === 'parcial') bg-utn-blue/10 text-utn-blue-dark
                             @elseif($nota->evaluacion->tipo === 'recuperatorio') bg-yellow-100 text-yellow-800
                             @elseif($nota->evaluacion->tipo === 'examen_final') bg-purple-100 text-purple-800
                             @else bg-gray-100 text-gray-800
@@ -148,8 +152,8 @@
                     </td>
                     <td class="px-6 py-4 text-center">
                         <span class="inline-flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-lg
-                            @if($nota->nota >= 6) bg-green-500
-                            @elseif($nota->nota >= 4) bg-blue-500
+                            @if($nota->nota >= $notaAprobacion) bg-green-500
+                            @elseif($nota->nota >= $notaMinimaRegular) bg-blue-500
                             @else bg-red-500
                             @endif">
                             {{ number_format($nota->nota, 1) }}

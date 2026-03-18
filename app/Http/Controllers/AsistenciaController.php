@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Services\ConfiguracionService;
 
 class AsistenciaController extends Controller
 {
@@ -79,6 +80,14 @@ class AsistenciaController extends Controller
         }
 
         // Filtros adicionales
+        if ($request->filled('buscar')) {
+            $buscar = $request->buscar;
+            $query->where(function ($q) use ($buscar) {
+                $q->where('nombre', 'like', '%' . $buscar . '%')
+                  ->orWhere('codigo', 'like', '%' . $buscar . '%');
+            });
+        }
+
         if ($request->filled('anio')) {
             $query->where('anio', $request->anio);
         }
@@ -112,11 +121,12 @@ class AsistenciaController extends Controller
                 $alumnosEnRiesgo = 0;
                 $sumaPorcentajes = 0;
                 
+                $minimoAsistencia = ConfiguracionService::get('asistencia_minima', 75);
                 foreach ($comision->inscripciones as $inscripcion) {
                     $porcentaje = $this->calcularPorcentajeAsistencia($inscripcion);
                     $sumaPorcentajes += $porcentaje;
                     
-                    if ($porcentaje < 75) {
+                    if ($porcentaje < $minimoAsistencia) {
                         $alumnosEnRiesgo++;
                     }
                 }
@@ -156,14 +166,10 @@ class AsistenciaController extends Controller
             ];
         }
 
-        // Paginar comisiones
+        // Paginar comisiones (ordenar alfabéticamente)
         $comisiones = $query
-            ->orderByRaw("CASE
-                WHEN modalidad = 'Presencial' THEN 1
-                WHEN modalidad = 'Semipresencial' THEN 2
-                ELSE 3
-            END")
-            ->orderBy('codigo')
+            ->orderBy('nombre', 'asc')
+            ->orderBy('codigo', 'asc')
             ->paginate(12)
             ->appends($request->all());
         
@@ -176,11 +182,12 @@ class AsistenciaController extends Controller
             if ($cantidadAlumnos > 0) {
                 $sumaPorcentajes = 0;
                 
+                $minimoAsistencia = ConfiguracionService::get('asistencia_minima', 75);
                 foreach ($comision->inscripciones as $inscripcion) {
                     $porcentaje = $this->calcularPorcentajeAsistencia($inscripcion);
                     $sumaPorcentajes += $porcentaje;
                     
-                    if ($porcentaje < 75) {
+                    if ($porcentaje < $minimoAsistencia) {
                         $alumnosEnRiesgo++;
                     }
                 }
@@ -192,7 +199,10 @@ class AsistenciaController extends Controller
             $comision->alumnos_en_riesgo = $alumnosEnRiesgo;
         }
 
-        return view('asistencias.index', compact('comisiones', 'stats', 'esDocente'));
+        // Años disponibles desde la BD
+        $aniosDisponibles = Comision::select('anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
+
+        return view('asistencias.index', compact('comisiones', 'stats', 'esDocente', 'aniosDisponibles'));
     }
 
     /**
@@ -230,10 +240,11 @@ class AsistenciaController extends Controller
         $alumnosEnRiesgo = 0;
         $sumaPorcentajes = 0;
 
+        $minimoAsistencia = ConfiguracionService::get('asistencia_minima', 75);
         foreach ($comision->inscripciones as $inscripcion) {
             $porcentaje = $this->calcularPorcentajeAsistencia($inscripcion);
             $sumaPorcentajes += $porcentaje;
-            if ($porcentaje < 75) {
+            if ($porcentaje < $minimoAsistencia) {
                 $alumnosEnRiesgo++;
             }
         }
@@ -302,7 +313,7 @@ class AsistenciaController extends Controller
 
                 $asistio = $presentes + $tardanzas + $justificados;
                 $porcentaje = round(($asistio / $total) * 100, 1);
-                $enRiesgo = $porcentaje < 75;
+                $enRiesgo = $porcentaje < ConfiguracionService::get('asistencia_minima', 75);
 
                 $estadisticas->push([
                     'inscripcion' => $inscripcion,
@@ -411,7 +422,7 @@ class AsistenciaController extends Controller
             'fecha' => 'required|date|before_or_equal:today',
             'asistencias' => 'required|array',
             'asistencias.*.inscripcion_comision_id' => 'required|exists:inscripciones_comision,id',
-            'asistencias.*.estado' => 'required|in:presente,ausente,tardanza,justificado',
+            'asistencias.*.estado' => 'required|in:' . implode(',', array_keys(\App\Models\Asistencia::getEstados())),
             'asistencias.*.observaciones' => 'nullable|string|max:500',
         ]);
 
@@ -523,7 +534,7 @@ class AsistenciaController extends Controller
             'fecha' => 'required|date|before_or_equal:today',
             'asistencias' => 'required|array',
             'asistencias.*.inscripcion_comision_id' => 'required|exists:inscripciones_comision,id',
-            'asistencias.*.estado' => 'required|in:presente,ausente,tardanza,justificado',
+            'asistencias.*.estado' => 'required|in:' . implode(',', array_keys(\App\Models\Asistencia::getEstados())),
             'asistencias.*.observaciones' => 'nullable|string|max:500'
         ]);
 
@@ -607,7 +618,7 @@ class AsistenciaController extends Controller
             'fecha' => 'required|date',
             'asistencias' => 'required|array',
             'asistencias.*.inscripcion_comision_id' => 'required|exists:inscripciones_comision,id',
-            'asistencias.*.estado' => 'required|in:presente,ausente,tardanza,justificado',
+            'asistencias.*.estado' => 'required|in:' . implode(',', array_keys(\App\Models\Asistencia::getEstados())),
             'asistencias.*.observaciones' => 'nullable|string|max:500'
         ]);
 
@@ -715,8 +726,8 @@ class AsistenciaController extends Controller
 
             $porcentaje = $this->calcularPorcentajeAsistencia($inscripcion);
 
-            // En riesgo si tiene menos de 75% de asistencia
-            return $porcentaje < 75;
+            // En riesgo si tiene menos del mínimo de asistencia configurado
+            return $porcentaje < ConfiguracionService::get('asistencia_minima', 75);
         })->sortBy(function ($inscripcion) {
             return $this->calcularPorcentajeAsistencia($inscripcion);
         });
@@ -826,7 +837,7 @@ class AsistenciaController extends Controller
                             'ausentes' => $ausentes,
                             'justificados' => $justificados,
                             'porcentaje' => $porcentaje,
-                            'en_riesgo' => $porcentaje < config('paicat.asistencia_minima', 75),
+                            'en_riesgo' => $porcentaje < \App\Services\ConfiguracionService::get('asistencia_minima', 75),
                         ];
                     })
                     ->sortBy('alumno_nombre');
@@ -952,7 +963,7 @@ class AsistenciaController extends Controller
             'materia_id' => 'nullable|exists:materias,id',
             'asistencias' => 'required|array',
             'asistencias.*.inscripcion_id' => 'required|exists:inscripcion_comisiones,id',
-            'asistencias.*.estado' => 'required|in:presente,ausente,tardanza,justificado',
+            'asistencias.*.estado' => 'required|in:' . implode(',', array_keys(\App\Models\Asistencia::getEstados())),
             'asistencias.*.observaciones' => 'nullable|string|max:500',
         ]);
 
@@ -1047,7 +1058,7 @@ class AsistenciaController extends Controller
             'materia_id' => 'nullable|exists:materias,id',
             'asistencias' => 'required|array',
             'asistencias.*.inscripcion_comision_id' => 'required|exists:inscripciones_comision,id',
-            'asistencias.*.estado' => 'required|in:presente,ausente,tardanza,justificado',
+            'asistencias.*.estado' => 'required|in:' . implode(',', array_keys(\App\Models\Asistencia::getEstados())),
             'asistencias.*.observaciones' => 'nullable|string|max:500'
         ]);
 
@@ -1188,7 +1199,7 @@ class AsistenciaController extends Controller
         // Calcular estadísticas
         $totalAusencias = 0;
         $enRiesgo = false;
-        $minimoAsistencia = config('paicat.porcentaje_asistencia_minimo', 75);
+        $minimoAsistencia = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
 
         foreach ($inscripciones as $inscripcion) {
             // Contar ausencias sin justificar

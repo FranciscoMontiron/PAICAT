@@ -109,7 +109,7 @@
             <nav class="flex gap-6">
                 <button
                     id="tab-asistencias"
-                    class="tab-btn border-b-2 border-utn-blue text-utn-blue font-semibold px-1 pb-2"
+                    class="tab-btn border-b-2 border-utn-blue text-utn-blue-dark font-semibold px-1 pb-2"
                 >
                     Asistencias
                 </button>
@@ -145,7 +145,7 @@
                                         </label>
                                         <select name="materia_id"
                                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                    focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                    focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                             <option value="">Todas</option>
                                             @foreach($materias as $materia)
                                                 <option value="{{ $materia->id }}"
@@ -165,7 +165,7 @@
                             </a>
 
                             <button type="submit"
-                                    class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800">
+                                    class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark">
                                 Filtrar
                             </button>
                         </div>
@@ -255,7 +255,7 @@
                                     <th class="px-4 py-2 text-center text-green-600">Asist.</th>
                                     <th class="px-4 py-2 text-center text-red-600">Aus.</th>
                                     <th class="px-4 py-2 text-center text-orange-600">Tard.</th>
-                                    <th class="px-4 py-2 text-center text-blue-600">Just.</th>
+                                    <th class="px-4 py-2 text-center text-utn-blue-dark">Just.</th>
                                     <th class="px-4 py-2 text-center">Estado</th>
                                 </tr>
                             </thead>
@@ -383,13 +383,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function activar(tab) {
         Object.values(tabs).forEach(t => {
             t.content.classList.add('hidden');
-            t.btn.classList.remove('border-utn-blue', 'text-utn-blue', 'font-semibold');
+            t.btn.classList.remove('border-utn-blue', 'text-utn-blue-dark', 'font-semibold');
             t.btn.classList.add('border-transparent', 'text-gray-500');
         });
 
         tabs[tab].content.classList.remove('hidden');
         tabs[tab].btn.classList.remove('border-transparent', 'text-gray-500');
-        tabs[tab].btn.classList.add('border-utn-blue', 'text-utn-blue', 'font-semibold');
+        tabs[tab].btn.classList.add('border-utn-blue', 'text-utn-blue-dark', 'font-semibold');
     }
 
     tabs.asistencias.btn.addEventListener('click', () => activar('asistencias'));

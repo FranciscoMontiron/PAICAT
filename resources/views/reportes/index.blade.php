@@ -6,13 +6,13 @@
     
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div class="flex items-center justify-between mb-6">
-                <h1 class="text-3xl font-bold text-utn-blue">Módulo de Reportes y Estadísticas</h1>
+                <h1 class="text-3xl font-bold text-utn-blue-dark">Módulo de Reportes y Estadísticas</h1>
             </div>
         </div>
 
     <div>
         <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <svg class="w-5 h-5 text-utn-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
             </svg>
             Módulos de Reportes de asistencias
@@ -33,14 +33,14 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="font-semibold text-gray-900 group-hover:text-utn-blue transition-colors">
+                        <h3 class="font-semibold text-gray-900 group-hover:text-utn-blue-dark transition-colors">
                             Reportes
                         </h3>
                         <p class="text-sm text-gray-500 mt-1">
                             Reportes de asistencias por comisión
                         </p>
                     </div>
-                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue group-hover:translate-x-1 transition-all"
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue-dark group-hover:translate-x-1 transition-all"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 5l7 7-7 7"/>
@@ -61,14 +61,14 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="font-semibold text-gray-900 group-hover:text-utn-blue transition-colors">
+                        <h3 class="font-semibold text-gray-900 group-hover:text-utn-blue-dark transition-colors">
                             Reportes de Inscripciones
                         </h3>
                         <p class="text-sm text-gray-500 mt-1">
                             Reportes de inscripciones
                         </p>
                     </div>
-                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue group-hover:translate-x-1 transition-all"
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue-dark group-hover:translate-x-1 transition-all"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 5l7 7-7 7"/>
@@ -89,14 +89,14 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="font-semibold text-gray-900 group-hover:text-utn-blue transition-colors">
+                        <h3 class="font-semibold text-gray-900 group-hover:text-utn-blue-dark transition-colors">
                             Reportes de Rendimientos
                         </h3>
                         <p class="text-sm text-gray-500 mt-1">
                             Reportes de rendiientos academicos
                         </p>
                     </div>
-                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue group-hover:translate-x-1 transition-all"
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue-dark group-hover:translate-x-1 transition-all"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 5l7 7-7 7"/>
@@ -117,14 +117,14 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="font-semibold text-gray-900 group-hover:text-utn-blue transition-colors">
+                        <h3 class="font-semibold text-gray-900 group-hover:text-utn-blue-dark transition-colors">
                             Reportes de Alumnos
                         </h3>
                         <p class="text-sm text-gray-500 mt-1">
                             Reportes de Alumnos
                         </p>
                     </div>
-                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue group-hover:translate-x-1 transition-all"
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue-dark group-hover:translate-x-1 transition-all"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 5l7 7-7 7"/>

@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Estudiantes Inactivos')
 @section('content')
+@php $diasInactividad = \App\Services\ConfiguracionService::get('dias_inactividad', 30); @endphp
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
@@ -29,12 +30,12 @@
         <form method="GET" action="{{ route('inscripciones.inactivos') }}" class="flex items-center gap-4">
             <label for="dias" class="text-sm font-medium text-gray-700">Días de inactividad:</label>
             <input type="number" name="dias" id="dias" value="{{ $diasLimite }}" min="1" max="365"
-                class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition">
+                class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent text-sm">
+            <button type="submit" class="bg-utn-blue-darker text-white px-4 py-2 rounded-lg hover:bg-utn-dark-light text-sm font-medium transition">
                 Filtrar
             </button>
             <span class="text-sm text-gray-500 ml-2">
-                (Configurado por defecto: {{ config('paicat.dias_inactividad', 30) }} días)
+                (Configurado por defecto: {{ \App\Services\ConfiguracionService::get('dias_inactividad', 30) }} días)
             </span>
         </form>
     </div>
@@ -62,7 +63,7 @@
     @if($inactivos->count() > 0)
     <!-- Formulario de baja masiva -->
     <form method="POST" action="{{ route('inscripciones.baja-inactivos') }}" id="formBaja"
-        onsubmit="return confirm('¿Confirma marcar como LIBRE a los estudiantes seleccionados?')">
+        data-confirm="¿Confirma marcar como LIBRE a los estudiantes seleccionados?" data-confirm-type="danger" data-confirm-title="Marcar como LIBRE" data-confirm-text="Confirmar">
         @csrf
 
         <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
@@ -118,13 +119,13 @@
                             <td class="px-6 py-4">
                                 @php $dias = $item['dias_sin_actividad']; @endphp
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                                    {{ $dias > 60 ? 'bg-red-100 text-red-800' : ($dias > 30 ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800') }}">
+                                    {{ $dias > ($diasInactividad * 2) ? 'bg-red-100 text-red-800' : ($dias > $diasInactividad ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800') }}">
                                     {{ $dias }} días
                                 </span>
                             </td>
                             <td class="px-6 py-4">
                                 <a href="{{ route('inscripciones.show', $item['inscripcion']) }}"
-                                    class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                    class="text-utn-blue-dark hover:text-utn-blue-dark text-sm font-medium">
                                     Ver detalle
                                 </a>
                             </td>

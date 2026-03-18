@@ -1,12 +1,16 @@
 @extends('layouts.app')
 @section('title', 'Notas - ' . $comision->codigo)
 @section('content')
+@php
+    $notaAprobacion = \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+    $notaMinimaRegular = \App\Services\ConfiguracionService::get('nota_minima_regular', 4);
+@endphp
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     {{-- Breadcrumb --}}
     <nav class="mb-4 text-sm">
         <ol class="flex items-center space-x-2">
-            <li><a href="{{ route('evaluaciones.index') }}" class="text-utn-blue hover:underline">Evaluaciones</a></li>
+            <li><a href="{{ route('evaluaciones.index') }}" class="text-utn-blue-dark hover:underline">Evaluaciones</a></li>
             <li><span class="text-gray-400">/</span></li>
             <li class="text-gray-500">Notas - {{ $comision->codigo }}</li>
         </ol>
@@ -23,7 +27,7 @@
         <div class="flex flex-wrap gap-2">
             {{-- Exportar Acta --}}
             <a href="{{ route('evaluaciones.notas.exportar-acta', $comision) }}"
-                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2">
+                class="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-colors duration-200 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                 </svg>
@@ -33,7 +37,7 @@
             @if(auth()->user()->hasPermission('evaluaciones.crear'))
             {{-- Recuperatorio --}}
             <a href="{{ route('evaluaciones.notas.recuperatorio.create', $comision) }}"
-                class="bg-utn-orange text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors duration-200 flex items-center gap-2">
+                class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors duration-200 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
@@ -42,7 +46,7 @@
 
             {{-- Cargar Nota --}}
             <a href="{{ route('evaluaciones.notas.create', $comision) }}"
-                class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center gap-2">
+                class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-utn-dark transition-colors duration-200 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -86,7 +90,7 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <span class="text-sm text-gray-500 hidden sm:inline">{{ $inscripciones->count() }} alumnos</span>
-                    <button type="submit" class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-blue-800 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                    <button type="submit" class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-utn-dark text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
                         </svg>
@@ -105,7 +109,7 @@
                                     <span class="font-bold text-gray-700">{{ Str::limit($eval->nombre, 12) }}</span>
                                     <span class="text-[10px] text-gray-400">{{ $eval->fecha?->format('d/m') ?? '-' }}</span>
                                     <span class="text-[9px] px-1 rounded-sm bg-gray-200 text-gray-600 mt-1 inline-block">
-                                        {{ $eval->tipo == 'examen_final' ? 'FINAL' : ($eval->tipo == 'recuperatorio' ? 'REC' : 'PARCIAL') }}
+                                        {{ \App\Models\Evaluacion::tiposDisponibles()[$eval->tipo] ?? ucfirst(str_replace('_', ' ', $eval->tipo)) }}
                                     </span>
                                 </div>
                             </th>
@@ -143,8 +147,8 @@
                             // Estilo según nota
                             $inputClass = "border-gray-300";
                             if($valor !== '') {
-                            if($valor >= 6) $inputClass = "border-green-300 bg-green-50 text-green-800 font-bold focus:ring-green-500 focus:border-green-500";
-                            elseif($valor >= 4) $inputClass = "border-blue-300 bg-blue-50 text-blue-800 font-bold focus:ring-blue-500 focus:border-blue-500";
+                            if($valor >= $notaAprobacion) $inputClass = "border-green-300 bg-green-50 text-green-800 font-bold focus:ring-green-500 focus:border-green-500";
+                            elseif($valor >= $notaMinimaRegular) $inputClass = "border-blue-300 bg-blue-50 text-utn-blue-dark font-bold focus:ring-utn-blue-dark focus:border-blue-500";
                             else $inputClass = "border-red-300 bg-red-50 text-red-800 font-bold focus:ring-red-500 focus:border-red-500";
                             }
                             @endphp
@@ -172,7 +176,7 @@
             </div>
 
             <div class="bg-gray-50 px-6 py-4 border-t flex justify-end">
-                <button type="submit" class="bg-utn-blue text-white px-6 py-2 rounded-lg hover:bg-blue-800 font-medium shadow-md transition-all transform hover:scale-105">
+                <button type="submit" class="bg-utn-blue text-white px-6 py-2 rounded-lg hover:bg-utn-dark font-medium shadow-md transition-all transform hover:scale-105">
                     Guardar Todas las Notas
                 </button>
             </div>
@@ -218,7 +222,7 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm text-gray-900">{{ $nota->evaluacion->nombre ?? 'N/A' }}</div>
                         <span class="px-2 py-0.5 text-xs rounded
-                                @if($nota->evaluacion->tipo === 'parcial') bg-blue-100 text-blue-700
+                                @if($nota->evaluacion->tipo === 'parcial') bg-utn-blue/10 text-utn-blue-dark
                                 @elseif($nota->evaluacion->tipo === 'recuperatorio') bg-yellow-100 text-yellow-700
                                 @elseif($nota->evaluacion->tipo === 'examen_final') bg-purple-100 text-purple-700
                                 @else bg-gray-100 text-gray-700
@@ -232,8 +236,8 @@
                         $notaValor = $nota->nota;
                         @endphp
                         <span class="inline-flex items-center justify-center w-10 h-10 rounded-full text-white font-bold
-                                @if($notaValor >= 6) bg-green-500
-                                @elseif($notaValor >= 4) bg-blue-500
+                                @if($notaValor >= $notaAprobacion) bg-green-500
+                                @elseif($notaValor >= $notaMinimaRegular) bg-blue-500
                                 @else bg-red-500
                                 @endif">
                             {{ number_format($notaValor, 1) }}
@@ -252,12 +256,12 @@
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         @if(auth()->user()->hasPermission('evaluaciones.editar'))
                         <a href="{{ route('evaluaciones.notas.edit', [$comision, $nota]) }}"
-                            class="text-utn-blue hover:text-blue-800 mr-3">Editar</a>
+                            class="text-utn-blue-dark hover:text-utn-blue-dark mr-3">Editar</a>
                         @endif
                         @if(auth()->user()->hasPermission('evaluaciones.eliminar'))
                         <form action="{{ route('evaluaciones.notas.destroy', [$comision, $nota]) }}"
                             method="POST" class="inline"
-                            onsubmit="return confirm('¿Eliminar esta nota?');">
+                            data-confirm="¿Eliminar esta nota?" data-confirm-type="danger" data-confirm-title="Eliminar nota" data-confirm-text="Eliminar">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-red-600 hover:text-red-900">Eliminar</button>
@@ -273,7 +277,7 @@
                         </svg>
                         <p class="mt-2">No hay notas registradas en esta comisión</p>
                         @if(auth()->user()->hasPermission('evaluaciones.crear'))
-                        <a href="{{ route('evaluaciones.notas.create', $comision) }}" class="mt-4 inline-block text-utn-blue hover:text-blue-800">
+                        <a href="{{ route('evaluaciones.notas.create', $comision) }}" class="mt-4 inline-block text-utn-blue-dark hover:text-utn-blue-dark">
                             Cargar la primera nota
                         </a>
                         @endif

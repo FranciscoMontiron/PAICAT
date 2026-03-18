@@ -11,6 +11,7 @@ use App\Models\InscripcionComision;
 use App\Models\Materia;
 use App\Models\Municipio;
 use App\Models\User;
+use App\Services\ConfiguracionService;
 use App\Services\DataNormalizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -64,7 +65,10 @@ class ComisionController extends Controller
                 ->count(),
         ];
 
-        return view('comisiones.index', compact('comisiones', 'stats'));
+        // Años disponibles desde la BD
+        $aniosDisponibles = Comision::select('anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
+
+        return view('comisiones.index', compact('comisiones', 'stats', 'aniosDisponibles'));
     }
 
     /**
@@ -78,39 +82,11 @@ class ComisionController extends Controller
 
         $materias = Materia::activas()->orderBy('codigo')->get();
 
-        // Obtener valores únicos de alumnos_utn.academico_datos
-        // Turnos disponibles (campo turno_ingreso)
-        $turnos = DB::connection('alumnos_utn')
-            ->table('academico_datos')
-            ->select('turno_ingreso')
-            ->distinct()
-            ->whereNotNull('turno_ingreso')
-            ->where('turno_ingreso', '!=', '')
-            ->orderBy('turno_ingreso')
-            ->pluck('turno_ingreso', 'turno_ingreso')
-            ->toArray();
+        $turnos = Comision::getTurnos();
 
-        // Tipos de periodo/ingreso (campo tipo_ingreso)
-        $tiposIngreso = DB::connection('alumnos_utn')
-            ->table('academico_datos')
-            ->select('tipo_ingreso')
-            ->distinct()
-            ->whereNotNull('tipo_ingreso')
-            ->where('tipo_ingreso', '!=', '')
-            ->orderBy('tipo_ingreso')
-            ->pluck('tipo_ingreso', 'tipo_ingreso')
-            ->toArray();
+        $tiposIngreso = Comision::getTiposIngreso();
 
-        // Modalidades (campo modalidad)
-        $modalidades = DB::connection('alumnos_utn')
-            ->table('academico_datos')
-            ->select('modalidad')
-            ->distinct()
-            ->whereNotNull('modalidad')
-            ->where('modalidad', '!=', '')
-            ->orderBy('modalidad')
-            ->pluck('modalidad', 'modalidad')
-            ->toArray();
+        $modalidades = Comision::getModalidades();
 
         // Municipios activos
         $municipios = Municipio::activos()->orderBy('nombre')->get();
@@ -236,39 +212,11 @@ class ComisionController extends Controller
 
         $materias = Materia::activas()->orderBy('codigo')->get();
 
-        // Obtener valores únicos de alumnos_utn.academico_datos
-        // Turnos disponibles (campo turno_ingreso)
-        $turnos = DB::connection('alumnos_utn')
-            ->table('academico_datos')
-            ->select('turno_ingreso')
-            ->distinct()
-            ->whereNotNull('turno_ingreso')
-            ->where('turno_ingreso', '!=', '')
-            ->orderBy('turno_ingreso')
-            ->pluck('turno_ingreso', 'turno_ingreso')
-            ->toArray();
+        $turnos = Comision::getTurnos();
 
-        // Tipos de periodo/ingreso (campo tipo_ingreso)
-        $tiposIngreso = DB::connection('alumnos_utn')
-            ->table('academico_datos')
-            ->select('tipo_ingreso')
-            ->distinct()
-            ->whereNotNull('tipo_ingreso')
-            ->where('tipo_ingreso', '!=', '')
-            ->orderBy('tipo_ingreso')
-            ->pluck('tipo_ingreso', 'tipo_ingreso')
-            ->toArray();
+        $tiposIngreso = Comision::getTiposIngreso();
 
-        // Modalidades (campo modalidad)
-        $modalidades = DB::connection('alumnos_utn')
-            ->table('academico_datos')
-            ->select('modalidad')
-            ->distinct()
-            ->whereNotNull('modalidad')
-            ->where('modalidad', '!=', '')
-            ->orderBy('modalidad')
-            ->pluck('modalidad', 'modalidad')
-            ->toArray();
+        $modalidades = Comision::getModalidades();
 
         // Municipios activos
         $municipios = Municipio::activos()->orderBy('nombre')->get();
@@ -302,7 +250,7 @@ class ComisionController extends Controller
             'turno' => $esVirtual ? 'nullable|string|max:50' : 'required|string|max:50',
             'modalidad' => 'required|string|max:50',
             'cupo_maximo' => $esVirtual ? 'nullable|integer|min:0|max:9999' : 'required|integer|min:' . $comision->cupo_real . '|max:9999',
-            'estado' => 'required|in:activa,cerrada,finalizada,cancelada',
+            'estado' => 'required|in:' . implode(',', array_keys(Comision::getEstados())),
             'municipio_id' => $esVirtual ? 'nullable|exists:municipios,id' : 'required|exists:municipios,id',
             'aula_id' => 'nullable|exists:aulas,id',
             'docentes' => 'nullable|array',
@@ -407,7 +355,7 @@ class ComisionController extends Controller
     public function cambiarEstado(Request $request, Comision $comision)
     {
         $validated = $request->validate([
-            'estado' => 'required|in:activa,cerrada,finalizada,cancelada',
+            'estado' => 'required|in:' . implode(',', array_keys(Comision::getEstados())),
         ]);
 
         $comision->update(['estado' => $validated['estado']]);

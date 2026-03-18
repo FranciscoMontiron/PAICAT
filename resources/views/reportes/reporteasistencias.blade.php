@@ -5,7 +5,7 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     
     <div class="flex items-center justify-between mb-6">
-            <h1 class="text-3xl font-bold text-utn-blue">Módulo de Reportes de asistencias por comision</h1>
+            <h1 class="text-3xl font-bold text-utn-blue-dark">Módulo de Reportes de asistencias por comision</h1>
     </div>
     
 
@@ -25,7 +25,7 @@
 
                 <!-- Fondo -->
                 <div
-                    class="w-28 h-7 rounded-full bg-indigo-500
+                    class="w-28 h-7 rounded-full bg-utn-blue/50
                         peer-checked:bg-orange-400
                         transition-colors duration-300
                         flex items-center justify-between px-2 text-[10px] font-semibold text-white"
@@ -48,7 +48,7 @@
             <div class="p-6 bg-white border-b border-gray-200">
                 <div class="mb-10 ">
                     <div class="flex items-center justify-between mb-6">
-                        <h1 class="text-3xl font-bold text-utn-blue">Reportes de asistencias generales</h1>
+                        <h1 class="text-3xl font-bold text-utn-blue-dark">Reportes de asistencias generales</h1>
                     </div>
                 </div>
                 <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
@@ -68,7 +68,7 @@
                                         </label>
                                         <select name="especialidad_id"
                                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                    focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                    focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                             <option value="">Todas</option>
                                             @foreach($especialidades as $esp)
                                                 <option value="{{ $esp->id_sysacad }}"
@@ -86,7 +86,7 @@
                                     </label>
                                     <select name="materia_id"
                                             class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                         <option value="">Todas</option>
                                         @foreach($materias as $materia)
                                             <option value="{{ $materia->id }}"
@@ -104,7 +104,7 @@
                                     </label>
                                     <select name="comision_id"
                                             class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                         <option value="">Todas</option>
                                         @foreach($comisiones as $comision)
                                             <option value="{{ $comision->id }}"
@@ -122,7 +122,7 @@
                                     </label>
                                     <select name="estado"
                                             class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                         <option value="">Todos</option>
                                         <option value="presente" {{ request('estado') == 'presente' ? 'selected' : '' }}>
                                             Presente
@@ -141,7 +141,7 @@
                                     <input type="date" name="fecha_desde"
                                         value="{{ request('fecha_desde') }}"
                                         class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                 </div>
 
                                 {{-- Hasta --}}
@@ -152,7 +152,7 @@
                                     <input type="date" name="fecha_hasta"
                                         value="{{ request('fecha_hasta') }}"
                                         class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                 </div>
 
                             </div>
@@ -168,7 +168,7 @@
 
                             <button type="submit"
                                     class="px-6 py-2 bg-utn-blue text-white rounded-lg
-                                        hover:bg-blue-800 transition-colors duration-200">
+                                        hover:bg-utn-dark transition-colors duration-200">
                                 Filtrar
                             </button>
                         </div>
@@ -271,7 +271,7 @@
                 <div class="p-6 bg-white border-b border-gray-200">
                     <div class="mb-10 ">
                         <div class="flex items-center justify-between mb-6">
-                            <h1 class="text-3xl font-bold text-utn-blue">Reportes de asistencias Detallados</h1>
+                            <h1 class="text-3xl font-bold text-utn-blue-dark">Reportes de asistencias Detallados</h1>
                         </div>
                     </div>
                         <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
@@ -291,7 +291,7 @@
                                                 <input type="date" name="fecha_desde"
                                                     value="{{ request('fecha_desde') }}"
                                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                            focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                             </div>
 
                                         {{-- Hasta --}}
@@ -302,7 +302,7 @@
                                                 <input type="date" name="fecha_hasta"
                                                     value="{{ request('fecha_hasta') }}"
                                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                            focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                            focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                             </div>
 
                                             {{-- Especialidad --}}
@@ -312,7 +312,7 @@
                                                     </label>
                                                     <select name="especialidad_id"
                                                             class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                                focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                                         <option value="">Todas</option>
                                                         @foreach($especialidades as $esp)
                                                             <option value="{{ $esp->id_sysacad }}"
@@ -329,7 +329,7 @@
                                                     </label>
                                                     <select name="comision_id"
                                                             class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                                focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                                         <option value="">Todas</option>
                                                         @foreach($comisiones as $comision)
                                                             <option value="{{ $comision->id }}"
@@ -346,7 +346,7 @@
                                                         </label>
                                                         <select name="materia_id"
                                                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                                                                    focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                                                                    focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                                                             <option value="">Todas</option>
                                                             @foreach($materias as $materia)
                                                                 <option value="{{ $materia->id }}"
@@ -375,7 +375,7 @@
 
                                         <button type="submit"
                                                 class="px-6 py-2 bg-utn-blue text-white rounded-lg
-                                                    hover:bg-blue-800 transition-colors duration-200">
+                                                    hover:bg-utn-dark transition-colors duration-200">
                                             Filtrar
                                         </button>
                                     </div>
@@ -426,7 +426,7 @@
                                             id="buscador-asistencias"
                                             placeholder="Buscar por alumno, comisión, materia, estado o fecha..."
                                             class="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-lg
-                                                focus:ring-2 focus:ring-utn-blue focus:border-transparent"
+                                                focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent"
                                         >
                                     </div>
 
@@ -490,7 +490,7 @@
                     id="buscador-alumnos"
                     placeholder="Buscar alumno por nombre, apellido, comisión o materia..."
                     class="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-lg
-                        focus:ring-2 focus:ring-utn-blue focus:border-transparent"
+                        focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent"
                 >
             </div>
             <div id="tabla-alumnos"></div>
@@ -504,7 +504,7 @@
                         <th class="border px-3 py-2 text-green-600">Asist.</th>
                         <th class="border px-3 py-2 text-red-600">Faltas</th>
                         <th class="border px-3 py-2 text-yellow-600">Tard.</th>
-                        <th class="border px-3 py-2 text-blue-600">Justif.</th>
+                        <th class="border px-3 py-2 text-utn-blue-dark">Justif.</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -526,7 +526,7 @@
                             <td class="border px-3 py-2 text-center text-yellow-600 font-semibold">
                                 {{ $row->tardanzas }}
                             </td>
-                            <td class="border px-3 py-2 text-center text-blue-600 font-semibold">
+                            <td class="border px-3 py-2 text-center text-utn-blue-dark font-semibold">
                                 {{ $row->justificados }}
                             </td>
                         </tr>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Materia;
+use App\Services\ConfiguracionService;
 use Illuminate\Http\Request;
 
 class MateriaController extends Controller
@@ -58,7 +59,7 @@ class MateriaController extends Controller
             'codigo' => 'required|string|max:20|unique:materias,codigo',
             'nombre' => 'required|string|max:200',
             'descripcion' => 'nullable|string',
-            'tipo' => 'required|in:obligatoria,optativa,nivelacion',
+            'tipo' => 'required|in:' . implode(',', array_keys(Materia::getTipos())),
             'carga_horaria' => 'nullable|integer|min:1',
             'es_nivelacion' => 'boolean',
             'activa' => 'boolean',
@@ -99,7 +100,7 @@ class MateriaController extends Controller
             'codigo' => 'required|string|max:20|unique:materias,codigo,' . $materia->id,
             'nombre' => 'required|string|max:200',
             'descripcion' => 'nullable|string',
-            'tipo' => 'required|in:obligatoria,optativa,nivelacion',
+            'tipo' => 'required|in:' . implode(',', array_keys(Materia::getTipos())),
             'carga_horaria' => 'nullable|integer|min:1',
             'es_nivelacion' => 'boolean',
             'activa' => 'boolean',

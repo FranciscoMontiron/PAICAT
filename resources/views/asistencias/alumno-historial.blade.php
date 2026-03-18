@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Historial de Asistencias - Alumno')
 @section('content')
+@php $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75); @endphp
 <div class="container mx-auto px-4 py-6">
     <!-- Header -->
     <div class="mb-6">
@@ -50,12 +51,12 @@
         </div>
         <div class="bg-white rounded-lg shadow p-4">
             <p class="text-xs text-gray-600 mb-1">Justificados</p>
-            <p class="text-2xl font-bold text-blue-600">{{ $estadisticas['justificados'] }}</p>
+            <p class="text-2xl font-bold text-utn-blue-dark">{{ $estadisticas['justificados'] }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4">
             <p class="text-xs text-gray-600 mb-1">% Asistencia</p>
             <p class="text-2xl font-bold 
-                @if($estadisticas['porcentaje'] >= 75) text-green-600
+                @if($estadisticas['porcentaje'] >= $asistenciaMinima) text-green-600
                 @elseif($estadisticas['porcentaje'] >= 50) text-yellow-600
                 @else text-red-600 @endif">
                 {{ $estadisticas['porcentaje'] }}%
@@ -64,7 +65,7 @@
     </div>
 
     <!-- Alerta si tiene bajo porcentaje -->
-    @if($estadisticas['porcentaje'] < 75 && $estadisticas['total'] > 0)
+    @if($estadisticas['porcentaje'] < $asistenciaMinima && $estadisticas['total'] > 0)
         <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
             <div class="flex">
                 <div class="flex-shrink-0">
@@ -75,7 +76,7 @@
                 <div class="ml-3">
                     <h3 class="text-sm font-medium text-red-800">Alumno en Riesgo</h3>
                     <p class="mt-1 text-sm text-red-700">
-                        El porcentaje de asistencia es menor al 75%. Se recomienda contactar al alumno.
+                        El porcentaje de asistencia es menor al {{ $asistenciaMinima }}%. Se recomienda contactar al alumno.
                     </p>
                 </div>
             </div>
@@ -121,7 +122,7 @@
                                         @if($asistencia->estado == 'presente') bg-green-100 text-green-800
                                         @elseif($asistencia->estado == 'ausente') bg-red-100 text-red-800
                                         @elseif($asistencia->estado == 'tardanza') bg-yellow-100 text-yellow-800
-                                        @else bg-blue-100 text-blue-800 @endif">
+                                        @else bg-utn-blue/10 text-utn-blue-dark @endif">
                                         {{ ucfirst($asistencia->estado) }}
                                     </span>
                                 </td>

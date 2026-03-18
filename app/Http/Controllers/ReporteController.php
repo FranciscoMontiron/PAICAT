@@ -11,6 +11,7 @@ use App\Models\InscripcionComision;
 use App\Models\Inscripcion;
 use App\Models\Nota;
 use App\Models\AcademicoDato;
+use App\Services\ConfiguracionService;
 use Illuminate\Support\Facades\DB;
 
 
@@ -334,7 +335,8 @@ public function reporteinscriones(Request $request)
 public function reporterendimiento(Request $request)
 {
 
-    
+    $notaMinimaRegular = intval(ConfiguracionService::get('nota_minima_regular', 4));
+
     $materias = DB::table('materias')
         ->orderBy('nombre')
         ->get();
@@ -374,8 +376,8 @@ $tablaRendimiento = DB::table('paicat.notas as n')
         'e.nombre as parcial',
         'e.tipo',
         'e.fecha',
-        DB::raw('SUM(CASE WHEN n.nota >= 4 THEN 1 ELSE 0 END) as aprobados'),
-        DB::raw('SUM(CASE WHEN n.nota < 4 THEN 1 ELSE 0 END) as desaprobados'),
+        DB::raw("SUM(CASE WHEN n.nota >= {$notaMinimaRegular} THEN 1 ELSE 0 END) as aprobados"),
+        DB::raw("SUM(CASE WHEN n.nota < {$notaMinimaRegular} THEN 1 ELSE 0 END) as desaprobados"),
     ])
 
     ->groupBy(
@@ -413,8 +415,8 @@ $tablaRendimiento = DB::table('paicat.notas as n')
 
     ->select(
         'mat.nombre as materia',
-        DB::raw('SUM(CASE WHEN n.nota >= 4 THEN 1 ELSE 0 END) as aprobados'),
-        DB::raw('SUM(CASE WHEN n.nota < 4 THEN 1 ELSE 0 END) as desaprobados')
+        DB::raw("SUM(CASE WHEN n.nota >= {$notaMinimaRegular} THEN 1 ELSE 0 END) as aprobados"),
+        DB::raw("SUM(CASE WHEN n.nota < {$notaMinimaRegular} THEN 1 ELSE 0 END) as desaprobados")
     )
     ->groupBy('mat.nombre')
     ->orderBy('mat.nombre')
@@ -545,7 +547,7 @@ $resumenPorMateria = DB::table('asistencias as a')
 
         $row->estado = 'Activo';
 
-        if ($row->porcentaje_asistencia < 75) {
+        if ($row->porcentaje_asistencia < ConfiguracionService::get('asistencia_minima', 75)) {
             $row->estado = 'En riesgo';
         }
 

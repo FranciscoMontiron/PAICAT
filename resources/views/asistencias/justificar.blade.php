@@ -2,6 +2,7 @@
 @extends('layouts.app')
 @section('title','Justificar Inasistencia')
 @section('content')
+@php $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75); @endphp
 <div class="container mx-auto p-4">
 
     <!-- Header con contexto -->
@@ -14,7 +15,7 @@
         <div class="mt-4 bg-white rounded-lg shadow-md p-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-blue-50 p-3 rounded">
-                    <p class="text-xs text-blue-600 font-semibold">COMISIÓN</p>
+                    <p class="text-xs text-utn-blue-dark font-semibold">COMISIÓN</p>
                     <p class="text-lg font-bold text-gray-800">{{ $comision->nombre }}</p>
                     <p class="text-sm text-gray-600">Código: {{ $comision->codigo }}</p>
                 </div>
@@ -46,16 +47,16 @@
 
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
-        <a href="{{ route('asistencias.index') }}" class="hover:text-blue-600">Asistencias</a>
+        <a href="{{ route('asistencias.index') }}" class="hover:text-utn-blue-dark">Asistencias</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
-        <a href="{{ route('asistencias.comision.materias', $comision) }}" class="hover:text-blue-600">{{ $comision->nombre }}</a>
+        <a href="{{ route('asistencias.comision.materias', $comision) }}" class="hover:text-utn-blue-dark">{{ $comision->nombre }}</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
         @if(isset($materia))
-        <a href="{{ route('asistencias.materia.historial', [$comision, $materia]) }}" class="hover:text-blue-600">{{ $materia->nombre }}</a>
+        <a href="{{ route('asistencias.materia.historial', [$comision, $materia]) }}" class="hover:text-utn-blue-dark">{{ $materia->nombre }}</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
@@ -72,7 +73,7 @@
             </div>
             <div class="bg-white rounded-lg shadow p-4">
                 <p class="text-sm text-gray-600">Período</p>
-                <p class="text-2xl font-bold text-blue-600">
+                <p class="text-2xl font-bold text-utn-blue-dark">
                     @if($ausencias->count() > 0)
                         {{ $ausencias->first()->fecha->format('d/m/Y') }}
                         @if($ausencias->count() > 1)
@@ -85,14 +86,14 @@
             </div>
             <div class="bg-white rounded-lg shadow p-4">
                 <p class="text-sm text-gray-600">% Asistencia</p>
-                <p class="text-2xl font-bold {{ ($porcentajeAsistencia ?? 0) < 75 ? 'text-red-600' : 'text-green-600' }}">
+                <p class="text-2xl font-bold {{ ($porcentajeAsistencia ?? 0) < $asistenciaMinima ? 'text-red-600' : 'text-green-600' }}">
                     {{ round($porcentajeAsistencia ?? 0, 1) }}%
                 </p>
             </div>
             <div class="bg-white rounded-lg shadow p-4">
                 <p class="text-sm text-gray-600">Estado</p>
-                <p class="text-2xl font-bold {{ ($porcentajeAsistencia ?? 0) < 75 ? 'text-red-600' : 'text-green-600' }}">
-                    @if(($porcentajeAsistencia ?? 0) < 75)
+                <p class="text-2xl font-bold {{ ($porcentajeAsistencia ?? 0) < $asistenciaMinima ? 'text-red-600' : 'text-green-600' }}">
+                    @if(($porcentajeAsistencia ?? 0) < $asistenciaMinima)
                         EN RIESGO
                     @else
                         REGULAR
@@ -136,12 +137,12 @@
     <!-- Información importante -->
     <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
         <div class="flex items-start">
-            <svg class="h-6 w-6 text-blue-500 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="h-6 w-6 text-utn-blue-dark mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-                <p class="text-blue-800 font-semibold">Instrucciones de Justificación</p>
-                <p class="text-blue-700 text-sm mt-1">
+                <p class="text-utn-blue-dark font-semibold">Instrucciones de Justificación</p>
+                <p class="text-utn-blue-dark text-sm mt-1">
                     1. Selecciona las fechas de ausencia que deseas justificar.<br>
                     2. Proporciona un motivo claro y detallado para la justificación.<br>
                     3. Puedes adjuntar un archivo de respaldo (ej: certificado médico).<br>
@@ -174,7 +175,7 @@
                         </p>
                     </div>
                     <div class="flex gap-2">
-                        <button type="button" onclick="seleccionarTodas()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium">
+                        <button type="button" onclick="seleccionarTodas()" class="bg-utn-blue-darker hover:bg-utn-dark-light text-white px-3 py-1 rounded text-sm font-medium">
                             <i class="fas fa-check-square mr-1"></i> Seleccionar Todas
                         </button>
                         <button type="button" onclick="deseleccionarTodas()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded text-sm font-medium">
@@ -232,7 +233,7 @@
                     <label for="archivo" class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-paperclip mr-1"></i> Archivo Adjunto (Opcional)
                     </label>
-                    <input type="file" name="archivo" id="archivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <input type="file" name="archivo" id="archivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-utn-blue-dark hover:file:bg-utn-blue/10">
                     <p class="text-xs text-gray-500 mt-2">Formatos aceptados: PDF, JPG, JPEG, PNG, DOC, DOCX (Máx. 5MB)</p>
                 </div>
             </div>
@@ -270,7 +271,7 @@
             </p>
             <div class="mt-8">
                 <a href="{{ isset($materia) ? route('asistencias.materia.historial', [$comision, $materia]) : route('asistencias.alumno.historial', [$comision, $inscripcion]) }}" 
-                   class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg">
+                   class="inline-flex items-center px-6 py-3 bg-utn-blue-darker text-white rounded-lg hover:bg-utn-dark-light text-lg">
                     <i class="fas fa-history mr-2"></i> Ver Historial Completo
                 </a>
             </div>
@@ -311,7 +312,7 @@ document.querySelectorAll('input[name="asistencias_ids[]"]').forEach(checkbox =>
 });
 
 // Validación del formulario
-document.getElementById('justificarForm')?.addEventListener('submit', function(e) {
+document.getElementById('justificarForm')?.addEventListener('submit', async function(e) {
     const checkboxes = document.querySelectorAll('input[name="asistencias_ids[]"]:checked');
     const observacion = document.getElementById('observaciones').value.trim();
     
@@ -327,9 +328,17 @@ document.getElementById('justificarForm')?.addEventListener('submit', function(e
         document.getElementById('observaciones').focus();
         return;
     }
-    
-    if (!confirm(`¿Confirmar justificación de ${checkboxes.length} ausencia(s)?\n\nEsta acción cambiará el estado de "Ausente" a "Justificado".`)) {
-        e.preventDefault();
+
+    if (this.dataset.confirmBypassed) return;
+    e.preventDefault();
+    const ok = await paiConfirm({
+        title: 'Confirmar justificación',
+        message: `¿Confirmar justificación de ${checkboxes.length} ausencia(s)? Esta acción cambiará el estado de "Ausente" a "Justificado".`
+    });
+    if (ok) {
+        this.dataset.confirmBypassed = 'true';
+        this.requestSubmit ? this.requestSubmit() : this.submit();
+        delete this.dataset.confirmBypassed;
     }
 });
 

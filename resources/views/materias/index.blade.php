@@ -9,7 +9,7 @@
             <p class="text-gray-600 mt-1">Administra las materias del curso de ingreso</p>
         </div>
         @if(auth()->user()->hasPermission('comisiones.crear'))
-        <a href="{{ route('materias.create') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+        <a href="{{ route('materias.create') }}" class="inline-flex items-center px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors font-medium">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -30,7 +30,7 @@
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
             <p class="text-sm font-medium text-gray-500">Nivelación</p>
-            <p class="text-2xl font-bold text-blue-600">{{ $stats['nivelacion'] }}</p>
+            <p class="text-2xl font-bold text-utn-blue-dark">{{ $stats['nivelacion'] }}</p>
         </div>
     </div>
 
@@ -46,9 +46,9 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
                 <select name="tipo" class="rounded-lg border-gray-300">
                     <option value="">Todos</option>
-                    <option value="obligatoria" {{ request('tipo') == 'obligatoria' ? 'selected' : '' }}>Obligatoria</option>
-                    <option value="optativa" {{ request('tipo') == 'optativa' ? 'selected' : '' }}>Optativa</option>
-                    <option value="nivelacion" {{ request('tipo') == 'nivelacion' ? 'selected' : '' }}>Nivelación</option>
+                    @foreach(\App\Models\Materia::getTipos() as $key => $label)
+                        <option value="{{ $key }}" {{ request('tipo') == $key ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
             <div>
@@ -59,7 +59,7 @@
                     <option value="0" {{ request('activa') == '0' ? 'selected' : '' }}>Inactivas</option>
                 </select>
             </div>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Filtrar</button>
+            <button type="submit" class="px-4 py-2 bg-utn-blue-darker text-white rounded-lg hover:bg-utn-dark-light">Filtrar</button>
             <a href="{{ route('materias.index') }}" class="px-4 py-2 text-gray-600 hover:text-gray-800">Limpiar</a>
         </form>
     </div>
@@ -90,9 +90,9 @@
                     </td>
                     <td class="px-6 py-4">
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full 
-                            {{ $materia->tipo == 'obligatoria' ? 'bg-blue-100 text-blue-800' : 
+                            {{ $materia->tipo == 'obligatoria' ? 'bg-utn-blue/10 text-utn-blue-dark' : 
                                ($materia->tipo == 'nivelacion' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800') }}">
-                            {{ ucfirst($materia->tipo) }}
+                            {{ \App\Models\Materia::getTipos()[$materia->tipo] ?? ucfirst($materia->tipo) }}
                         </span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600">{{ $materia->carga_horaria ?? '-' }} hs</td>
@@ -107,7 +107,7 @@
                         <a href="{{ route('materias.edit', $materia) }}" class="text-yellow-600 hover:text-yellow-800">Editar</a>
                         @endif
                         @if(auth()->user()->hasPermission('comisiones.eliminar'))
-                        <form action="{{ route('materias.destroy', $materia) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar esta materia?')">
+                        <form action="{{ route('materias.destroy', $materia) }}" method="POST" class="inline" data-confirm="¿Eliminar esta materia?" data-confirm-type="danger" data-confirm-title="Eliminar materia" data-confirm-text="Eliminar">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-red-600 hover:text-red-800">Eliminar</button>

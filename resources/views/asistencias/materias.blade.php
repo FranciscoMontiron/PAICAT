@@ -3,11 +3,12 @@
 @section('title', 'Materias - ' . $comision->nombre)
 
 @section('content')
+@php $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75); @endphp
 <div class="container mx-auto px-4 py-6">
 
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-sm text-gray-600 mb-6">
-        <a href="{{ route('asistencias.index') }}" class="hover:text-blue-600 transition">Asistencias</a>
+        <a href="{{ route('asistencias.index') }}" class="hover:text-utn-blue-dark transition">Asistencias</a>
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
@@ -37,10 +38,10 @@
     <!-- Tarjetas de resumen -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p class="text-sm text-blue-700 font-medium mb-1">Total Alumnos</p>
-            <p class="text-3xl font-bold text-blue-900">{{ $totalAlumnos }}</p>
+            <p class="text-sm text-utn-blue-dark font-medium mb-1">Total Alumnos</p>
+            <p class="text-3xl font-bold text-utn-dark">{{ $totalAlumnos }}</p>
         </div>
-        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+        <div class="bg-utn-blue/5 border border-utn-blue/20 rounded-lg p-4">
             <p class="text-sm text-indigo-700 font-medium mb-1">Total Materias</p>
             <p class="text-3xl font-bold text-indigo-900">{{ $comision->materias->count() }}</p>
         </div>
@@ -56,7 +57,7 @@
 
     <!-- Listado de Materias -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 px-6 py-4 border-b border-indigo-200">
+        <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 px-6 py-4 border-b border-utn-blue/20">
             <h2 class="text-lg font-semibold text-gray-800">Materias de la Comisión</h2>
             <p class="text-sm text-gray-600 mt-1">Selecciona una materia para gestionar sus asistencias</p>
         </div>
@@ -74,13 +75,13 @@
                 <div class="border-2 border-gray-200 rounded-xl p-6 hover:shadow-xl hover:border-indigo-500 transition-all duration-200 group">
                     <!-- Header Materia -->
                     <div class="flex items-start gap-4 mb-4">
-                        <div class="p-3 bg-indigo-100 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <div class="p-3 bg-utn-blue/10 text-utn-blue-dark rounded-lg group-hover:bg-utn-blue-darker group-hover:text-white transition-colors flex-shrink-0">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                             </svg>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 text-lg">{{ $materia->nombre }}</h3>
+                            <h3 class="font-semibold text-gray-900 group-hover:text-utn-blue-dark text-lg">{{ $materia->nombre }}</h3>
                             <p class="text-sm text-gray-500 font-mono mt-1">{{ $materia->codigo }}</p>
                             @if($materia->carga_horaria)
                             <p class="text-xs text-gray-400 mt-1">{{ $materia->carga_horaria }} horas semanales</p>
@@ -97,7 +98,7 @@
                         <div class="text-center">
                             <p class="text-xs text-gray-500">Asistencia</p>
                             <p class="text-lg font-bold 
-                                @if($estadisticas['promedio_asistencia'] >= 75) text-green-600
+                                @if($estadisticas['promedio_asistencia'] >= $asistenciaMinima) text-green-600
                                 @elseif($estadisticas['promedio_asistencia'] >= 50) text-yellow-600
                                 @else text-red-600 @endif">
                                 {{ round($estadisticas['promedio_asistencia'], 1) }}%
@@ -113,7 +114,7 @@
                     <div class="flex flex-col gap-2">
                         @if(auth()->user()->hasPermission('asistencias.crear') && $comision->estado == 'activa')
                         <a href="{{ route('asistencias.materia.registrar', [$comision, $materia]) }}"
-                            class="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition shadow-sm">
+                            class="flex items-center justify-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded-lg transition shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                             </svg>
@@ -122,7 +123,7 @@
                         @endif
                         
                         <a href="{{ route('asistencias.materia.historial', [$comision, $materia]) }}"
-                            class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-sm">
+                            class="flex items-center justify-center gap-2 px-4 py-2 bg-utn-blue-darker hover:bg-utn-dark-light text-white rounded-lg transition shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                             </svg>
@@ -171,7 +172,7 @@
                     @php
                         $porcentaje = $inscripcion->calcularPorcentajeAsistencia();
                         $estaEnRiesgo = $inscripcion->estaEnRiesgo();
-                        $colorIndicador = $porcentaje >= 85 ? 'bg-green-500' : ($porcentaje >= 75 ? 'bg-yellow-500' : 'bg-red-500');
+                        $colorIndicador = $porcentaje >= ($asistenciaMinima + 10) ? 'bg-green-500' : ($porcentaje >= $asistenciaMinima ? 'bg-yellow-500' : 'bg-red-500');
                     @endphp
                     <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-gray-200">
                         <div class="flex items-center gap-3">
@@ -202,7 +203,7 @@
                             </div>
                         </div>
                         <a href="{{ route('asistencias.alumno.historial', [$comision, $inscripcion]) }}" 
-                           class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-2 rounded hover:bg-blue-50 transition">
+                           class="flex items-center gap-1 text-utn-blue-dark hover:text-utn-blue-dark text-sm font-medium px-3 py-2 rounded hover:bg-blue-50 transition">
                             Ver Detalle
                             <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>

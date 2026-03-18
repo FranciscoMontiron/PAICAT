@@ -22,7 +22,7 @@
             <h3 class="text-xl font-semibold text-gray-700 mb-2">¡No hay alumnos con inasistencias!</h3>
             <p class="text-gray-600 mb-4">Todos los alumnos tienen sus asistencias al día en esta materia.</p>
             <a href="{{ route('asistencias.materia.historial', [$comision, $materia]) }}" 
-               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+               class="inline-flex items-center px-4 py-2 bg-utn-blue-darker text-white rounded hover:bg-utn-dark-light">
                 <i class="fas fa-arrow-left mr-2"></i> Volver al Historial
             </a>
         </div>
@@ -71,8 +71,8 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <i class="fas fa-user text-blue-600"></i>
+                                        <div class="flex-shrink-0 h-10 w-10 bg-utn-blue/10 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-user text-utn-blue-dark"></i>
                                         </div>
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900">
@@ -102,7 +102,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <a href="{{ route('asistencias.alumno.justificar', [$comision, $inscripcion]) }}?materia_id={{ $materia->id }}" 
-                                       class="text-blue-600 hover:text-blue-900 mr-3">
+                                       class="text-utn-blue-dark hover:text-utn-dark mr-3">
                                         <i class="fas fa-edit mr-1"></i> Justificar
                                     </a>
                                     <a href="{{ route('asistencias.alumno.historial', [$comision, $inscripcion]) }}?materia_id={{ $materia->id }}" 
@@ -119,7 +119,7 @@
             <div class="px-6 py-4 bg-gray-50 border-t">
                 <div class="flex justify-between items-center">
                     <a href="{{ route('asistencias.materia.historial', [$comision, $materia]) }}" 
-                       class="text-blue-600 hover:text-blue-800 font-medium">
+                       class="text-utn-blue-dark hover:text-utn-blue-dark font-medium">
                         <i class="fas fa-arrow-left mr-1"></i> Volver al Historial
                     </a>
                     <div class="text-sm text-gray-600">

@@ -7,9 +7,9 @@
     {{-- Breadcrumb --}}
     <nav class="mb-6" aria-label="Breadcrumb">
         <ol class="flex items-center space-x-2 text-sm text-gray-500">
-            <li><a href="{{ route('evaluaciones.index') }}" class="hover:text-utn-blue">Evaluaciones</a></li>
+            <li><a href="{{ route('evaluaciones.index') }}" class="hover:text-utn-blue-dark">Evaluaciones</a></li>
             <li><span class="mx-2">/</span></li>
-            <li><a href="{{ route('evaluaciones.notas.index', $comision) }}" class="hover:text-utn-blue">Notas {{ $comision->codigo }}</a></li>
+            <li><a href="{{ route('evaluaciones.notas.index', $comision) }}" class="hover:text-utn-blue-dark">Notas {{ $comision->codigo }}</a></li>
             <li><span class="mx-2">/</span></li>
             <li class="text-gray-900 font-medium">Recuperatorio</li>
         </ol>
@@ -41,7 +41,7 @@
         <h3 class="mt-4 text-lg font-medium text-green-800">¡Todos los alumnos están aprobados!</h3>
         <p class="mt-2 text-green-600">No hay alumnos que necesiten rendir recuperatorio (promedio ≥ 6).</p>
         <a href="{{ route('evaluaciones.notas.index', $comision) }}" 
-           class="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+           class="mt-4 inline-block px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800">
             Volver a Notas
         </a>
     </div>
@@ -58,7 +58,7 @@
                         Alumno *
                     </label>
                     <select name="inscripcion_comision_id" id="inscripcion_comision_id" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('inscripcion_comision_id') border-red-500 @enderror">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('inscripcion_comision_id') border-red-500 @enderror">
                         <option value="">Seleccione un alumno...</option>
                         @foreach($inscripciones as $insc)
                             @php
@@ -81,7 +81,7 @@
                         Evaluación a Recuperar *
                     </label>
                     <select name="evaluacion_original_id" id="evaluacion_original_id" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('evaluacion_original_id') border-red-500 @enderror">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('evaluacion_original_id') border-red-500 @enderror">
                         <option value="">Seleccione una evaluación...</option>
                         @foreach($evaluacionesRecuperables as $eval)
                             <option value="{{ $eval->id }}" {{ old('evaluacion_original_id') == $eval->id ? 'selected' : '' }}>
@@ -102,7 +102,7 @@
                     <input type="number" name="nota" id="nota" 
                            value="{{ old('nota') }}"
                            min="0" max="10" step="0.01" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('nota') border-red-500 @enderror"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('nota') border-red-500 @enderror"
                            placeholder="0.00 - 10.00">
                     @error('nota')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -115,7 +115,7 @@
                         Observaciones
                     </label>
                     <textarea name="observaciones" id="observaciones" rows="3"
-                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('observaciones') border-red-500 @enderror"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('observaciones') border-red-500 @enderror"
                               placeholder="Observaciones adicionales...">{{ old('observaciones') }}</textarea>
                     @error('observaciones')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -130,8 +130,8 @@
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                     </svg>
                     <div class="ml-3">
-                        <h4 class="text-sm font-medium text-blue-800">Información sobre recuperatorios</h4>
-                        <ul class="mt-2 text-sm text-blue-700 list-disc list-inside">
+                        <h4 class="text-sm font-medium text-utn-blue-dark">Información sobre recuperatorios</h4>
+                        <ul class="mt-2 text-sm text-utn-blue-dark list-disc list-inside">
                             <li>El recuperatorio reemplaza la nota original si es mayor</li>
                             <li>Se crea automáticamente una evaluación de tipo "Recuperatorio"</li>
                             <li>La nota original quedará marcada como reemplazada</li>
@@ -147,7 +147,7 @@
                     Cancelar
                 </a>
                 <button type="submit"
-                        class="px-6 py-3 bg-utn-orange text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
+                        class="px-6 py-3 bg-utn-blue text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
                     Registrar Recuperatorio
                 </button>
             </div>

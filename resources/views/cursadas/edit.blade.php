@@ -7,9 +7,9 @@
     {{-- Breadcrumb --}}
     <nav class="mb-4 text-sm">
         <ol class="flex items-center space-x-2">
-            <li><a href="{{ route('comisiones.show', $comision) }}" class="text-utn-blue hover:underline">{{ $comision->codigo }}</a></li>
+            <li><a href="{{ route('comisiones.show', $comision) }}" class="text-utn-blue-dark hover:underline">{{ $comision->codigo }}</a></li>
             <li><span class="text-gray-400">/</span></li>
-            <li><a href="{{ route('cursadas.index', $comision) }}" class="text-utn-blue hover:underline">Cursadas</a></li>
+            <li><a href="{{ route('cursadas.index', $comision) }}" class="text-utn-blue-dark hover:underline">Cursadas</a></li>
             <li><span class="text-gray-400">/</span></li>
             <li class="text-gray-500">Editar</li>
         </ol>
@@ -38,8 +38,8 @@
                         Estado <span class="text-red-500">*</span>
                     </label>
                     <select name="estado" id="estado"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('estado') border-red-500 @enderror">
-                        @foreach(\App\Models\Cursada::ESTADOS as $key => $label)
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('estado') border-red-500 @enderror">
+                        @foreach(\App\Models\Cursada::getEstados() as $key => $label)
                             <option value="{{ $key }}" {{ old('estado', $cursada->estado) == $key ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
@@ -54,7 +54,7 @@
                         Motivo del cambio de estado
                     </label>
                     <input type="text" name="motivo_cambio" id="motivo_cambio" value="{{ old('motivo_cambio') }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent"
                            placeholder="Si cambia el estado, indique el motivo...">
                 </div>
 
@@ -62,11 +62,11 @@
                 <div>
                     <label for="modalidad" class="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
                     <select name="modalidad" id="modalidad"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('modalidad') border-red-500 @enderror">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('modalidad') border-red-500 @enderror">
                         <option value="">Misma que la comisión</option>
-                        <option value="presencial" {{ old('modalidad', $cursada->modalidad) == 'presencial' ? 'selected' : '' }}>Presencial</option>
-                        <option value="virtual" {{ old('modalidad', $cursada->modalidad) == 'virtual' ? 'selected' : '' }}>Virtual</option>
-                        <option value="semipresencial" {{ old('modalidad', $cursada->modalidad) == 'semipresencial' ? 'selected' : '' }}>Semipresencial</option>
+                        @foreach(\App\Models\Comision::getModalidades() as $key => $label)
+                            <option value="{{ $key }}" {{ old('modalidad', $cursada->modalidad) == $key ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
                     </select>
                     @error('modalidad')
                         <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
@@ -79,7 +79,7 @@
                     <input type="number" name="nota_final" id="nota_final"
                            value="{{ old('nota_final', $cursada->nota_final) }}"
                            step="0.01" min="0" max="10"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('nota_final') border-red-500 @enderror"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('nota_final') border-red-500 @enderror"
                            placeholder="0.00 - 10.00">
                     @error('nota_final')
                         <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
@@ -91,7 +91,7 @@
                 <div>
                     <label for="resultado" class="block text-sm font-medium text-gray-700 mb-1">Resultado</label>
                     <input type="text" name="resultado" id="resultado" value="{{ old('resultado', $cursada->resultado) }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('resultado') border-red-500 @enderror"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('resultado') border-red-500 @enderror"
                            placeholder="Ej: Aprobado con 7.50">
                     @error('resultado')
                         <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
@@ -101,7 +101,7 @@
                 {{-- Es recursante --}}
                 <div class="flex items-center gap-3">
                     <input type="checkbox" name="es_recursante" id="es_recursante" value="1"
-                           class="h-4 w-4 text-utn-blue border-gray-300 rounded focus:ring-utn-blue"
+                           class="h-4 w-4 text-utn-blue-dark border-gray-300 rounded focus:ring-utn-blue-dark"
                            {{ old('es_recursante', $cursada->es_recursante) ? 'checked' : '' }}>
                     <label for="es_recursante" class="text-sm font-medium text-gray-700">
                         Es recursante (está repitiendo)
@@ -112,7 +112,7 @@
                 <div>
                     <label for="observaciones" class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
                     <textarea name="observaciones" id="observaciones" rows="4"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('observaciones') border-red-500 @enderror"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('observaciones') border-red-500 @enderror"
                               placeholder="Notas adicionales...">{{ old('observaciones', $cursada->observaciones) }}</textarea>
                     @error('observaciones')
                         <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
@@ -127,7 +127,7 @@
                     Cancelar
                 </a>
                 <button type="submit"
-                        class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors">
+                        class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors">
                     Guardar Cambios
                 </button>
             </div>

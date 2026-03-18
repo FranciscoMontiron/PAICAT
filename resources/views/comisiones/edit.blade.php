@@ -23,9 +23,9 @@
 
         {{-- Sección: Información General --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-            <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100 border-b border-indigo-200">
+            <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100 border-b border-utn-blue/20">
                 <div class="flex items-center gap-3">
-                    <div class="p-2 bg-indigo-600 rounded-lg">
+                    <div class="p-2 bg-utn-blue-darker rounded-lg">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
@@ -51,7 +51,7 @@
                         <label class="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition-colors">
                             <input type="checkbox" name="materias[]" value="{{ $materia->id }}"
                                 {{ in_array($materia->id, $materiasSeleccionadas) ? 'checked' : '' }}
-                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                class="rounded border-gray-300 text-utn-blue-dark focus:ring-indigo-500">
                             <div>
                                 <span class="text-sm font-medium text-gray-900">{{ $materia->nombre }}</span>
                                 <span class="text-xs text-gray-500 ml-1">[{{ $materia->codigo }}]</span>
@@ -138,7 +138,7 @@
                         @error('modalidad')
                         <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                         @enderror
-                        <p id="modalidad-info" class="mt-1.5 text-xs text-indigo-600 hidden"></p>
+                        <p id="modalidad-info" class="mt-1.5 text-xs text-utn-blue-dark hidden"></p>
                     </div>
 
                     {{-- Turno --}}
@@ -165,10 +165,9 @@
                         </label>
                         <select name="estado" id="estado" required
                             class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow @error('estado') border-red-500 @enderror">
-                            <option value="activa" {{ old('estado', $comision->estado) == 'activa' ? 'selected' : '' }}>Activa</option>
-                            <option value="cerrada" {{ old('estado', $comision->estado) == 'cerrada' ? 'selected' : '' }}>Cerrada</option>
-                            <option value="finalizada" {{ old('estado', $comision->estado) == 'finalizada' ? 'selected' : '' }}>Finalizada</option>
-                            <option value="cancelada" {{ old('estado', $comision->estado) == 'cancelada' ? 'selected' : '' }}>Cancelada</option>
+                            @foreach(\App\Models\Comision::getEstados() as $key => $label)
+                                <option value="{{ $key }}" {{ old('estado', $comision->estado) == $key ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
                         </select>
                         @error('estado')
                         <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
@@ -343,7 +342,7 @@
                 Cancelar
             </a>
             <button type="submit"
-                class="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition-all flex items-center gap-2">
+                class="px-6 py-2.5 bg-utn-blue-darker text-white font-medium rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition-all flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
