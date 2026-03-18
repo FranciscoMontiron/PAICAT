@@ -52,6 +52,7 @@
         <div class="bg-red-50 border border-red-200 rounded-lg p-4">
             <p class="text-sm text-red-700 font-medium mb-1">Alumnos en Riesgo</p>
             <p class="text-3xl font-bold text-red-900">{{ $alumnosEnRiesgo }}</p>
+            <p class="text-xs text-red-400 mt-1">con &lt;75% en alguna materia</p>
         </div>
     </div>
 
@@ -218,6 +219,59 @@
 
 </div>
 
+<!-- Modal: Pasar Asistencia -->
+<div id="modalAsistencia" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50">
+    <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-lg font-semibold text-gray-800">Pasar Asistencia</h3>
+            <button onclick="cerrarModal()" class="text-gray-400 hover:text-gray-600 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Opción: Hoy -->
+        <button onclick="irHoy()"
+            class="w-full flex items-center gap-4 p-4 border-2 border-green-200 hover:border-green-500 hover:bg-green-50 rounded-xl transition mb-3 text-left group">
+            <div class="w-10 h-10 bg-green-100 group-hover:bg-green-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="font-semibold text-gray-800">Hoy</p>
+                <p class="text-xs text-gray-500">{{ \Carbon\Carbon::today()->isoFormat('dddd D [de] MMMM') }}</p>
+            </div>
+        </button>
+
+        <!-- Opción: Fecha pasada -->
+        <div class="p-4 border-2 border-gray-200 hover:border-indigo-300 rounded-xl transition">
+            <div class="flex items-center gap-4 mb-3">
+                <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-800">Fecha pasada</p>
+                    <p class="text-xs text-gray-500">Seleccioná la fecha de la clase</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <input type="date"
+                       id="inputFechaPasada"
+                       max="{{ date('Y-m-d', strtotime('-1 day')) }}"
+                       class="flex-1 rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <button onclick="irFechaPasada()"
+                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">
+                    Ir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function toggleAlumnos() {
     const list = document.getElementById('alumnosList');
@@ -225,5 +279,33 @@ function toggleAlumnos() {
     list.classList.toggle('hidden');
     chevron.classList.toggle('rotate-180');
 }
+
+let urlBaseModal = '';
+
+function abrirModal(urlBase, materiaNombre) {
+    urlBaseModal = urlBase;
+    document.getElementById('modalAsistencia').classList.remove('hidden');
+}
+
+function cerrarModal() {
+    document.getElementById('modalAsistencia').classList.add('hidden');
+}
+
+function irHoy() {
+    window.location.href = urlBaseModal;
+}
+
+function irFechaPasada() {
+    const fecha = document.getElementById('inputFechaPasada').value;
+    if (!fecha) {
+        alert('Por favor seleccioná una fecha.');
+        return;
+    }
+    window.location.href = urlBaseModal + '?fecha=' + fecha;
+}
+
+document.getElementById('modalAsistencia').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+});
 </script>
 @endsection

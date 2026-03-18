@@ -97,6 +97,9 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Fecha
                             </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Materia
+                            </th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Estado
                             </th>
@@ -116,6 +119,14 @@
                                     <span class="text-xs text-gray-500 block">
                                         {{ $asistencia->fecha->diffForHumans() }}
                                     </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    @if($asistencia->materia)
+                                        <span class="font-medium">{{ $asistencia->materia->nombre }}</span>
+                                        <span class="text-xs text-gray-400 block font-mono">{{ $asistencia->materia->codigo }}</span>
+                                    @else
+                                        <span class="text-gray-400 italic">General</span>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <span class="px-3 py-1 text-xs font-semibold rounded
@@ -164,4 +175,3 @@
     </div>
 </div>
 @endsection
-

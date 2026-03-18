@@ -202,9 +202,13 @@
 
 <script>
     function marcarTodos(estado) {
-        const radios = document.querySelectorAll(`input[type="radio"][value="${estado}"]`);
-        radios.forEach(radio => {
-            radio.checked = true;
+        // Obtener todos los nombres de grupo únicos (asistencias[0][estado], asistencias[1][estado], etc.)
+        const grupos = new Set();
+        document.querySelectorAll('input[type="radio"][name*="[estado]"]').forEach(r => grupos.add(r.name));
+
+        grupos.forEach(nombre => {
+            const radio = document.querySelector(`input[type="radio"][name="${nombre}"][value="${estado}"]`);
+            if (radio) radio.click();
         });
     }
 
@@ -213,9 +217,13 @@
         if (this.dataset.confirmBypassed) return;
         e.preventDefault();
         const fecha = document.querySelector('input[name="fecha"]').value;
+        const esHoy = fecha === new Date().toISOString().split('T')[0];
+        const msg = esHoy
+            ? '¿Confirmar el registro de asistencia para hoy?'
+            : `¿Confirmar el registro de asistencia para el ${fecha.split('-').reverse().join('/')}?`;
         const ok = await paiConfirm({
             title: 'Confirmar asistencia',
-            message: `¿Confirmar asistencia para el día ${fecha}?`
+            message: msg
         });
         if (ok) {
             this.dataset.confirmBypassed = 'true';

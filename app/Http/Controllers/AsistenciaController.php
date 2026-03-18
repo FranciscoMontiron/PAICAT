@@ -244,7 +244,20 @@ class AsistenciaController extends Controller
         foreach ($comision->inscripciones as $inscripcion) {
             $porcentaje = $this->calcularPorcentajeAsistencia($inscripcion);
             $sumaPorcentajes += $porcentaje;
-            if ($porcentaje < $minimoAsistencia) {
+
+            // Un alumno está en riesgo si está bajo el mínimo en CUALQUIERA de sus materias
+            $enRiesgo = false;
+            $porMateria = $inscripcion->asistencias->groupBy('materia_id');
+            foreach ($porMateria as $asistencias) {
+                $total = $asistencias->count();
+                if ($total === 0) continue;
+                $asistio = $asistencias->whereIn('estado', ['presente', 'tardanza', 'justificado'])->count();
+                if (round(($asistio / $total) * 100, 1) < $minimoAsistencia) {
+                    $enRiesgo = true;
+                    break;
+                }
+            }
+            if ($enRiesgo) {
                 $alumnosEnRiesgo++;
             }
         }
