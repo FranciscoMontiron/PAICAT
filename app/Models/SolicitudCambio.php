@@ -146,11 +146,15 @@ class SolicitudCambio extends Model
     }
 
     /**
-     * Verificar si puede ser procesada
+     * Verificar si puede ser procesada (pendiente, en revisión o trueque detectado)
      */
     public function puedeSerProcesada(): bool
     {
-        return $this->isPendiente();
+        return in_array($this->estado, [
+            self::ESTADO_PENDIENTE,
+            self::ESTADO_EN_REVISION,
+            self::ESTADO_TRUEQUE_DETECTADO,
+        ]);
     }
 
     /**

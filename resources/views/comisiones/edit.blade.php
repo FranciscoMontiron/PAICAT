@@ -180,7 +180,7 @@
                             Cupo Máximo <span class="text-red-500 cupo-required">*</span>
                         </label>
                         <div class="relative">
-                            <input type="number" name="cupo_maximo" id="cupo_maximo" value="{{ old('cupo_maximo', $comision->cupo_maximo) }}" min="{{ $comision->cupo_real }}" max="200"
+                            <input type="number" name="cupo_maximo" id="cupo_maximo" value="{{ old('cupo_maximo', $comision->cupo_maximo) }}" min="{{ $comision->cupo_real }}" max="500"
                                 class="w-full px-4 py-2.5 pr-16 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow @error('cupo_maximo') border-red-500 @enderror">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">alumnos</span>
                         </div>

@@ -6,7 +6,7 @@
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     {{-- Header --}}
     <div class="mb-6">
-        <a href="{{ route('aulas.index') }}" class="text-utn-blue-dark hover:text-utn-blue-dark flex items-center gap-1 text-sm mb-2">
+        <a href="{{ route('infraestructura.index', ['tab' => 'aulas']) }}" class="text-utn-blue-dark hover:text-utn-blue-dark flex items-center gap-1 text-sm mb-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
             </svg>
@@ -57,18 +57,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Código --}}
-                    <div>
-                        <label for="codigo" class="block text-sm font-medium text-gray-700 mb-1">Código</label>
-                        <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $aula->codigo) }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('codigo') border-red-500 @enderror"
-                               placeholder="Ej: A101">
-                        @error('codigo')
-                        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-xs text-gray-500">Código corto para identificar el aula</p>
-                    </div>
-
                     {{-- Capacidad --}}
                     <div>
                         <label for="capacidad" class="block text-sm font-medium text-gray-700 mb-1">Capacidad</label>
@@ -118,7 +106,7 @@
 
             {{-- Botones --}}
             <div class="mt-8 flex justify-end gap-3">
-                <a href="{{ route('aulas.index') }}"
+                <a href="{{ route('infraestructura.index', ['tab' => 'aulas']) }}"
                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                     Cancelar
                 </a>

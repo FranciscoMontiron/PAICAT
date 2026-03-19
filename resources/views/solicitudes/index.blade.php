@@ -106,8 +106,9 @@
                 @forelse($solicitudes as $solicitud)
                     @php
                         $alumno = $solicitud->inscripcion?->alumno;
+                        $destinoActiva = $solicitud->comisionDestino ? $solicitud->comisionDestino->isActiva() : true;
+                        $tieneCupos = $destinoActiva && ($solicitud->comisionDestino?->tieneCuposDisponibles() ?? true);
                         $cuposDestino = $solicitud->comisionDestino?->cupos_disponibles;
-                        $tieneCupos = $solicitud->comisionDestino?->tieneCuposDisponibles() ?? true;
                     @endphp
                     <tr class="{{ $solicitud->estado === 'trueque_detectado' ? 'bg-purple-50' : '' }}">
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -173,8 +174,10 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($solicitud->comisionDestino)
-                                @if($solicitud->comisionDestino->esVirtual())
-                                    <span class="text-sm text-green-600">Sin límite</span>
+                                @if(!$destinoActiva)
+                                    <span class="text-sm text-red-600 font-medium" title="Estado: {{ ucfirst($solicitud->comisionDestino->estado) }}">No activa</span>
+                                @elseif($solicitud->comisionDestino->esVirtual())
+                                    <span class="text-sm text-green-600">Sin limite</span>
                                 @elseif($tieneCupos)
                                     <span class="text-sm text-green-600">{{ $cuposDestino }} disponibles</span>
                                 @else
@@ -289,8 +292,11 @@
 </div>
 
 <script>
+var rechazarBaseUrl = "{{ url('solicitudes') }}";
+
 function abrirModalRechazo(solicitudId) {
-    document.getElementById('formRechazo').action = '/solicitudes/' + solicitudId + '/rechazar';
+    document.getElementById('formRechazo').action = rechazarBaseUrl + '/' + solicitudId + '/rechazar';
+    document.getElementById('motivo_rechazo').value = '';
     document.getElementById('modalRechazo').classList.remove('hidden');
 }
 
@@ -302,6 +308,13 @@ function cerrarModalRechazo() {
 // Cerrar modal al hacer clic fuera
 document.getElementById('modalRechazo').addEventListener('click', function(e) {
     if (e.target === this) {
+        cerrarModalRechazo();
+    }
+});
+
+// Cerrar con Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !document.getElementById('modalRechazo').classList.contains('hidden')) {
         cerrarModalRechazo();
     }
 });

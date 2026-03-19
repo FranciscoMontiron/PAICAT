@@ -55,7 +55,14 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600">Cupos Disponibles</p>
-                    <p class="text-2xl font-bold text-gray-800">{{ $stats['cupos_disponibles'] }}</p>
+                    @if(is_null($stats['cupos_disponibles']))
+                        <p class="text-2xl font-bold text-gray-400">Sin limite</p>
+                    @else
+                        <p class="text-2xl font-bold text-gray-800">{{ $stats['cupos_disponibles'] }}</p>
+                        @if($comision->extracupos_habilitados && $comision->extracupos > 0)
+                            <p class="text-xs text-orange-600">Base: {{ $comision->cupo_maximo }} + {{ $comision->extracupos }} extra</p>
+                        @endif
+                    @endif
                 </div>
                 <div class="bg-green-100 p-3 rounded-full">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,7 +76,11 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600">Ocupación</p>
-                    <p class="text-2xl font-bold text-gray-800">{{ number_format($stats['porcentaje_ocupacion'], 1) }}%</p>
+                    @if($comision->esVirtual() || is_null($comision->cupo_maximo))
+                        <p class="text-2xl font-bold text-gray-400">N/A</p>
+                    @else
+                        <p class="text-2xl font-bold text-gray-800">{{ number_format($stats['porcentaje_ocupacion'], 1) }}%</p>
+                    @endif
                 </div>
                 <div class="bg-purple-100 p-3 rounded-full">
                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,12 +131,17 @@
                             <p class="mt-1 text-gray-900">{{ $comision->modalidad }}</p>
                         </div>
                         <div>
-                            <label class="text-sm font-medium text-gray-500">Cupo Máximo</label>
-                            <p class="mt-1 text-gray-900">{{ $comision->cupo_maximo }}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm font-medium text-gray-500">Cupo Actual</label>
-                            <p class="mt-1 text-gray-900">{{ $comision->cupo_real }}</p>
+                            <label class="text-sm font-medium text-gray-500">Cupo</label>
+                            @if($comision->esVirtual() || is_null($comision->cupo_maximo))
+                                <p class="mt-1 text-gray-400 italic">Sin limite (Virtual)</p>
+                            @else
+                                <p class="mt-1 text-gray-900">
+                                    {{ $comision->cupo_real }} / {{ $comision->cupo_total }}
+                                    @if($comision->extracupos_habilitados && $comision->extracupos > 0)
+                                        <span class="text-xs text-orange-600">({{ $comision->cupo_maximo }} base + {{ $comision->extracupos }} extra)</span>
+                                    @endif
+                                </p>
+                            @endif
                         </div>
                         @if($comision->fecha_inicio)
                         <div>
@@ -164,14 +180,14 @@
                         <h2 class="text-xl font-bold text-gray-800">Alumnos Inscritos</h2>
                         <span class="text-sm text-gray-600">{{ $comision->inscripciones->count() }} alumnos</span>
                     </div>
-                    @if(auth()->user()->hasPermission('comisiones.editar') && $comision->cupos_disponibles > 0)
+                    @if(auth()->user()->hasPermission('comisiones.editar') && $comision->tieneCuposDisponibles())
                     <button onclick="document.getElementById('modal-agregar-alumno').classList.remove('hidden')" class="bg-utn-blue-darker hover:bg-utn-dark-light text-white px-4 py-2 rounded-lg transition duration-200 flex items-center text-sm">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
                         </svg>
                         Agregar Alumno
                     </button>
-                    @elseif(auth()->user()->hasPermission('comisiones.editar') && $comision->cupos_disponibles <= 0)
+                    @elseif(auth()->user()->hasPermission('comisiones.editar') && !$comision->tieneCuposDisponibles())
                     <span class="text-sm text-red-600 font-medium">Sin cupos disponibles</span>
                     @endif
                 </div>
@@ -259,16 +275,13 @@
                         <p class="mt-1 text-sm text-gray-500">Ver, crear y administrar las evaluaciones de esta comisión</p>
                         @if(auth()->user()->hasPermission('evaluaciones.ver'))
                         <div class="mt-6">
-                            {{-- TODO: Implementar en rama feature/evaluaciones --}}
-                            {{-- <a href="{{ route('comisiones.evaluaciones.index', $comision) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700"> --}}
-                            <button onclick="alert('Funcionalidad a implementar en rama feature/evaluaciones')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700">
+                            <a href="{{ route('evaluaciones.comision', $comision) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700">
                                 <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                 </svg>
                                 Ver Evaluaciones ({{ $stats['evaluaciones'] }})
-                            </button>
-                            {{-- </a> --}}
+                            </a>
                         </div>
                         @endif
                     </div>
@@ -299,7 +312,8 @@
                     @else
                     <p class="text-gray-500 italic">Sin docente asignado</p>
                     @if(auth()->user()->hasPermission('comisiones.editar'))
-                    <button class="mt-4 w-full bg-utn-blue-darker hover:bg-utn-dark-light text-white px-4 py-2 rounded-lg transition duration-200">
+                    <button onclick="document.getElementById('modal-asignar-docente').classList.remove('hidden')"
+                        class="mt-4 w-full bg-utn-blue-darker hover:bg-utn-dark-light text-white px-4 py-2 rounded-lg transition duration-200">
                         Asignar Docente
                     </button>
                     @endif
@@ -392,6 +406,50 @@
             </div>
             @endif
 
+            <!-- Extracupos (solo para presencial/semipresencial) -->
+            @if(auth()->user()->hasPermission('comisiones.editar') && !$comision->esVirtual() && !is_null($comision->cupo_maximo))
+            <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-gray-800">Extracupos</h2>
+                        @if($comision->extracupos_habilitados)
+                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">Activo</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="p-6">
+                    <p class="text-sm text-gray-600 mb-4">
+                        Habilita lugares adicionales por encima del cupo base de <strong>{{ $comision->cupo_maximo }}</strong> alumnos.
+                    </p>
+
+                    <button onclick="document.getElementById('modal-extracupos').classList.remove('hidden')"
+                        class="w-full inline-flex items-center justify-center {{ $comision->extracupos_habilitados ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-600 hover:bg-gray-700' }} text-white px-4 py-2 rounded-lg transition duration-200 text-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        {{ $comision->extracupos_habilitados ? 'Modificar Extracupos ('.$comision->extracupos.')' : 'Habilitar Extracupos' }}
+                    </button>
+
+                    @if($comision->extracupos_habilitados && $comision->extracupos > 0)
+                    <div class="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600">Cupo base:</span>
+                            <span class="font-medium">{{ $comision->cupo_maximo }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-orange-600">Extracupos:</span>
+                            <span class="font-medium text-orange-600">+{{ $comision->extracupos }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm font-bold border-t border-orange-200 pt-1 mt-1">
+                            <span class="text-gray-700">Total efectivo:</span>
+                            <span>{{ $comision->cupo_total }}</span>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             <!-- Información Adicional -->
             <div class="bg-white rounded-lg shadow overflow-hidden">
                 <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
@@ -411,6 +469,115 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Asignar Docente -->
+@if(auth()->user()->hasPermission('comisiones.editar') && !$comision->docente)
+<div id="modal-asignar-docente" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900">Asignar Docente</h3>
+            <button onclick="document.getElementById('modal-asignar-docente').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <form action="{{ route('comisiones.asignarDocente', $comision) }}" method="POST">
+            @csrf
+
+            <div class="mb-4">
+                <label for="docente_id" class="block text-sm font-medium text-gray-700 mb-1.5">Seleccionar docente</label>
+                <select name="docente_id" id="docente_id" required
+                    class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
+                    <option value="">-- Seleccionar --</option>
+                    @foreach($docentes as $docente)
+                        <option value="{{ $docente->id }}">{{ $docente->nombre_completo ?? $docente->name }} ({{ $docente->email }})</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 mt-6">
+                <button type="button" onclick="document.getElementById('modal-asignar-docente').classList.add('hidden')"
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit"
+                    class="px-4 py-2 bg-utn-blue-darker text-white rounded-lg hover:bg-utn-dark-light transition-colors">
+                    Asignar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
+<!-- Modal Extracupos -->
+@if(auth()->user()->hasPermission('comisiones.editar') && !$comision->esVirtual() && !is_null($comision->cupo_maximo))
+<div id="modal-extracupos" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900">Configurar Extracupos</h3>
+            <button onclick="document.getElementById('modal-extracupos').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <form action="{{ route('comisiones.actualizarExtracupos', $comision) }}" method="POST">
+            @csrf
+
+            <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p class="text-sm text-blue-800">
+                    Cupo base actual: <strong>{{ $comision->cupo_maximo }}</strong> alumnos
+                    <br>Inscriptos actualmente: <strong>{{ $comision->cupo_real }}</strong>
+                </p>
+            </div>
+
+            <!-- Toggle habilitar -->
+            <div class="mb-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="hidden" name="extracupos_habilitados" value="0">
+                    <input type="checkbox" name="extracupos_habilitados" value="1" id="toggle-extracupos"
+                        {{ $comision->extracupos_habilitados ? 'checked' : '' }}
+                        class="rounded border-gray-300 text-orange-600 focus:ring-orange-500 w-5 h-5"
+                        onchange="document.getElementById('extracupos-cantidad').classList.toggle('hidden', !this.checked)">
+                    <span class="text-sm font-medium text-gray-700">Habilitar extracupos</span>
+                </label>
+            </div>
+
+            <!-- Cantidad -->
+            <div id="extracupos-cantidad" class="{{ $comision->extracupos_habilitados ? '' : 'hidden' }} mb-4">
+                <label for="extracupos" class="block text-sm font-medium text-gray-700 mb-1.5">
+                    Cantidad de extracupos
+                </label>
+                <div class="relative">
+                    <input type="number" name="extracupos" id="extracupos"
+                        value="{{ $comision->extracupos }}"
+                        min="0" max="200" placeholder="Ej: 10"
+                        class="w-full px-4 py-2.5 pr-20 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">alumnos</span>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">
+                    Cupo total efectivo sera: <strong>{{ $comision->cupo_maximo }}</strong> + extracupos
+                </p>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 mt-6">
+                <button type="button" onclick="document.getElementById('modal-extracupos').classList.add('hidden')"
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit"
+                    class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
 
 <!-- Modal Agregar Alumno -->
 @if(auth()->user()->hasPermission('comisiones.editar'))
@@ -442,7 +609,14 @@
 
         <!-- Mensaje de cupos -->
         <div class="mt-4 text-sm text-gray-600">
-            <span class="font-medium">Cupos disponibles:</span> {{ $comision->cupos_disponibles }} de {{ $comision->cupo_maximo }}
+            @if(is_null($comision->cupos_disponibles))
+                <span class="font-medium">Cupos:</span> Sin limite (Virtual)
+            @else
+                <span class="font-medium">Cupos disponibles:</span> {{ $comision->cupos_disponibles }} de {{ $comision->cupo_total }}
+                @if($comision->extracupos_habilitados && $comision->extracupos > 0)
+                    <span class="text-orange-600">(incluye {{ $comision->extracupos }} extracupos)</span>
+                @endif
+            @endif
         </div>
     </div>
 </div>

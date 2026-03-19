@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\AulaController;
 use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\AutoCrearComisionesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -88,6 +89,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/{comision}/alumnos-disponibles', [ComisionController::class, 'alumnosDisponibles'])->middleware('permission:comisiones.editar')->name('alumnosDisponibles');
         Route::post('/{comision}/inscribir-alumno', [ComisionController::class, 'inscribirAlumno'])->middleware('permission:comisiones.editar')->name('inscribirAlumno');
         Route::delete('/{comision}/inscripcion/{inscripcion}', [ComisionController::class, 'desinscribirAlumno'])->middleware('permission:comisiones.editar')->name('desinscribirAlumno');
+        Route::post('/{comision}/extracupos', [ComisionController::class, 'actualizarExtracupos'])->middleware('permission:comisiones.editar')->name('actualizarExtracupos');
+        Route::patch('/{comision}/archivar', [ComisionController::class, 'toggleArchivar'])->middleware('permission:comisiones.editar')->name('toggleArchivar');
+    });
+
+    // Módulo 2.1: Auto-creación de comisiones
+    Route::prefix('auto-crear-comisiones')->name('auto-crear-comisiones.')->middleware('permission:comisiones.crear')->group(function () {
+        Route::get('/', [AutoCrearComisionesController::class, 'index'])->name('index');
+        Route::post('/preview', [AutoCrearComisionesController::class, 'preview'])->name('preview');
+        Route::post('/ejecutar', [AutoCrearComisionesController::class, 'ejecutar'])->name('ejecutar');
     });
 
     // Módulo 2.5: Asignación Aleatoria de Alumnos (RF10)
@@ -275,6 +285,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/{materia}', [App\Http\Controllers\MateriaController::class, 'update'])->middleware('permission:comisiones.editar')->name('update');
         Route::delete('/{materia}', [App\Http\Controllers\MateriaController::class, 'destroy'])->middleware('permission:comisiones.eliminar')->name('destroy');
     });
+
+    // Módulo: Infraestructura (vista unificada)
+    Route::get('/infraestructura', [App\Http\Controllers\InfraestructuraController::class, 'index'])
+        ->middleware('permission:comisiones.ver')
+        ->name('infraestructura.index');
 
     // Módulo: Municipios (ABM)
     Route::prefix('municipios')->name('municipios.')->middleware('permission:comisiones.ver')->group(function () {

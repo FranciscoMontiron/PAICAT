@@ -25,12 +25,12 @@
             <div>
                 <h2 class="text-2xl font-bold">{{ $totalAsignar }} alumnos serán asignados</h2>
                 <p class="opacity-90">a {{ count($simulacion) }} comisiones</p>
-                @if(isset($distribuirPorCarrera) && $distribuirPorCarrera)
+                @if(isset($agruparPorCarrera) && $agruparPorCarrera)
                 <p class="mt-2 text-sm bg-white/20 inline-block px-3 py-1 rounded-full">
                     <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    Distribución equitativa por carrera activada
+                    Agrupados por carrera
                 </p>
                 @endif
                 @if(isset($filtrarEspecialidad) && $filtrarEspecialidad && isset($especialidades[$filtrarEspecialidad]))
@@ -57,8 +57,8 @@
         @foreach($comisionesIds as $id)
         <input type="hidden" name="comisiones[]" value="{{ $id }}">
         @endforeach
-        @if(isset($distribuirPorCarrera) && $distribuirPorCarrera)
-        <input type="hidden" name="distribuir_por_carrera" value="1">
+        @if(isset($agruparPorCarrera) && $agruparPorCarrera)
+        <input type="hidden" name="agrupar_por_carrera" value="1">
         @endif
         @if(isset($filtrarEspecialidad) && $filtrarEspecialidad)
         <input type="hidden" name="filtrar_especialidad" value="{{ $filtrarEspecialidad }}">
@@ -87,7 +87,7 @@
                             <span class="text-gray-500">/ {{ $item['cuposDisponibles'] }} cupos</span>
                         </div>
                     </div>
-                    @if(isset($item['distribucionPorCarrera']) && $item['distribucionPorCarrera']->count() > 0 && isset($distribuirPorCarrera) && $distribuirPorCarrera)
+                    @if(isset($item['distribucionPorCarrera']) && $item['distribucionPorCarrera']->count() > 0 && isset($agruparPorCarrera) && $agruparPorCarrera)
                     <div class="mt-3 pt-3 border-t border-gray-200">
                         <span class="text-xs font-medium text-gray-500 mr-2">Distribución por carrera:</span>
                         @foreach($item['distribucionPorCarrera'] as $espId => $cantidad)
@@ -155,17 +155,37 @@
                     Cancelar
                 </a>
                 @if($totalAsignar > 0)
-                <button type="submit"
-                    class="bg-green-700 hover:bg-green-800 text-white font-semibold px-6 py-3 rounded-lg transition duration-200 flex items-center shadow-md"
-                    >
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="submit" id="btnConfirmar"
+                    class="bg-green-700 hover:bg-green-800 text-white font-semibold px-6 py-3 rounded-lg transition duration-200 flex items-center shadow-md">
+                    <svg id="btnConfirmarIcon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    Confirmar Asignación
+                    <svg id="btnConfirmarSpinner" class="hidden animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="btnConfirmarText">Confirmar Asignación</span>
                 </button>
                 @endif
             </div>
         </div>
     </form>
 </div>
+@push('scripts')
+<script>
+document.getElementById('formConfirmar').addEventListener('submit', function(e) {
+    // No bloquear si es el confirm dialog el que lo maneja
+    const btn = document.getElementById('btnConfirmar');
+    if (btn) {
+        btn.disabled = true;
+        const icon = document.getElementById('btnConfirmarIcon');
+        const spinner = document.getElementById('btnConfirmarSpinner');
+        const text = document.getElementById('btnConfirmarText');
+        if (icon) icon.classList.add('hidden');
+        if (spinner) spinner.classList.remove('hidden');
+        if (text) text.textContent = 'Asignando alumnos...';
+    }
+});
+</script>
+@endpush
 @endsection

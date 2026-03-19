@@ -49,17 +49,17 @@ class MunicipioController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:100|unique:municipios,nombre',
-            'codigo' => 'nullable|string|max:20|unique:municipios,codigo',
             'direccion' => 'nullable|string|max:255',
             'activo' => 'boolean',
             'observaciones' => 'nullable|string|max:500',
         ]);
 
         $validated['activo'] = $request->boolean('activo', true);
+        $validated['codigo'] = $this->generarCodigoMunicipio($validated['nombre']);
 
         Municipio::create($validated);
 
-        return redirect()->route('municipios.index')
+        return redirect()->route('infraestructura.index', ['tab' => 'municipios'])
             ->with('success', 'Municipio creado exitosamente.');
     }
 
@@ -90,7 +90,6 @@ class MunicipioController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:100|unique:municipios,nombre,' . $municipio->id,
-            'codigo' => 'nullable|string|max:20|unique:municipios,codigo,' . $municipio->id,
             'direccion' => 'nullable|string|max:255',
             'activo' => 'boolean',
             'observaciones' => 'nullable|string|max:500',
@@ -98,9 +97,13 @@ class MunicipioController extends Controller
 
         $validated['activo'] = $request->boolean('activo', true);
 
+        if ($municipio->nombre !== $validated['nombre']) {
+            $validated['codigo'] = $this->generarCodigoMunicipio($validated['nombre']);
+        }
+
         $municipio->update($validated);
 
-        return redirect()->route('municipios.index')
+        return redirect()->route('infraestructura.index', ['tab' => 'municipios'])
             ->with('success', 'Municipio actualizado exitosamente.');
     }
 
@@ -117,7 +120,7 @@ class MunicipioController extends Controller
 
         $municipio->delete();
 
-        return redirect()->route('municipios.index')
+        return redirect()->route('infraestructura.index', ['tab' => 'municipios'])
             ->with('success', 'Municipio eliminado exitosamente.');
     }
 
@@ -132,5 +135,16 @@ class MunicipioController extends Controller
 
         return redirect()->back()
             ->with('success', "Municipio {$estado} exitosamente.");
+    }
+
+    private function generarCodigoMunicipio(string $nombre): string
+    {
+        $prefijo = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $nombre), 0, 3));
+        $prefijo = str_pad($prefijo, 3, 'X');
+
+        $ultimo = Municipio::where('codigo', 'like', $prefijo . '%')->count();
+        $numero = str_pad($ultimo + 1, 2, '0', STR_PAD_LEFT);
+
+        return $prefijo . $numero;
     }
 }

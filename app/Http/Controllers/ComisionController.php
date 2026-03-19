@@ -23,7 +23,18 @@ class ComisionController extends Controller
      */
     public function index(Request $request)
     {
+        $verArchivadas = $request->boolean('archivadas');
+
         $query = Comision::with(['docente', 'materias']);
+
+        // Por defecto ocultar archivadas
+        if (!$verArchivadas) {
+            $query->where(function ($q) {
+                $q->where('archivada', false)->orWhereNull('archivada');
+            });
+        } else {
+            $query->where('archivada', true);
+        }
 
         // Filtros
         if ($request->filled('anio')) {
@@ -50,25 +61,69 @@ class ComisionController extends Controller
             });
         }
 
-        $comisiones = $query->orderBy('anio', 'desc')
+        $comisiones = $query->withCount(['docentesActivos'])
+            ->orderByRaw('CASE WHEN docente_id IS NULL AND (SELECT COUNT(*) FROM comision_docente WHERE comision_docente.comision_id = comisiones.id AND comision_docente.activo = 1) = 0 THEN 0 ELSE 1 END')
+            ->orderBy('anio', 'desc')
             ->orderBy('nombre')
             ->paginate(15);
 
-        // Estadísticas
+        // Estadísticas (excluir virtuales del cálculo de cupos)
+        $cuposTotales = Comision::whereNotNull('cupo_maximo')
+            ->selectRaw('SUM(cupo_maximo + CASE WHEN extracupos_habilitados = 1 THEN extracupos ELSE 0 END) as total')
+            ->value('total') ?? 0;
+
+        $sinDocente = Comision::whereNull('docente_id')
+            ->whereDoesntHave('docentesActivos')
+            ->count();
+
         $stats = [
             'total' => Comision::count(),
             'activas' => Comision::where('estado', 'activa')->count(),
-            'cupos_totales' => Comision::sum('cupo_maximo'),
+            'cupos_totales' => $cuposTotales,
             'cupos_ocupados' => \DB::table('inscripcion_comisiones')
                 ->whereNull('deleted_at')
                 ->whereIn('estado', ['inscripto', 'confirmado', 'aprobado'])
                 ->count(),
+            'sin_docente' => $sinDocente,
+            'archivadas' => Comision::where('archivada', true)->count(),
         ];
+
+        // Detectar conflictos de aula: misma aula, año, turno y periodo (solo presenciales)
+        $conflictosAulaRaw = Comision::whereNotNull('aula_id')
+            ->where('estado', '!=', 'cancelada')
+            ->whereRaw("LOWER(modalidad) = 'presencial'")
+            ->where(function ($q) {
+                $q->where('archivada', false)->orWhereNull('archivada');
+            })
+            ->select('aula_id', 'anio', 'turno', 'periodo')
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('GROUP_CONCAT(nombre SEPARATOR ", ") as nombres')
+            ->selectRaw('GROUP_CONCAT(id SEPARATOR ",") as ids')
+            ->groupBy('aula_id', 'anio', 'turno', 'periodo')
+            ->having('total', '>', 1)
+            ->get();
+
+        // IDs de comisiones en conflicto para marcar en la tabla
+        $idsEnConflicto = collect();
+        $conflictosAula = $conflictosAulaRaw->map(function ($conflicto) use (&$idsEnConflicto) {
+            $aula = Aula::find($conflicto->aula_id);
+            $ids = explode(',', $conflicto->ids);
+            $idsEnConflicto = $idsEnConflicto->merge($ids);
+            return [
+                'aula' => $aula ? $aula->nombre : 'Aula #' . $conflicto->aula_id,
+                'anio' => $conflicto->anio,
+                'turno' => $conflicto->turno,
+                'periodo' => $conflicto->periodo,
+                'total' => $conflicto->total,
+                'nombres' => $conflicto->nombres,
+            ];
+        });
+        $idsEnConflicto = $idsEnConflicto->map(fn($id) => (int) $id)->unique()->values();
 
         // Años disponibles desde la BD
         $aniosDisponibles = Comision::select('anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
 
-        return view('comisiones.index', compact('comisiones', 'stats', 'aniosDisponibles'));
+        return view('comisiones.index', compact('comisiones', 'stats', 'aniosDisponibles', 'verArchivadas', 'conflictosAula', 'idsEnConflicto'));
     }
 
     /**
@@ -116,7 +171,7 @@ class ComisionController extends Controller
             'periodo' => 'required|string|max:50',
             'turno' => $esVirtual ? 'nullable|string|max:50' : 'required|string|max:50',
             'modalidad' => 'required|string|max:50',
-            'cupo_maximo' => $esVirtual ? 'nullable|integer|min:0|max:9999' : 'required|integer|min:1|max:9999',
+            'cupo_maximo' => $esVirtual ? 'nullable|integer|min:0' : 'required|integer|min:1|max:500',
             'municipio_id' => $esVirtual ? 'nullable|exists:municipios,id' : 'required|exists:municipios,id',
             'aula_id' => 'nullable|exists:aulas,id',
             'docentes' => 'nullable|array',
@@ -142,9 +197,11 @@ class ComisionController extends Controller
         // Lógica especial para comisiones virtuales: sin cupo ni turno
         if (strtolower($validated['modalidad']) === 'virtual') {
             $validated['turno'] = null;
-            $validated['cupo_maximo'] = 9999; // Sin límite de cupo (valor muy alto)
-            $validated['municipio_id'] = null; // Virtual no requiere sede física
-            $validated['aula_id'] = null; // Virtual no requiere aula
+            $validated['cupo_maximo'] = null; // Sin límite de cupo
+            $validated['municipio_id'] = null;
+            $validated['aula_id'] = null;
+            $validated['extracupos_habilitados'] = false;
+            $validated['extracupos'] = 0;
         }
 
         // Si hay docentes, asignar el primero como docente_id (compatibilidad)
@@ -198,7 +255,12 @@ class ComisionController extends Controller
             'evaluaciones' => $comision->evaluaciones()->count(),
         ];
 
-        return view('comisiones.show', compact('comision', 'stats'));
+        // Docentes disponibles para asignar
+        $docentes = User::whereHas('roles', function ($query) {
+            $query->where('slug', 'docente');
+        })->orderBy('name')->get();
+
+        return view('comisiones.show', compact('comision', 'stats', 'docentes'));
     }
 
     /**
@@ -249,7 +311,7 @@ class ComisionController extends Controller
             'periodo' => 'required|string|max:50',
             'turno' => $esVirtual ? 'nullable|string|max:50' : 'required|string|max:50',
             'modalidad' => 'required|string|max:50',
-            'cupo_maximo' => $esVirtual ? 'nullable|integer|min:0|max:9999' : 'required|integer|min:' . $comision->cupo_real . '|max:9999',
+            'cupo_maximo' => $esVirtual ? 'nullable|integer|min:0' : 'required|integer|min:' . $comision->cupo_real . '|max:500',
             'estado' => 'required|in:' . implode(',', array_keys(Comision::getEstados())),
             'municipio_id' => $esVirtual ? 'nullable|exists:municipios,id' : 'required|exists:municipios,id',
             'aula_id' => 'nullable|exists:aulas,id',
@@ -273,9 +335,11 @@ class ComisionController extends Controller
         // Lógica especial para comisiones virtuales
         if (strtolower($validated['modalidad']) === 'virtual') {
             $validated['turno'] = null;
-            $validated['cupo_maximo'] = 9999; // Sin límite de cupo (valor muy alto)
-            $validated['municipio_id'] = null; // Virtual no requiere sede física
-            $validated['aula_id'] = null; // Virtual no requiere aula
+            $validated['cupo_maximo'] = null; // Sin límite de cupo
+            $validated['municipio_id'] = null;
+            $validated['aula_id'] = null;
+            $validated['extracupos_habilitados'] = false;
+            $validated['extracupos'] = 0;
         }
 
         // Si hay docentes, actualizar el docente_id (compatibilidad)
@@ -456,8 +520,8 @@ class ComisionController extends Controller
         // Obtener la inscripción
         $inscripcion = Inscripcion::findOrFail($validated['inscripcion_id']);
 
-        // Verificar que la comisión tenga cupo disponible
-        if ($comision->cupos_disponibles <= 0) {
+        // Verificar que la comisión tenga cupo disponible (null = sin límite para virtuales)
+        if (!$comision->tieneCuposDisponibles()) {
             return redirect()->back()
                 ->with('error', 'La comisión no tiene cupos disponibles.');
         }
@@ -564,6 +628,49 @@ class ComisionController extends Controller
 
         return redirect()->back()
             ->with('success', 'Alumno inscripto exitosamente.');
+    }
+
+    /**
+     * Actualizar configuración de extracupos
+     */
+    public function actualizarExtracupos(Request $request, Comision $comision)
+    {
+        if ($comision->esVirtual()) {
+            return redirect()->back()
+                ->with('error', 'Las comisiones virtuales no tienen límite de cupos.');
+        }
+
+        $validated = $request->validate([
+            'extracupos_habilitados' => 'required|boolean',
+            'extracupos' => 'required_if:extracupos_habilitados,1|integer|min:0|max:200',
+        ]);
+
+        $comision->update([
+            'extracupos_habilitados' => $validated['extracupos_habilitados'],
+            'extracupos' => $validated['extracupos_habilitados'] ? ($validated['extracupos'] ?? 0) : 0,
+        ]);
+
+        return redirect()->back()
+            ->with('success', $validated['extracupos_habilitados']
+                ? "Extracupos habilitados: {$validated['extracupos']} lugares adicionales."
+                : 'Extracupos deshabilitados.');
+    }
+
+    /**
+     * Archivar/desarchivar comisión
+     */
+    public function toggleArchivar(Comision $comision)
+    {
+        if ($comision->estado === 'activa' && !$comision->archivada) {
+            return redirect()->back()
+                ->with('error', 'No se puede archivar una comisión con estado activa.');
+        }
+
+        $comision->update(['archivada' => !$comision->archivada]);
+
+        $mensaje = $comision->archivada ? 'Comisión archivada.' : 'Comisión desarchivada.';
+
+        return redirect()->back()->with('success', $mensaje);
     }
 
     /**
