@@ -586,5 +586,137 @@ return view('reportes.showreportealumno',compact('persona','asistencias','evalua
 }
 
 
+public function reporteDesercion(Request $request)
+{
+    $diasLimite = $request->input('dias', 14);
+
+    $comisiones = DB::table('comisiones')->orderBy('nombre')->get();
+    $especialidades = DB::table('sysacad_especialidades')->orderBy('nombre')->get();
+
+    $query = DB::table('inscripcion_comisiones as ic')
+        ->join('inscripciones as i', 'ic.inscripcion_id', '=', 'i.id')
+        ->join('alumnos_utn.persons as pers', 'pers.id', '=', 'i.person_id')
+        ->join('paicat.comisiones as com', 'com.id', '=', 'ic.comision_id')
+        ->join('paicat.sysacad_especialidades as espe', 'espe.id_sysacad', '=', 'i.especialidad_id_sysacad')
+        ->leftJoin(DB::raw('(SELECT inscripcion_comision_id, MAX(fecha) as ultima_fecha FROM asistencias GROUP BY inscripcion_comision_id) as ult'), 'ult.inscripcion_comision_id', '=', 'ic.id')
+        ->where('com.estado', 'activa')
+        ->where(function ($q) use ($diasLimite) {
+            $q->whereNull('ult.ultima_fecha')
+              ->orWhereRaw('DATEDIFF(CURDATE(), ult.ultima_fecha) >= ?', [$diasLimite]);
+        })
+        ->when($request->filled('comision_id'), fn ($q) =>
+            $q->where('com.id', $request->comision_id)
+        )
+        ->when($request->filled('especialidad_id'), fn ($q) =>
+            $q->where('i.especialidad_id_sysacad', $request->especialidad_id)
+        )
+        ->select([
+            'pers.apellido',
+            'pers.nombre',
+            'pers.documento',
+            'com.nombre as comision',
+            'espe.nombre as especialidad',
+            'ult.ultima_fecha',
+            DB::raw('DATEDIFF(CURDATE(), ult.ultima_fecha) as dias_ausente'),
+        ])
+        ->orderByRaw('ult.ultima_fecha IS NULL DESC')
+        ->orderBy('ult.ultima_fecha')
+        ->paginate(20)
+        ->appends($request->query());
+
+    // Stats
+    $totalDesertores = DB::table('inscripcion_comisiones as ic')
+        ->join('paicat.comisiones as com', 'com.id', '=', 'ic.comision_id')
+        ->leftJoin(DB::raw('(SELECT inscripcion_comision_id, MAX(fecha) as ultima_fecha FROM asistencias GROUP BY inscripcion_comision_id) as ult'), 'ult.inscripcion_comision_id', '=', 'ic.id')
+        ->where('com.estado', 'activa')
+        ->where(function ($q) use ($diasLimite) {
+            $q->whereNull('ult.ultima_fecha')
+              ->orWhereRaw('DATEDIFF(CURDATE(), ult.ultima_fecha) >= ?', [$diasLimite]);
+        })
+        ->count();
+
+    $nuncaAsistieron = DB::table('inscripcion_comisiones as ic')
+        ->join('paicat.comisiones as com', 'com.id', '=', 'ic.comision_id')
+        ->leftJoin(DB::raw('(SELECT DISTINCT inscripcion_comision_id FROM asistencias) as asist'), 'asist.inscripcion_comision_id', '=', 'ic.id')
+        ->where('com.estado', 'activa')
+        ->whereNull('asist.inscripcion_comision_id')
+        ->count();
+
+    $stats = [
+        'total_desertores' => $totalDesertores,
+        'nunca_asistieron' => $nuncaAsistieron,
+        'dias_limite' => $diasLimite,
+    ];
+
+    return view('reportes.desercion', compact('query', 'comisiones', 'especialidades', 'stats'));
+}
+
+
+public function reporteResumenComisiones(Request $request)
+{
+    $asistenciaMinima = ConfiguracionService::get('asistencia_minima', 75);
+    $notaMinima = intval(ConfiguracionService::get('nota_minima_regular', 4));
+
+    $comisiones = DB::table('comisiones as c')
+        ->leftJoin('inscripcion_comisiones as ic', 'ic.comision_id', '=', 'c.id')
+        ->leftJoin(DB::raw("(
+            SELECT ic2.comision_id,
+                COUNT(DISTINCT a.id) as total_asistencias,
+                SUM(CASE WHEN a.estado IN ('presente','tardanza','justificado') THEN 1 ELSE 0 END) as asistencias_ok
+            FROM asistencias a
+            JOIN inscripcion_comisiones ic2 ON ic2.id = a.inscripcion_comision_id
+            GROUP BY ic2.comision_id
+        ) as asist"), 'asist.comision_id', '=', 'c.id')
+        ->leftJoin(DB::raw("(
+            SELECT ic3.comision_id,
+                COUNT(DISTINCT n.id) as total_notas,
+                SUM(CASE WHEN n.nota >= {$notaMinima} THEN 1 ELSE 0 END) as aprobados
+            FROM notas n
+            JOIN inscripcion_comisiones ic3 ON ic3.id = n.inscripcion_comision_id
+            WHERE n.nota IS NOT NULL
+            GROUP BY ic3.comision_id
+        ) as notas"), 'notas.comision_id', '=', 'c.id')
+        ->where('c.estado', 'activa')
+        ->when($request->filled('periodo'), fn ($q) =>
+            $q->where('c.periodo', $request->periodo)
+        )
+        ->when($request->filled('anio'), fn ($q) =>
+            $q->where('c.anio', $request->anio)
+        )
+        ->select([
+            'c.id',
+            'c.nombre',
+            'c.turno',
+            'c.modalidad',
+            'c.cupo_maximo',
+            DB::raw('COUNT(DISTINCT ic.id) as alumnos'),
+            DB::raw('COALESCE(asist.total_asistencias, 0) as total_asistencias'),
+            DB::raw('COALESCE(asist.asistencias_ok, 0) as asistencias_ok'),
+            DB::raw('COALESCE(notas.total_notas, 0) as total_notas'),
+            DB::raw('COALESCE(notas.aprobados, 0) as aprobados'),
+        ])
+        ->groupBy('c.id', 'c.nombre', 'c.turno', 'c.modalidad', 'c.cupo_maximo',
+                  'asist.total_asistencias', 'asist.asistencias_ok',
+                  'notas.total_notas', 'notas.aprobados')
+        ->orderBy('c.nombre')
+        ->get()
+        ->map(function ($c) {
+            $c->pct_asistencia = $c->total_asistencias > 0
+                ? round(($c->asistencias_ok / $c->total_asistencias) * 100, 1)
+                : null;
+            $c->pct_aprobacion = $c->total_notas > 0
+                ? round(($c->aprobados / $c->total_notas) * 100, 1)
+                : null;
+            $c->pct_ocupacion = $c->cupo_maximo > 0
+                ? round(($c->alumnos / $c->cupo_maximo) * 100, 1)
+                : null;
+            return $c;
+        });
+
+    $anios = DB::table('comisiones')->select('anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
+    $periodos = DB::table('comisiones')->select('periodo')->distinct()->orderBy('periodo')->pluck('periodo');
+
+    return view('reportes.resumen-comisiones', compact('comisiones', 'anios', 'periodos'));
+}
 
 }

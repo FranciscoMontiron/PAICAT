@@ -126,25 +126,6 @@ class ConfiguracionSeeder extends Seeder
             ],
 
             // ═══════════════════════════════════════════
-            // COMISIONES
-            // ═══════════════════════════════════════════
-            [
-                'grupo' => 'comisiones',
-                'clave' => 'estados_comision',
-                'valor' => json_encode([
-                    'activa' => 'Activa',
-                    'cerrada' => 'Cerrada',
-                    'finalizada' => 'Finalizada',
-                    'cancelada' => 'Cancelada',
-                ], JSON_UNESCAPED_UNICODE),
-                'tipo' => 'json',
-                'nombre' => 'Estados de comisión',
-                'descripcion' => 'Estados posibles de una comisión.',
-                'origen' => 'config',
-                'orden' => 1,
-            ],
-
-            // ═══════════════════════════════════════════
             // MATERIAS
             // ═══════════════════════════════════════════
             [
@@ -193,6 +174,7 @@ class ConfiguracionSeeder extends Seeder
 
         // Eliminar variables que ya no deben existir (estados lógicos del sistema)
         $clavesAEliminar = [
+            'estados_comision',
             'estados_inscripcion',
             'estados_ingreso',
             'estados_cursada',

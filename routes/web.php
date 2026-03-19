@@ -272,7 +272,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/reportes/rendimiento', [ReporteController::class, 'reporterendimiento'])->name('reporterendimiento');
         Route::get('/reportes/alumnos', [ReporteController::class, 'reportealumnos'])->name('reportealumnos');
         Route::get('/reportes/alumno/detalle{inscripcion_id}', [ReporteController::class, 'reportealumnosdetalle'])->name('reportealumnosdetalle');
-
+        Route::get('/reportes/desercion', [ReporteController::class, 'reporteDesercion'])->name('desercion');
+        Route::get('/reportes/resumen-comisiones', [ReporteController::class, 'reporteResumenComisiones'])->name('resumen-comisiones');
     });
 
     // Módulo: Materias (ABM)
