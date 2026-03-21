@@ -291,33 +291,45 @@
 
         <!-- Sidebar -->
         <div class="lg:col-span-1">
-            <!-- Docente -->
+            <!-- Personal Asignado -->
             <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
-                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-xl font-bold text-gray-800">Docente</h2>
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800">Personal Asignado</h2>
+                    <span class="text-xs text-gray-500">{{ $comision->docentesActivos->count() }} persona{{ $comision->docentesActivos->count() != 1 ? 's' : '' }}</span>
                 </div>
-                <div class="p-6">
-                    @if($comision->docente)
-                    <div class="flex items-center space-x-3">
-                        <div class="bg-utn-blue/10 p-3 rounded-full">
-                            <svg class="w-6 h-6 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
+                <div class="divide-y divide-gray-100">
+                    @forelse($comision->docentesActivos as $asignacion)
+                    <div class="flex items-center gap-3 px-6 py-3">
+                        <div class="w-9 h-9 rounded-full bg-utn-blue/10 flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs font-bold text-utn-blue-dark">{{ strtoupper(substr($asignacion->docente->name ?? '', 0, 1) . substr($asignacion->docente->apellido ?? '', 0, 1)) }}</span>
                         </div>
-                        <div>
-                            <p class="font-medium text-gray-900">{{ $comision->docente->nombre_completo }}</p>
-                            <p class="text-sm text-gray-600">{{ $comision->docente->email }}</p>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ $asignacion->docente->nombre_completo ?? 'Sin nombre' }}</p>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                @foreach($asignacion->docente->roles ?? [] as $role)
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                                    @if($role->slug === 'docente') bg-blue-100 text-blue-700
+                                    @elseif($role->slug === 'tutor') bg-purple-100 text-purple-700
+                                    @elseif($role->slug === 'bedel') bg-green-100 text-green-700
+                                    @else bg-gray-100 text-gray-600
+                                    @endif">{{ $role->nombre }}</span>
+                                @endforeach
+                                @if($loop->first)
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">Principal</span>
+                                @endif
+                            </div>
                         </div>
                     </div>
-                    @else
-                    <p class="text-gray-500 italic">Sin docente asignado</p>
-                    @if(auth()->user()->hasPermission('comisiones.editar'))
-                    <button onclick="document.getElementById('modal-asignar-docente').classList.remove('hidden')"
-                        class="mt-4 w-full bg-utn-blue-darker hover:bg-utn-dark-light text-white px-4 py-2 rounded-lg transition duration-200">
-                        Asignar Docente
-                    </button>
-                    @endif
-                    @endif
+                    @empty
+                    <div class="px-6 py-6 text-center">
+                        <p class="text-gray-500 text-sm italic">Sin personal asignado</p>
+                        @if(auth()->user()->hasPermission('comisiones.editar'))
+                        <a href="{{ route('comisiones.edit', $comision) }}" class="mt-3 inline-block text-sm text-utn-blue-dark hover:text-utn-dark font-medium">
+                            Asignar personal
+                        </a>
+                        @endif
+                    </div>
+                    @endforelse
                 </div>
             </div>
 

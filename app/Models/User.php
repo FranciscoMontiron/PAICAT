@@ -114,6 +114,31 @@ class User extends Authenticatable
     }
 
     /**
+     * Determina si el usuario tiene visibilidad general (ve todo el contenido)
+     */
+    public function tieneVisibilidadGeneral(): bool
+    {
+        return $this->roles()->where('visibilidad_general', true)->exists();
+    }
+
+    /**
+     * Determina si el usuario solo puede ver contenido asignado a él
+     */
+    public function soloContenidoAsignado(): bool
+    {
+        return !$this->tieneVisibilidadGeneral();
+    }
+
+    /**
+     * Determina si el usuario puede ser asignado como personal a comisiones
+     */
+    public function esAsignableAComision(): bool
+    {
+        // Puede asignarse si alguno de sus roles tiene solo_contenido_asignado = true
+        return $this->roles()->where('solo_contenido_asignado', true)->exists();
+    }
+
+    /**
      * Obtener nombre completo del usuario
      */
     public function getNombreCompletoAttribute(): string

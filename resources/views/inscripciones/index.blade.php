@@ -277,7 +277,7 @@
                                 </svg>
                             </a>
                             @endif
-                            @if(!in_array($inscripcion->estado_documentacion, ['validada', 'confirmada']))
+                            @if(auth()->user()->hasPermission('inscripciones.editar') && !in_array($inscripcion->estado_documentacion, ['validada', 'confirmada']))
                             <a href="{{ route('inscripciones.show', $inscripcion) }}#documentacion"
                                class="p-1.5 rounded bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
                                title="Validar documentación">

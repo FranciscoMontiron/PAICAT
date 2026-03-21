@@ -95,23 +95,54 @@
                     @enderror
                 </div>
 
-                {{-- Roles --}}
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Roles</label>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        @foreach($roles as $role)
-                        <div class="flex items-center">
-                            <input type="checkbox" name="roles[]" value="{{ $role->id }}" id="role_{{ $role->id }}"
-                                   {{ in_array($role->id, old('roles', $usuario->roles->pluck('id')->toArray())) ? 'checked' : '' }}
-                                   class="h-4 w-4 text-utn-blue-dark border-gray-300 rounded focus:ring-utn-blue-dark">
-                            <label for="role_{{ $role->id }}" class="ml-2 text-sm text-gray-700">{{ $role->nombre }}</label>
-                        </div>
-                        @endforeach
+            </div>
+
+            {{-- Roles --}}
+            <div class="mt-6 border-t border-gray-200 pt-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">Roles</h3>
+                        <p class="text-sm text-gray-500 mt-0.5">Selecciona los roles que tendra el usuario. Cada rol otorga un conjunto de permisos.</p>
                     </div>
-                    @error('roles')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
                 </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    @foreach($roles as $role)
+                    <label for="role_{{ $role->id }}" class="relative flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition-all hover:border-utn-blue-dark/30 hover:bg-utn-blue/5 has-[:checked]:border-utn-blue-dark has-[:checked]:bg-utn-blue/5 has-[:checked]:ring-1 has-[:checked]:ring-utn-blue-dark">
+                        <input type="checkbox" name="roles[]" value="{{ $role->id }}" id="role_{{ $role->id }}"
+                               {{ in_array($role->id, old('roles', $usuario->roles->pluck('id')->toArray())) ? 'checked' : '' }}
+                               class="mt-0.5 h-4 w-4 text-utn-blue-dark border-gray-300 rounded focus:ring-utn-blue-dark">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-semibold text-gray-900">{{ $role->nombre }}</span>
+                                @if($role->permissions_count > 0)
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">{{ $role->permissions_count }} permiso{{ $role->permissions_count != 1 ? 's' : '' }}</span>
+                                @endif
+                            </div>
+                            @if($role->descripcion)
+                            <p class="text-xs text-gray-500 mt-0.5">{{ $role->descripcion }}</p>
+                            @endif
+                            @if($role->permissions->count() > 0)
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                @foreach($role->permissions->take(5) as $perm)
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-50 text-green-700">{{ $perm->nombre }}</span>
+                                @endforeach
+                                @if($role->permissions->count() > 5)
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-50 text-gray-500">+{{ $role->permissions->count() - 5 }} mas</span>
+                                @endif
+                            </div>
+                            @else
+                            <p class="text-xs text-amber-600 mt-1">Sin permisos asignados</p>
+                            @endif
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <span class="text-xs text-gray-400">{{ $role->users_count }} usuario{{ $role->users_count != 1 ? 's' : '' }}</span>
+                        </div>
+                    </label>
+                    @endforeach
+                </div>
+                @error('roles')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
             </div>
 
             {{-- Botones --}}

@@ -124,6 +124,36 @@ class InscripcionComision extends Model
     }
 
     /**
+     * Obtiene la cursada relacionada a esta inscripción-comisión (si existe).
+     * Se usa para acceder a los parámetros snapshot cuando la cursada ya finalizó.
+     */
+    public function getCursadaRelacionada(): ?Cursada
+    {
+        return Cursada::where('inscripcion_id', $this->inscripcion_id)
+            ->where('comision_id', $this->comision_id)
+            ->first();
+    }
+
+    /**
+     * Retorna los parámetros de evaluación efectivos para esta inscripción.
+     * Si hay una cursada finalizada con snapshot, usa esos valores históricos.
+     * Si la cursada está activa o no existe, usa la configuración actual.
+     */
+    public function getParametrosEfectivos(): array
+    {
+        $cursada = $this->getCursadaRelacionada();
+        if ($cursada && $cursada->estaFinalizada()) {
+            return $cursada->getParametrosEfectivos();
+        }
+
+        return [
+            'nota_aprobacion'   => (float) \App\Services\ConfiguracionService::get('nota_aprobacion', 6),
+            'nota_regular'      => (float) \App\Services\ConfiguracionService::get('nota_minima_regular', 4),
+            'asistencia_minima' => (float) \App\Services\ConfiguracionService::get('asistencia_minima', 75),
+        ];
+    }
+
+    /**
      * Determinar condición final del alumno
      * @return array ['condicion' => string, 'color' => string, 'descripcion' => string]
      */
@@ -131,23 +161,11 @@ class InscripcionComision extends Model
     {
         $promedio = $this->calcularPromedioPonderado();
         $porcentajeAsistencia = $this->calcularPorcentajeAsistencia();
-        $minimoAsistencia = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
-        
-        // Sin notas cargadas
-        if ($promedio === null) {
-            return [
-                'condicion' => 'Sin evaluar',
-                'color' => 'gray',
-                'descripcion' => 'No hay notas cargadas',
-            ];
-        }
 
-        // Verificar asistencia
-        $cumpleAsistencia = $porcentajeAsistencia >= $minimoAsistencia;
-
-        // Lógica de condición
-        $notaAprobacion = \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
-        $notaMinimaRegular = \App\Services\ConfiguracionService::get('nota_minima_regular', 4);
+        $params = $this->getParametrosEfectivos();
+        $notaAprobacion   = $params['nota_aprobacion'];
+        $notaMinimaRegular = $params['nota_regular'];
+        $minimoAsistencia  = $params['asistencia_minima'];
 
         if ($promedio >= $notaAprobacion && $cumpleAsistencia) {
             return [
@@ -190,7 +208,7 @@ class InscripcionComision extends Model
     public function puedeRendirRecuperatorio(): bool
     {
         $promedio = $this->calcularPromedioPonderado();
-        $notaAprobacion = \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+        $notaAprobacion = $this->getParametrosEfectivos()['nota_aprobacion'];
         return $promedio !== null && $promedio < $notaAprobacion;
     }
 
@@ -224,7 +242,7 @@ class InscripcionComision extends Model
      */
     public function estaEnRiesgo(): bool
     {
-        $minimo = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
+        $minimo = $this->getParametrosEfectivos()['asistencia_minima'];
         return $this->calcularPorcentajeAsistencia() < $minimo;
     }
 

@@ -345,6 +345,18 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/restore', [UsuarioController::class, 'restore'])->middleware('permission:usuarios.eliminar')->name('restore');
     });
 
+    // Módulo: Roles y Permisos
+    Route::prefix('roles')->name('roles.')->middleware('permission:roles.gestionar')->group(function () {
+        Route::get('/', [App\Http\Controllers\RolController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\RolController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\RolController::class, 'store'])->name('store');
+        Route::post('/sync-permissions', [App\Http\Controllers\RolController::class, 'syncPermissions'])->name('sync-permissions');
+        Route::get('/{role}', [App\Http\Controllers\RolController::class, 'show'])->name('show');
+        Route::get('/{role}/edit', [App\Http\Controllers\RolController::class, 'edit'])->name('edit');
+        Route::put('/{role}', [App\Http\Controllers\RolController::class, 'update'])->name('update');
+        Route::delete('/{role}', [App\Http\Controllers\RolController::class, 'destroy'])->name('destroy');
+    });
+
     // Módulo: Solicitudes de Cambio
     Route::prefix('solicitudes')->name('solicitudes.')->middleware('permission:comisiones.editar')->group(function () {
         Route::get('/', [App\Http\Controllers\SolicitudCambioController::class, 'index'])->name('index');

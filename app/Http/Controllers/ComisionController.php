@@ -131,9 +131,11 @@ class ComisionController extends Controller
      */
     public function create()
     {
-        $docentes = User::whereHas('roles', function ($query) {
-            $query->where('slug', 'docente');
-        })->orderBy('name')->get();
+        $docentes = User::where('estado', 'activo')
+            ->whereHas('roles', function ($query) {
+                $query->where('solo_contenido_asignado', true);
+            })->with('roles:id,nombre,slug')
+            ->orderBy('name')->get();
 
         $materias = Materia::activas()->orderBy('codigo')->get();
 
@@ -241,6 +243,7 @@ class ComisionController extends Controller
     {
         $comision->load([
             'docente',
+            'docentesActivos.docente.roles',
             'inscripciones' => function ($query) {
                 $query->whereIn('estado', ['inscripto', 'confirmado', 'aprobado'])
                       ->with(['inscripcion', 'academicoDato.user']);
@@ -256,9 +259,11 @@ class ComisionController extends Controller
         ];
 
         // Docentes disponibles para asignar
-        $docentes = User::whereHas('roles', function ($query) {
-            $query->where('slug', 'docente');
-        })->orderBy('name')->get();
+        $docentes = User::where('estado', 'activo')
+            ->whereHas('roles', function ($query) {
+                $query->where('solo_contenido_asignado', true);
+            })->with('roles:id,nombre,slug')
+            ->orderBy('name')->get();
 
         return view('comisiones.show', compact('comision', 'stats', 'docentes'));
     }
@@ -268,9 +273,11 @@ class ComisionController extends Controller
      */
     public function edit(Comision $comision)
     {
-        $docentes = User::whereHas('roles', function ($query) {
-            $query->where('slug', 'docente');
-        })->orderBy('name')->get();
+        $docentes = User::where('estado', 'activo')
+            ->whereHas('roles', function ($query) {
+                $query->where('solo_contenido_asignado', true);
+            })->with('roles:id,nombre,slug')
+            ->orderBy('name')->get();
 
         $materias = Materia::activas()->orderBy('codigo')->get();
 

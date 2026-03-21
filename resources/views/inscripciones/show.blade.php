@@ -412,7 +412,7 @@
                                         <div class="flex flex-wrap justify-center gap-1.5">
                                             @foreach($infoMateria['notas'] as $notaInfo)
                                                 @if($notaInfo['nota'] && $notaInfo['nota']->nota !== null)
-                                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium {{ $notaInfo['nota']->nota >= $notaAprobacion ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}">
+                                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium {{ $notaInfo['nota']->nota >= ($infoMateria['nota_aprobacion'] ?? $notaAprobacion) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}">
                                                     {{ $notaInfo['evaluacion']->tipo_nombre ?? 'Eval' }}: {{ number_format($notaInfo['nota']->nota, 1) }}
                                                 </span>
                                                 @else
@@ -439,7 +439,7 @@
                                     {{-- Nota Final (puesta por el docente) --}}
                                     <td class="px-5 py-4 text-center">
                                         @if($infoMateria && $infoMateria['nota_final'] !== null)
-                                        <span class="text-xl font-bold {{ $infoMateria['nota_final'] >= $notaAprobacion ? 'text-green-600' : 'text-red-600' }}">
+                                        <span class="text-xl font-bold {{ $infoMateria['nota_final'] >= ($infoMateria['nota_aprobacion'] ?? $notaAprobacion) ? 'text-green-600' : 'text-red-600' }}">
                                             {{ number_format($infoMateria['nota_final'], 1) }}
                                         </span>
                                         @if(auth()->user()->hasPermission('evaluaciones.editar'))

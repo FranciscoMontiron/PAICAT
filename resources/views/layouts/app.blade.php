@@ -10,34 +10,73 @@
 
     <!-- Scripts -->
     <script>
-    // Definir confirmModal ANTES de que Alpine inicialice
-    function confirmModal() {
-        return {
-            show: false,
-            title: '',
-            message: '',
-            type: 'info',
-            confirmText: 'Aceptar',
-            _resolve: null,
+        // Aplicar tamaño de fuente inmediatamente para evitar parpadeos
+        (function() {
+            try {
+                var lvl = localStorage.getItem('paicat_font_size');
+                if (lvl === null || isNaN(parseInt(lvl)) || parseInt(lvl) < 0 || parseInt(lvl) > 4) {
+                    lvl = '2';
+                }
+                document.documentElement.classList.add('font-size-' + lvl);
+            } catch (e) {}
+        })();
 
-            open(detail) {
-                this.title = detail.title || 'Confirmar acción';
-                this.message = detail.message || '¿Está seguro?';
-                this.type = detail.type || 'info';
-                this.confirmText = detail.confirmText || 'Aceptar';
-                this._resolve = detail.resolve || null;
-                this.show = true;
-            },
-            accept() {
-                this.show = false;
-                if (this._resolve) this._resolve(true);
-            },
-            cancel() {
-                this.show = false;
-                if (this._resolve) this._resolve(false);
-            }
-        };
-    }
+        // Accesibilidad: control de tamaño de fuente (solo texto)
+        function fontSizer() {
+            return {
+                level: parseInt(localStorage.getItem('paicat_font_size') || '2'),
+                apply() {
+                    document.documentElement.className = document.documentElement.className.replace(/font-size-\d/g, '').trim();
+                    document.documentElement.classList.add('font-size-' + this.level);
+                    localStorage.setItem('paicat_font_size', this.level);
+                },
+                increase() {
+                    if (this.level < 4) {
+                        this.level++;
+                        this.apply();
+                    }
+                },
+                decrease() {
+                    if (this.level > 0) {
+                        this.level--;
+                        this.apply();
+                    }
+                },
+                reset() {
+                    this.level = 2;
+                    this.apply();
+                }
+            };
+        }
+
+        // Definir confirmModal ANTES de que Alpine inicialice
+        function confirmModal() {
+            return {
+                show: false,
+                title: '',
+                message: '',
+                type: 'info',
+                confirmText: 'Aceptar',
+                _resolve: null,
+
+                open(detail) {
+                    this.title = detail.title || 'Confirmar acción';
+                    this.message = detail.message || '¿Está seguro?';
+                    this.type = detail.type || 'info';
+                    this.confirmText = detail.confirmText || 'Aceptar';
+                    this._resolve = detail.resolve || null;
+                    this.show = true;
+                },
+                accept() {
+                    this.show = false;
+                    if (this._resolve) this._resolve(true);
+                },
+                cancel() {
+                    this.show = false;
+                    if (this._resolve) this._resolve(false);
+                }
+            };
+        }
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -46,10 +85,84 @@
         body {
             font-family: Arial, Helvetica, sans-serif;
         }
+
+        /* Accesibilidad: variable de escala de texto */
+        html {
+            --ts: 1;
+        }
+
+        html.font-size-0 {
+            --ts: 0.875;
+        }
+
+        html.font-size-1 {
+            --ts: 0.935;
+        }
+
+        /* font-size-2 = default (--ts: 1), sin override */
+        html.font-size-3 {
+            --ts: 1.125;
+        }
+
+        html.font-size-4 {
+            --ts: 1.25;
+        }
+
+        /* Escalar clases de texto globalmente */
+        html:not(.font-size-2) .text-xs {
+            font-size: calc(0.75rem * var(--ts)) !important;
+        }
+
+        html:not(.font-size-2) .text-sm {
+            font-size: calc(0.875rem * var(--ts)) !important;
+        }
+
+        html:not(.font-size-2) .text-base {
+            font-size: calc(1rem * var(--ts)) !important;
+        }
+
+        html:not(.font-size-2) .text-lg {
+            font-size: calc(1.125rem * var(--ts)) !important;
+        }
+
+        html:not(.font-size-2) .text-xl {
+            font-size: calc(1.25rem * var(--ts)) !important;
+        }
+
+        html:not(.font-size-2) .text-2xl {
+            font-size: calc(1.5rem * var(--ts)) !important;
+        }
+
+        html:not(.font-size-2) .text-3xl {
+            font-size: calc(1.875rem * var(--ts)) !important;
+        }
+
+        html:not(.font-size-2) .text-4xl {
+            font-size: calc(2.25rem * var(--ts)) !important;
+        }
+
+        /* Elementos por defecto */
+        html:not(.font-size-2) body {
+            font-size: calc(1rem * var(--ts));
+        }
+
+        /* Inputs y selects */
+        html:not(.font-size-2) input,
+        html:not(.font-size-2) select,
+        html:not(.font-size-2) textarea,
+        html:not(.font-size-2) button {
+            font-size: calc(0.875rem * var(--ts)) !important;
+        }
+
+        /* Evitar que se rompan tablas y listados grandes con fuentes aumentadas */
+        html:not(.font-size-2) .overflow-hidden {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+        }
     </style>
 </head>
 
-<body class="antialiased bg-gray-100">
+<body class="antialiased bg-gray-100" x-data>
     <div class="min-h-screen flex flex-col">
         <!-- Header institucional UTN -->
         <header class="bg-utn-dark">
@@ -65,40 +178,57 @@
                         </div>
                     </a>
 
-                    <!-- Usuario y logout - Desktop -->
-                    <div class="hidden md:flex items-center space-x-4" x-data="{ open: false }">
-                        <button @click="open = !open" class="flex items-center space-x-3 px-4 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200">
-                            <div class="w-9 h-9 rounded-full bg-utn-blue flex items-center justify-center">
-                                <span class="text-sm font-bold text-white">{{ substr(auth()->user()->name ?? 'U', 0, 1) }}{{ substr(auth()->user()->apellido ?? '', 0, 1) }}</span>
-                            </div>
-                            <div class="text-left">
-                                <div class="text-sm font-medium">{{ auth()->user()->nombre_completo ?? 'Usuario' }}</div>
-                                <div class="text-xs text-white/70">{{ auth()->user()->roles()->first()->nombre ?? 'Usuario' }}</div>
-                            </div>
-                            <svg class="w-4 h-4 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
+                    <!-- Accesibilidad + Usuario - Desktop -->
+                    <div class="hidden md:flex items-center space-x-3">
 
-                        <!-- Dropdown -->
-                        <div x-show="open" @click.away="open = false" x-transition class="absolute right-4 top-20 mt-2 w-56 rounded-lg shadow-xl bg-white ring-1 ring-black/5 z-50" style="display: none;">
-                            <div class="py-1">
-                                <div class="px-4 py-3 border-b border-gray-100">
-                                    <p class="text-sm font-semibold text-gray-900">{{ auth()->user()->nombre_completo ?? 'Usuario' }}</p>
-                                    <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email ?? '' }}</p>
+                        <!-- Control de fuente -->
+                        <div class="flex items-center bg-white/10 rounded-lg px-1 py-1 gap-0.5" x-data="fontSizer()" role="group" aria-label="Tamano de fuente">
+                            <button @click="decrease()" :disabled="level <= 0" class="w-7 h-7 flex items-center justify-center rounded text-white/80 hover:bg-white/15 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" title="Reducir fuente">
+                                <span class="text-xs font-bold">A-</span>
+                            </button>
+                            <button @click="reset()" class="w-7 h-7 flex items-center justify-center rounded text-white/80 hover:bg-white/15 transition-colors" title="Fuente normal">
+                                <span class="text-sm font-bold">A</span>
+                            </button>
+                            <button @click="increase()" :disabled="level >= 4" class="w-7 h-7 flex items-center justify-center rounded text-white/80 hover:bg-white/15 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" title="Agrandar fuente">
+                                <span class="text-base font-bold">A+</span>
+                            </button>
+                        </div>
+
+                        <!-- Usuario y logout -->
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="flex items-center space-x-3 px-4 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200">
+                                <div class="w-9 h-9 rounded-full bg-utn-blue flex items-center justify-center">
+                                    <span class="text-sm font-bold text-white">{{ substr(auth()->user()->name ?? 'U', 0, 1) }}{{ substr(auth()->user()->apellido ?? '', 0, 1) }}</span>
                                 </div>
-                                <form method="POST" action="{{ route('logout') }}">
-                                    @csrf
-                                    <button type="submit" class="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2">
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                                        </svg>
-                                        <span>Cerrar Sesión</span>
-                                    </button>
-                                </form>
+                                <div class="text-left">
+                                    <div class="text-sm font-medium">{{ auth()->user()->nombre_completo ?? 'Usuario' }}</div>
+                                    <div class="text-xs text-white/70">{{ auth()->user()->roles()->first()->nombre ?? 'Usuario' }}</div>
+                                </div>
+                                <svg class="w-4 h-4 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+
+                            <!-- Dropdown -->
+                            <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl bg-white ring-1 ring-black/5 z-50" style="display: none;">
+                                <div class="py-1">
+                                    <div class="px-4 py-3 border-b border-gray-100">
+                                        <p class="text-sm font-semibold text-gray-900">{{ auth()->user()->nombre_completo ?? 'Usuario' }}</p>
+                                        <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email ?? '' }}</p>
+                                    </div>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                            </svg>
+                                            <span>Cerrar Sesión</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </div><!-- Fin Accesibilidad + Usuario -->
 
                     <!-- Mobile menu button -->
                     <div class="md:hidden" x-data="{ mobileOpen: false }">
@@ -260,7 +390,7 @@
                         {{-- MENÚ: Administración --}}
                         @if(auth()->user()->hasPermission('usuarios.ver') || config('app.debug'))
                         <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-                            <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 {{ request()->routeIs('usuarios.*') || request()->routeIs('developer') || request()->routeIs('configuracion.*') ? 'bg-white text-utn-blue-dark' : 'text-white hover:bg-white/10' }}">
+                            <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 {{ request()->routeIs('usuarios.*') || request()->routeIs('roles.*') || request()->routeIs('developer') || request()->routeIs('configuracion.*') ? 'bg-white text-utn-blue-dark' : 'text-white hover:bg-white/10' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -279,7 +409,7 @@
                                         </svg>
                                         Configuración
                                         @if(\App\Services\ConfiguracionService::hayRequeridasSinConfigurar())
-                                            <span class="ml-auto bg-amber-100 text-amber-700 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">!</span>
+                                        <span class="ml-auto bg-amber-100 text-amber-700 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">!</span>
                                         @endif
                                     </a>
                                     <a href="{{ route('usuarios.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('usuarios.*') ? 'bg-blue-50 text-utn-blue-dark font-medium' : '' }}">
@@ -287,6 +417,12 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                         </svg>
                                         Usuarios
+                                    </a>
+                                    <a href="{{ route('roles.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('roles.*') ? 'bg-blue-50 text-utn-blue-dark font-medium' : '' }}">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
+                                        Roles y Permisos
                                     </a>
                                     @endif
                                     @if(config('app.debug'))
@@ -311,19 +447,19 @@
 
         {{-- Banner de configuración pendiente --}}
         @if(\App\Services\ConfiguracionService::hayRequeridasSinConfigurar() && auth()->user()->hasPermission('usuarios.ver'))
-            <div class="bg-amber-50 border-b border-amber-200">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                        </svg>
-                        <span class="text-sm text-amber-800 font-medium">Hay variables de configuración requeridas sin completar. El sistema puede no funcionar correctamente.</span>
-                    </div>
-                    <a href="{{ route('configuracion.index') }}" class="text-sm font-semibold text-amber-800 hover:text-amber-900 underline whitespace-nowrap">
-                        Ir a Configuración
-                    </a>
+        <div class="bg-amber-50 border-b border-amber-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span class="text-sm text-amber-800 font-medium">Hay variables de configuración requeridas sin completar. El sistema puede no funcionar correctamente.</span>
                 </div>
+                <a href="{{ route('configuracion.index') }}" class="text-sm font-semibold text-amber-800 hover:text-amber-900 underline whitespace-nowrap">
+                    Ir a Configuración
+                </a>
             </div>
+        </div>
         @endif
 
         <!-- Page Heading -->
@@ -372,117 +508,131 @@
 
     {{-- Modal global de confirmación --}}
     <div x-data="confirmModal()"
-         @confirm-modal.window="open($event.detail)"
-         id="confirm-modal-root"
-         x-show="show"
-         x-cloak
-         class="fixed inset-0 z-[9999] overflow-y-auto"
-         aria-modal="true"
-         role="dialog">
+        @confirm-modal.window="open($event.detail)"
+        @keydown.escape.window="show && cancel()"
+        id="confirm-modal-root"
+        x-show="show"
+        x-cloak
+        class="fixed inset-0 z-[9999] overflow-y-auto"
+        aria-modal="true"
+        role="dialog">
 
-        <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="flex items-center justify-center min-h-screen px-4 py-6">
             {{-- Overlay --}}
             <div x-show="show"
-                 x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                 x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 bg-black/50" @click="cancel()"></div>
+                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="cancel()"></div>
 
             {{-- Panel --}}
             <div x-show="show"
-                 x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                 x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-                 class="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-auto p-6 z-10">
+                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+                class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto z-10 overflow-hidden">
 
-                <div class="flex items-start gap-4">
-                    {{-- Icono --}}
-                    <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
-                         :class="type === 'danger' ? 'bg-red-100' : 'bg-blue-100'">
-                        <svg class="w-5 h-5" :class="type === 'danger' ? 'text-red-600' : 'text-blue-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  :d="type === 'danger'
-                                      ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z'
-                                      : 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'"/>
-                        </svg>
-                    </div>
-                    {{-- Contenido --}}
-                    <div class="flex-1 min-w-0">
-                        <h3 class="text-lg font-semibold text-gray-900" x-text="title"></h3>
-                        <p class="mt-1 text-sm text-gray-600" x-text="message"></p>
-                    </div>
-                </div>
+                {{-- Barra superior de color --}}
+                <div class="h-1.5" :class="type === 'danger' ? 'bg-red-500' : type === 'warning' ? 'bg-amber-500' : 'bg-utn-blue'"></div>
 
-                {{-- Botones --}}
-                <div class="flex justify-end gap-3 mt-6">
-                    <button @click="cancel()" type="button"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        Cancelar
-                    </button>
-                    <button @click="accept()" type="button"
-                        class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
-                        :class="type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-800 hover:bg-blue-900'"
-                        x-text="confirmText">
-                    </button>
+                <div class="p-6">
+                    {{-- Icono centrado --}}
+                    <div class="flex justify-center mb-5">
+                        <div class="w-14 h-14 rounded-full flex items-center justify-center ring-8"
+                            :class="type === 'danger' ? 'bg-red-100 ring-red-50' : type === 'warning' ? 'bg-amber-100 ring-amber-50' : 'bg-blue-100 ring-blue-50'">
+                            <svg class="w-7 h-7" :class="type === 'danger' ? 'text-red-600' : type === 'warning' ? 'text-amber-600' : 'text-utn-blue-dark'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    :d="type === 'danger'
+                                          ? 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                                          : type === 'warning'
+                                          ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z'
+                                          : 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {{-- Contenido centrado --}}
+                    <div class="text-center">
+                        <h3 class="text-lg font-bold text-gray-900" x-text="title"></h3>
+                        <p class="mt-2 text-sm text-gray-500 leading-relaxed" x-text="message"></p>
+                    </div>
+
+                    {{-- Botones --}}
+                    <div class="flex gap-3 mt-7">
+                        <button @click="cancel()" type="button"
+                            class="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300">
+                            Cancelar
+                        </button>
+                        <button @click="accept()" type="button"
+                            class="flex-1 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+                            :class="type === 'danger' ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 focus:ring-red-500' : type === 'warning' ? 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 focus:ring-amber-500' : 'bg-utn-blue hover:bg-utn-dark active:bg-utn-dark focus:ring-utn-blue'"
+                            x-text="confirmText">
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-    /**
-     * Global confirm function — returns a Promise<boolean>
-     */
-    window.paiConfirm = function(opts) {
-        if (typeof opts === 'string') {
-            opts = { message: opts };
-        }
-        return new Promise(resolve => {
-            window.dispatchEvent(new CustomEvent('confirm-modal', {
-                detail: { ...opts, resolve }
-            }));
-        });
-    };
-
-    /**
-     * Auto-bind: any element with data-confirm="..." will show the modal on click/submit.
-     * For forms: <form data-confirm="¿Está seguro?">
-     * For buttons/links: <button data-confirm="¿Eliminar?">
-     * Supports data-confirm-title, data-confirm-type="danger", data-confirm-text="Eliminar"
-     */
-    document.addEventListener('submit', function(e) {
-        const el = e.target.closest('[data-confirm]');
-        if (!el || el.dataset.confirmBypassed) {
-            return;
-        }
-        e.preventDefault();
-        paiConfirm({
-            message: el.dataset.confirm,
-            title: el.dataset.confirmTitle || 'Confirmar acción',
-            type: el.dataset.confirmType || 'info',
-            confirmText: el.dataset.confirmText || 'Aceptar'
-        }).then(ok => {
-            if (ok) {
-                el.dataset.confirmBypassed = 'true';
-                el.requestSubmit ? el.requestSubmit() : el.submit();
-                delete el.dataset.confirmBypassed;
+        /**
+         * Global confirm function — returns a Promise<boolean>
+         */
+        window.paiConfirm = function(opts) {
+            if (typeof opts === 'string') {
+                opts = {
+                    message: opts
+                };
             }
-        });
-    }, true);
+            return new Promise(resolve => {
+                window.dispatchEvent(new CustomEvent('confirm-modal', {
+                    detail: {
+                        ...opts,
+                        resolve
+                    }
+                }));
+            });
+        };
 
-    document.addEventListener('click', function(e) {
-        const el = e.target.closest('a[data-confirm], button[data-confirm]:not([type="submit"])');
-        if (!el || el.closest('form')) return;
-        e.preventDefault();
-        paiConfirm({
-            message: el.dataset.confirm,
-            title: el.dataset.confirmTitle || 'Confirmar acción',
-            type: el.dataset.confirmType || 'info',
-            confirmText: el.dataset.confirmText || 'Aceptar'
-        }).then(ok => {
-            if (ok && el.tagName === 'A' && el.href) {
-                window.location.href = el.href;
+        /**
+         * Auto-bind: any element with data-confirm="..." will show the modal on click/submit.
+         * For forms: <form data-confirm="¿Está seguro?">
+         * For buttons/links: <button data-confirm="¿Eliminar?">
+         * Supports data-confirm-title, data-confirm-type="danger", data-confirm-text="Eliminar"
+         */
+        document.addEventListener('submit', function(e) {
+            const el = e.target.closest('[data-confirm]');
+            if (!el || el.dataset.confirmBypassed) {
+                return;
             }
-        });
-    }, true);
+            e.preventDefault();
+            paiConfirm({
+                message: el.dataset.confirm,
+                title: el.dataset.confirmTitle || 'Confirmar acción',
+                type: el.dataset.confirmType || 'info',
+                confirmText: el.dataset.confirmText || 'Aceptar'
+            }).then(ok => {
+                if (ok) {
+                    el.dataset.confirmBypassed = 'true';
+                    el.requestSubmit ? el.requestSubmit() : el.submit();
+                    delete el.dataset.confirmBypassed;
+                }
+            });
+        }, true);
+
+        document.addEventListener('click', function(e) {
+            const el = e.target.closest('a[data-confirm], button[data-confirm]:not([type="submit"])');
+            if (!el || el.closest('form')) return;
+            e.preventDefault();
+            paiConfirm({
+                message: el.dataset.confirm,
+                title: el.dataset.confirmTitle || 'Confirmar acción',
+                type: el.dataset.confirmType || 'info',
+                confirmText: el.dataset.confirmText || 'Aceptar'
+            }).then(ok => {
+                if (ok && el.tagName === 'A' && el.href) {
+                    window.location.href = el.href;
+                }
+            });
+        }, true);
     </script>
 </body>
 

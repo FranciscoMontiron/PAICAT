@@ -373,8 +373,9 @@ class InscripcionController extends Controller
             $notaFinalMateria = $notasFinales->get($materia->id);
             $notaFinal = $notaFinalMateria?->nota_final;
 
-            // Aprobada solo si el docente puso nota final >= nota de aprobación
-            $aprobada = $notaFinal !== null && $notaFinal >= \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+            // Aprobada usando el snapshot guardado al momento de cargar la nota.
+            // Si no tiene snapshot (registros anteriores), usa el método del modelo que también lo contempla.
+            $aprobada = $notaFinalMateria !== null && $notaFinalMateria->estaAprobada();
 
             if ($aprobada) {
                 $materiasAprobadas++;
@@ -386,6 +387,12 @@ class InscripcionController extends Controller
                 'nota_sugerida' => $notaSugerida,
                 'nota_final' => $notaFinal,
                 'nota_final_materia' => $notaFinalMateria,
+                // Snapshot de la nota mínima usada al calificar esta materia.
+                // Si hay nota final cargada, tomar el snapshot del registro.
+                // Si todavía no hay nota final, usar la config actual (cursada en curso).
+                'nota_aprobacion' => $notaFinalMateria
+                    ? (float) ($notaFinalMateria->nota_aprobacion_snapshot ?? 6)
+                    : (float) \App\Services\ConfiguracionService::get('nota_aprobacion', 6),
                 'aprobada' => $aprobada,
             ];
         }
@@ -1218,6 +1225,8 @@ class InscripcionController extends Controller
             ],
             [
                 'nota_final' => $validated['nota_final'],
+                // Snapshot de la nota mínima vigente al momento de cargar la nota.
+                'nota_aprobacion_snapshot' => \App\Services\ConfiguracionService::get('nota_aprobacion', 6),
                 'cargado_por' => auth()->id(),
                 'observaciones' => $validated['observaciones'] ?? null,
             ]

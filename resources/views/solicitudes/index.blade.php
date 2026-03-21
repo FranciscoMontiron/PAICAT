@@ -10,6 +10,7 @@
             <h1 class="text-3xl font-bold text-gray-900">Solicitudes de Cambio</h1>
             <p class="text-gray-600 mt-1">Gestión de solicitudes de cambio de comisión</p>
         </div>
+        @if(auth()->user()->hasPermission('comisiones.editar'))
         <div class="mt-4 sm:mt-0">
             <form action="{{ route('solicitudes.detectar-trueques') }}" method="POST" class="inline">
                 @csrf
@@ -21,6 +22,7 @@
                 </button>
             </form>
         </div>
+        @endif
     </div>
 
     {{-- Estadísticas --}}

@@ -16,9 +16,8 @@ class HomeController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $isDocente = $user->hasRole('docente') && !$user->hasAnyRole(['admin', 'coordinador']);
-
-        if ($isDocente) {
+        // Si el usuario solo ve contenido asignado, mostrar dashboard de personal
+        if ($user->soloContenidoAsignado()) {
             return $this->dashboardDocente($user);
         }
 
@@ -169,6 +168,7 @@ class HomeController extends Controller
                     'icono' => 'clock',
                     'mensaje' => "{$pendientes} inscripciones pendientes de validación",
                     'url' => route('inscripciones.index', ['estado' => 'pendiente']),
+                    'permiso' => 'inscripciones.ver',
                 ];
             }
         } catch (\Exception $e) {}
@@ -181,6 +181,7 @@ class HomeController extends Controller
                     'icono' => 'refresh',
                     'mensaje' => "{$solicitudes} solicitudes de cambio de comisión pendientes",
                     'url' => route('solicitudes.index'),
+                    'permiso' => 'comisiones.editar',
                 ];
             }
         } catch (\Exception $e) {}
@@ -195,6 +196,7 @@ class HomeController extends Controller
                     'icono' => 'exclamation',
                     'mensaje' => "{$sinDocentes} comisiones activas sin docentes asignados",
                     'url' => route('comisiones.index'),
+                    'permiso' => 'comisiones.ver',
                 ];
             }
         } catch (\Exception $e) {}

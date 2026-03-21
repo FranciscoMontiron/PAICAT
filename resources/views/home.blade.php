@@ -28,6 +28,7 @@
     @if(count($alertas) > 0)
     <div class="space-y-2">
         @foreach($alertas as $alerta)
+        @if(empty($alerta['permiso']) || auth()->user()->hasPermission($alerta['permiso']))
         <a href="{{ $alerta['url'] }}" class="block bg-{{ $alerta['tipo'] === 'warning' ? 'yellow' : ($alerta['tipo'] === 'danger' ? 'red' : 'blue') }}-50 border-l-4 border-{{ $alerta['tipo'] === 'warning' ? 'yellow' : ($alerta['tipo'] === 'danger' ? 'red' : 'blue') }}-500 p-4 hover:bg-{{ $alerta['tipo'] === 'warning' ? 'yellow' : ($alerta['tipo'] === 'danger' ? 'red' : 'blue') }}-100 transition-colors rounded-r-lg">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
@@ -53,6 +54,7 @@
                 </svg>
             </div>
         </a>
+        @endif
         @endforeach
     </div>
     @endif
@@ -60,6 +62,7 @@
     {{-- Estadísticas rápidas --}}
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         {{-- Inscripciones --}}
+        @if(auth()->user()->hasPermission('inscripciones.ver'))
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
@@ -73,8 +76,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Cursando --}}
+        @if(auth()->user()->hasPermission('comisiones.ver'))
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
@@ -88,8 +93,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Comisiones Activas --}}
+        @if(auth()->user()->hasPermission('comisiones.ver'))
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
@@ -103,8 +110,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Inscripciones Pendientes --}}
+        @if(auth()->user()->hasPermission('inscripciones.ver'))
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
@@ -118,8 +127,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Solicitudes Pendientes --}}
+        @if(auth()->user()->hasPermission('comisiones.editar'))
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
@@ -133,8 +144,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Municipios --}}
+        @if(auth()->user()->hasPermission('comisiones.crear'))
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div class="flex items-center justify-between">
                 <div>
@@ -164,6 +177,7 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
 
     {{-- Accesos Rápidos por Categoría --}}

@@ -18,12 +18,14 @@ class NotaFinalMateria extends Model
         'comision_id',
         'materia_id',
         'nota_final',
+        'nota_aprobacion_snapshot',
         'cargado_por',
         'observaciones',
     ];
 
     protected $casts = [
         'nota_final' => 'decimal:2',
+        'nota_aprobacion_snapshot' => 'decimal:2',
     ];
 
     public function inscripcion(): BelongsTo
@@ -48,6 +50,9 @@ class NotaFinalMateria extends Model
 
     public function estaAprobada(): bool
     {
-        return $this->nota_final !== null && $this->nota_final >= \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+        // Usar el snapshot guardado al momento en que se cargó la nota.
+        // Si no tiene snapshot (registros anteriores a esta funcionalidad), usar 6.
+        $notaMinima = $this->nota_aprobacion_snapshot ?? 6;
+        return $this->nota_final !== null && $this->nota_final >= $notaMinima;
     }
 }
