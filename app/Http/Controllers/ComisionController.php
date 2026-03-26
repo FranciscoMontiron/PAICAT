@@ -137,7 +137,8 @@ class ComisionController extends Controller
             })->with('roles:id,nombre,slug')
             ->orderBy('name')->get();
 
-        $materias = Materia::activas()->orderBy('codigo')->get();
+        #$materias = Materia::activas()->orderBy('codigo')->get();
+        $materias = Materia::activas()->orderBy('nombre')->get();
 
         $turnos = Comision::getTurnos();
 
@@ -279,7 +280,8 @@ class ComisionController extends Controller
             })->with('roles:id,nombre,slug')
             ->orderBy('name')->get();
 
-        $materias = Materia::activas()->orderBy('codigo')->get();
+        #$materias = Materia::activas()->orderBy('codigo')->get();
+        $materias = Materia::activas()->orderBy('nombre')->get();
 
         $turnos = Comision::getTurnos();
 

@@ -64,7 +64,7 @@ class DataNormalizationService
         }
 
         // Si no hay corrección, capitalizar primera letra
-        return ucfirst($turnoLower);
+        return $turnoLower;
     }
 
     /**

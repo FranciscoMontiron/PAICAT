@@ -52,6 +52,11 @@ class Comision extends Model
         return self::TURNOS;
     }
 
+    public function getTurnoNombreAttribute()
+    {
+        return self::TURNOS[$this->turno] ?? $this->turno;
+    }
+
     public static function getModalidades(): array
     {
         return self::MODALIDADES;

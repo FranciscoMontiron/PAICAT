@@ -21,10 +21,16 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">{{ $comision->nombre }}</h1>
+            <h1 class="text-3xl font-bold text-gray-900">{{ $comision->nombre }} </h1>
+            
+            <p class="text-gray-600 mt-1"> Codigo: {{$comision->codigo }} </p>
+         
+            
+            
+            
             <div class="flex items-center gap-3 mt-1 text-gray-600">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-utn-blue/10 text-utn-blue-dark">
-                    {{ $comision->periodo }} {{ $comision->anio }}
+                    {{ $comision->periodo }} {{ $comision->anio }} 
                 </span>
                 @if($comision->turno)
                     <span class="capitalize text-sm">{{ $comision->turno }}</span>
