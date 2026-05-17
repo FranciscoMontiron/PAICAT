@@ -17,7 +17,6 @@ class Materia extends Model
     protected $table = 'materias';
 
     protected $fillable = [
-        'codigo',
         'nombre',
         'descripcion',
         'anio_cursado',
@@ -130,7 +129,7 @@ class Materia extends Model
      */
     public function getNombreCompletoAttribute(): string
     {
-        return "[{$this->codigo}] {$this->nombre}";
+        return "{$this->nombre}";
     }
 
     /**

@@ -94,7 +94,7 @@
             <div class="px-6 py-3 flex flex-wrap gap-2">
                 @foreach($materias as $materia)
                 <span class="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-700">
-                    {{ $materia->nombre }} <span class="ml-1 text-indigo-400">[{{ $materia->codigo }}]</span>
+                    {{ $materia->nombre }} <span class="ml-1 text-indigo-400">[{{ $materia->tipo }}]</span>
                 </span>
                 @endforeach
             </div>

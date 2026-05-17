@@ -67,7 +67,7 @@
                                     class="rounded border-gray-300 text-utn-blue-dark focus:ring-indigo-500">
                                 <div>
                                     <span class="text-sm font-medium text-gray-900">{{ $materia->nombre }}</span>
-                                    <span class="text-xs text-gray-500 ml-1">[{{ $materia->codigo }}]</span>
+                                    <span class="text-xs text-gray-500 ml-1">[{{ $materia->tipo }}]</span>
                                 </div>
                             </label>
                             @endforeach

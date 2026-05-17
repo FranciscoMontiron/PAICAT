@@ -3,6 +3,33 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <!-- Header -->
+        <div x-data="{ show: true }" x-show="show">
+
+            @if(session('success'))
+                <div class="mb-4 p-4 rounded-lg bg-green-100 text-green-800 border border-green-300 flex justify-between items-start">
+                    
+                    <span>{{ session('success') }}</span>
+
+                    <button @click="show = false" class="ml-4 font-bold text-green-700 hover:text-green-900">
+                        ✖
+                    </button>
+
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-4 p-4 rounded-lg bg-red-100 text-red-800 border border-red-300 flex justify-between items-start">
+                    
+                    <span>{{ session('error') }}</span>
+
+                    <button @click="show = false" class="ml-4 font-bold text-red-700 hover:text-red-900">
+                        ✖
+                    </button>
+
+                </div>
+            @endif
+
+        </div>
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-gray-800">Gestión de Comisiones</h1>

@@ -3,6 +3,33 @@
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
+        <div x-data="{ show: true }" x-show="show">
+
+            @if(session('success'))
+                <div class="mb-4 p-4 rounded-lg bg-green-100 text-green-800 border border-green-300 flex justify-between items-start">
+                    
+                    <span>{{ session('success') }}</span>
+
+                    <button @click="show = false" class="ml-4 font-bold text-green-700 hover:text-green-900">
+                        ✖
+                    </button>
+
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-4 p-4 rounded-lg bg-red-100 text-red-800 border border-red-300 flex justify-between items-start">
+                    
+                    <span>{{ session('error') }}</span>
+
+                    <button @click="show = false" class="ml-4 font-bold text-red-700 hover:text-red-900">
+                        ✖
+                    </button>
+
+                </div>
+            @endif
+
+        </div>
     <div class="mb-6">
         <div class="flex items-center justify-between">
             <div>
@@ -122,10 +149,16 @@
                             <label class="text-sm font-medium text-gray-500">Periodo</label>
                             <p class="mt-1 text-gray-900">{{ $comision->periodo }}</p>
                         </div>
+                        
                         <div>
                             <label class="text-sm font-medium text-gray-500">Turno</label>
-                            <p class="mt-1 text-gray-900">{{ $comision->turno }}</p>
+                            @if(!is_null($comision->turno_nombre))
+                                <p class="mt-1 text-gray-900">{{ $comision->turno_nombre }}</p>
+                            @else
+                                <p class="mt-1 text-gray-900">Sin turno asignado</p>
+                            @endif
                         </div>
+                        
                         <div>
                             <label class="text-sm font-medium text-gray-500">Modalidad</label>
                             <p class="mt-1 text-gray-900">{{ $comision->modalidad }}</p>

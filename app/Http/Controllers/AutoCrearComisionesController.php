@@ -20,7 +20,7 @@ class AutoCrearComisionesController extends Controller
     {
         $anios = range(date('Y') - 1, date('Y') + 1);
         $municipios = Municipio::activos()->with(['aulas' => fn($q) => $q->activas()])->orderBy('nombre')->get();
-        $materias = Materia::activas()->orderBy('codigo')->get();
+        $materias = Materia::activas()->orderBy('nombre')->get();
 
         return view('comisiones.auto-crear', compact('anios', 'municipios', 'materias'));
     }

@@ -18,8 +18,8 @@ class MateriaController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('nombre', 'like', "%{$search}%")
-                    ->orWhere('codigo', 'like', "%{$search}%");
+                $q->where('nombre', 'like', "%{$search}%");
+                    #->orWhere('codigo', 'like', "%{$search}%");
             });
         }
 
@@ -31,7 +31,8 @@ class MateriaController extends Controller
             $query->where('activa', $request->activa == '1');
         }
 
-        $materias = $query->orderBy('codigo')->paginate(20);
+        #$materias = $query->orderBy('codigo')->paginate(20);
+        $materias = $query->orderBy('nombre')->paginate(20);
 
         $stats = [
             'total' => Materia::count(),
@@ -56,7 +57,7 @@ class MateriaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'codigo' => 'required|string|max:20|unique:materias,codigo',
+#          'codigo' => 'required|string|max:20|unique:materias,codigo',
             'nombre' => 'required|string|max:200',
             'descripcion' => 'nullable|string',
             'tipo' => 'required|in:' . implode(',', array_keys(Materia::getTipos())),
@@ -97,7 +98,7 @@ class MateriaController extends Controller
     public function update(Request $request, Materia $materia)
     {
         $validated = $request->validate([
-            'codigo' => 'required|string|max:20|unique:materias,codigo,' . $materia->id,
+            #'codigo' => 'required|string|max:20|unique:materias,codigo,' . $materia->id,
             'nombre' => 'required|string|max:200',
             'descripcion' => 'nullable|string',
             'tipo' => 'required|in:' . implode(',', array_keys(Materia::getTipos())),
