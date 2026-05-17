@@ -15,12 +15,6 @@ class SysacadDataSeeder extends Seeder
     {
         $excelFile = database_path('data/Datos Sysacad.xlsx');
 
-        // Verificar si ya existen datos para evitar re-importar
-        if (DB::connection('sysacad')->table('sysacad_paises')->exists()) {
-            $this->command->info("Los datos de Sysacad ya existen. Saltando importación.");
-            return;
-        }
-
         if (!file_exists($excelFile)) {
             $this->command->error(" Archivo Excel no encontrado: {$excelFile}");
             return;

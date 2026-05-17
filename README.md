@@ -1,269 +1,159 @@
-#  PAICAT - Plataforma de Administración del Ingreso UTN FRLP
+# PAICAT
 
-Sistema de gestión integral para el Curso de Ingreso de la Universidad Tecnológica Nacional - Facultad Regional La Plata.
+Plataforma de Administración del Ingreso - UTN FRLP
 
-> **🚀 ¿Primera vez aquí?** Consulta [INICIO-RAPIDO.md](INICIO-RAPIDO.md) para comenzar en 1 minuto.
+Sistema de gestión para el Curso de Ingreso de la Universidad Tecnológica Nacional - Facultad Regional La Plata.
 
-##  Descripción
-
-PAICAT es una plataforma web desarrollada en Laravel 11 que permite gestionar de manera eficiente todo el proceso del curso de ingreso universitario, incluyendo inscripciones, asistencias, calificaciones y generación de reportes.
-
-### Características Principales
-
--  **Autenticación y autorización** basada en roles (Admin, Coordinador, Docente, Alumno)
--  **Gestión de comisiones** con control de cupos
--  **Administración de alumnos** y docentes
--  **Registro de asistencias** con validación de porcentajes mínimos
--  **Carga de calificaciones** por materia (Física, Matemática, Química)
--  **Generación de reportes** en PDF y Excel
--  **Sistema de recuperatorios** configurable
--  **Notificaciones por email** vía Mailhog (desarrollo)
--  **Interfaz moderna** con Tailwind CSS y Alpine.js
-
-##  Requisitos Previos
+## Requisitos
 
 - Docker 20.10+
 - Docker Compose 2.0+
 - Git
 
-##  Instalación
+## Instalación desde cero
 
-### 1. Clonar el repositorio
-
-```bash
-git clone https://github.com/tu-usuario/paicat.git
-cd paicat
-```
-
-### 2. Instalación Automática (Recomendado)
-
-El script de instalación se encarga de todo automáticamente:
-- Verifica que Docker esté corriendo
-- Copia el archivo `.env.example` a `.env` si no existe: ```cp .env.example .env ```
-- Levanta los contenedores con `docker-compose up -d`
-- Muestra el progreso de inicialización en tiempo real
-- Instala dependencias, ejecuta migraciones y crea el usuario admin
-
-**Windows (PowerShell):**
-```powershell
-.\install.ps1
-```
-
-**Linux/Mac:**
-```bash
-chmod +x install.sh
-./install.sh
-```
-
-> **Nota**: La primera inicialización puede tardar 2-3 minutos mientras se descargan las imágenes de Docker, se instalan las dependencias de Composer y NPM, se ejecutan las migraciones y se configura la aplicación. El script te mostrará el progreso de cada paso.
-
-### 3. Instalación Manual (Alternativa)
-
-Si prefieres hacerlo manualmente:
+### 1. Clonar repositorio
 
 ```bash
-# 1. Copiar archivo de configuración
+git clone https://github.com/FranciscoMontiron/PAICAT.git
+cd PAICAT
+```
+
+> El repositorio ya incluye `database/data/Datos Sysacad.xlsx` (datos maestros de países, provincias y escuelas). No es necesario descargarlo por separado.
+
+### 2. Descargar archivo de alumnos
+
+Descargar el archivo `alumnos.sql` desde el Drive del proyecto y colocarlo en:
+
+```
+bases_externas/alumnos.sql
+```
+
+> Sin este archivo el sistema funciona, pero no tendrá datos de alumnos para inscribir.
+
+### 3. Configurar el entorno
+
+```bash
 cp .env.example .env
-
-# 2. Levantar contenedores
-docker-compose up -d
-
-# 3. Monitorear el progreso (opcional)
-# Windows:
-.\monitor-startup.ps1
-# Linux/Mac:
-chmod +x monitor-startup.sh
-./monitor-startup.sh
 ```
 
-### 4. Acceder a la aplicación
-
-- **Aplicación**: http://localhost
-- **Vite Dev Server (HMR)**: http://localhost:5173 *(se levanta automáticamente)*
-- **PHPMyAdmin**: http://localhost:8081
-- **Mailhog** (visor de emails): http://localhost:8025
-
-> **Nota:** El servidor de Vite se levanta automáticamente en un contenedor separado, proporcionando Hot Module Replacement (HMR) para desarrollo. No necesitas ejecutar `npm run dev` manualmente.
-
-## 🔑 Credenciales de Acceso
-
-### Usuario Administrador
-- **Email**: admin@paicat.utn.edu.ar
-- **Password**: admin123
-
-### Base de Datos (Conexión Externa)
-
-Para conectarte a MariaDB desde tu máquina local usando un cliente de base de datos como **MySQL Workbench**, etc o la extensión **Database Client** de VS Code:
-
-| Parámetro | Valor |
-|-----------|-------|
-| **Host** | `localhost` |
-| **Puerto** | `3308` |
-| **Usuario** | `laravel` |
-| **Contraseña** | `secret` |
-| **Base de datos** | `paicat` |
-
-> **Nota**: El puerto es `3308` (no `3306`) porque se mapea así en Docker para evitar conflictos con instalaciones locales de MySQL.
-
-**Conexión como root** (acceso completo):
-- **Usuario**: `root`
-- **Contraseña**: `root`
-
-**Conexión desde terminal:**
-```bash
-docker exec -it paicat_mariadb mariadb -u laravel -psecret paicat
-```
-
-## 🛠️ Desarrollo
-
-### Monitoreo del Sistema
-
-Para verificar el estado de la inicialización después de `docker-compose up -d`:
-
-**Windows:**
-```powershell
-.\monitor-startup.ps1
-```
-
-**Linux/Mac:**
-```bash
-./monitor-startup.sh
-```
-
-Este script muestra en tiempo real el progreso de:
-- Instalación de dependencias
-- Ejecución de migraciones
-- Configuración de la aplicación
-- Estado de los servicios
-
-### Hot Module Replacement (HMR) Automático
-
-El proyecto incluye un contenedor dedicado para Vite que se levanta automáticamente con `docker-compose up -d`. Esto significa que:
-
--  **HMR siempre activo**: Los cambios en CSS/JS se reflejan instantáneamente
--  **No requiere comandos manuales**: Se levanta automáticamente
--  **Logs independientes**: `docker-compose logs -f vite`
--  **Reinicio simple**: `docker-compose restart vite`
-
-### Detener Vite (Opcional)
-
-Si no necesitas HMR (por ejemplo, trabajando solo en backend):
+### 4. Levantar contenedores
 
 ```bash
-docker-compose stop vite
+docker compose up -d --build
 ```
 
-Para volver a levantarlo:
+Esperar que MariaDB termine de inicializarse (~1-2 minutos). Podés verificar con:
 
 ```bash
-docker-compose start vite
+docker compose logs mariadb
+# Cuando aparezca "mariadb ready for connections" podés continuar
 ```
 
-### Compilar assets para producción
+### 5. Instalar dependencias PHP
 
 ```bash
-docker exec -it paicat_vite npm run build
+docker compose exec app composer install
 ```
 
-### Ejecutar tests
+### 6. Configurar base de datos
 
 ```bash
-docker exec -it paicat_php php artisan test
+docker compose exec app php artisan paicat:setup --fresh --seed
 ```
 
-### Acceder al contenedor PHP
+Este comando hace todo automáticamente:
+- Genera la `APP_KEY`
+- Limpia caché
+- Crea todas las tablas (`migrate:fresh`)
+- Carga datos iniciales: roles, permisos, usuario admin, configuración del sistema y datos de Sysacad
+- Crea el enlace de storage
+- Optimiza la aplicación
+
+### 7. Importar datos de alumnos
 
 ```bash
-docker exec -it paicat_php bash
+docker compose exec app php artisan paicat:import-alumnos
 ```
 
-### Ver logs
+> Requiere `bases_externas/alumnos.sql` del paso 2. Si no tenés el archivo, podés saltar este paso.
+
+### 8. Acceder
+
+Abrir en el navegador: **http://localhost**
+
+## Credenciales
+
+### Aplicación
+
+| Campo    | Valor                     |
+| -------- | ------------------------- |
+| Email    | `admin@paicat.utn.edu.ar` |
+| Password | `admin123`                |
+
+### Base de Datos
+
+| Campo    | Valor       |
+| -------- | ----------- |
+| Host     | `localhost` |
+| Puerto   | `3307`      |
+| Database | `paicat`    |
+| Usuario  | `paicat`    |
+| Password | `paicat`    |
+
+## Datos cargados automáticamente por el seeder
+
+| Dato | Fuente |
+|------|--------|
+| Roles y permisos del sistema | `RolesAndPermissionsSeeder` |
+| Usuario admin | `CreateAdminUserSeeder` |
+| Variables de configuración del sistema | `ConfiguracionSeeder` |
+| Países, provincias, escuelas (Sysacad) | `SysacadDataSeeder` + `database/data/Datos Sysacad.xlsx` |
+
+## Datos NO recuperables sin backup de producción
+
+Los siguientes datos no tienen seeder y se pierden al hacer `migrate:fresh`:
+
+- Municipios, aulas y comisiones
+- Inscripciones y cursadas
+- Docentes y alumnos cargados manualmente
+
+## Comandos Útiles
 
 ```bash
-# Logs de todos los servicios
-docker-compose logs -f
+# Acceder al contenedor de la app
+docker compose exec app bash
 
-# Logs de servicios específicos
-docker-compose logs -f php
-docker-compose logs -f vite
-docker-compose logs -f nginx
-docker-compose logs -f mariadb
+# Limpiar caché de config, rutas y vistas
+docker compose exec app php artisan optimize:clear
+
+# Resetear base de datos completamente (borra todo y re-seedea)
+docker compose exec app php artisan paicat:setup --fresh --seed
+
+# Re-importar alumnos
+docker compose exec app php artisan paicat:import-alumnos
+
+# Importar alumnos desde otro archivo
+docker compose exec app php artisan paicat:import-alumnos --file=bases_externas/otro_archivo.sql
+
+# Ver logs de la app
+docker compose logs -f app
+
+# Detener contenedores
+docker compose down
+
+# Detener y borrar volúmenes (borra la base de datos)
+docker compose down -v
 ```
 
-##  Base de Datos
+## Estructura de Contenedores
 
-### Conexiones configuradas
+| Servicio    | Puerto | Descripción            |
+| ----------- | ------ | ---------------------- |
+| **app**     | 80     | Laravel + Apache       |
+| **mariadb** | 3307   | MariaDB 11             |
+| **vite**    | 5173   | Hot Module Replacement |
 
-El sistema está preparado para trabajar con tres bases de datos:
+## Licencia
 
-1. **paicat** (principal - lectura/escritura): Datos del sistema actual
-2. **alumnos_utn** (solo lectura): Sistema anterior de alumnos
-3. **sysacad** (solo lectura): Datos maestros del sistema académico
-
-### Ejecutar migraciones manualmente
-
-```bash
-docker exec -it paicat_php php artisan migrate
-```
-
-### Ejecutar seeders manualmente
-
-```bash
-docker exec -it paicat_php php artisan db:seed
-```
-
-### Resetear base de datos
-
-```bash
-docker exec -it paicat_php php artisan migrate:fresh --seed
-```
-
-## 🔧 Comandos Útiles
-
-### Limpiar caché
-
-```bash
-docker exec -it paicat_php php artisan optimize:clear
-```
-
-### Generar nueva clave de aplicación
-
-```bash
-docker exec -it paicat_php php artisan key:generate
-```
-
-### Crear un nuevo controlador
-
-```bash
-docker exec -it paicat_php php artisan make:controller NombreController
-```
-
-### Crear un nuevo modelo con migración
-
-```bash
-docker exec -it paicat_php php artisan make:model NombreModelo -m
-```
-
-##  Roles y Permisos
-
-El sistema implementa 4 roles principales:
-
-1. **Admin**: Acceso completo al sistema
-2. **Coordinador**: Gestión de comisiones, docentes y reportes
-3. **Docente**: Carga de asistencias y calificaciones
-4. **Alumno**: Visualización de datos personales y calificaciones
-
-##  Configuración Avanzada
-
-### Variables de entorno importantes
-
-```env
-# Configuración de cupos y aprobación
-PAICAT_CUPO_MAXIMO_COMISION=40
-PAICAT_NOTA_APROBACION=6.00
-PAICAT_PORCENTAJE_ASISTENCIA_MINIMO=75
-PAICAT_HABILITAR_RECUPERATORIOS=true
-```
-
-
-
+TODO
