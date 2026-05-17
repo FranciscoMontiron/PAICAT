@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\Evaluacion;
+use Illuminate\Foundation\Http\FormRequest;
+
+
+
+class StoreEvaluacionRequest extends FormRequest
+{
+    /**
+     * Determinar si el usuario está autorizado para hacer esta solicitud.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Obtener las reglas de validación que se aplican a la solicitud.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'descripcion' => 'nullable|string|max:255',
+            'tipo' => 'required|in:' . implode(',', array_keys(Evaluacion::tiposDisponibles())),
+            'instancia' => 'nullable|integer|min:1|max:3',
+            'fecha' => 'required|date',
+            'porcentual' => 'required|numeric|min:0|max:100',
+            'comision' => 'nullable|exists:comisiones,id',
+            'materia_id' => 'required|exists:materias,id',
+            'anio' => 'required|integer|min:1900|max:2100',
+            'cuenta_promedio' => 'nullable|boolean',
+        ];
+    }
+
+    /**
+     * Obtener nombres de atributos personalizados para errores del validador.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => 'nombre',
+            'descripcion' => 'descripcion',
+            'tipo' => 'tipo',
+            'fecha' => 'fecha',
+            'porcentual' => 'porcentual',
+            'comision' => 'comision',
+            'anio' => 'anio',
+        ];
+    }
+}

@@ -23,6 +23,7 @@ yarn-error.log
 
 # Documentación local
 /docs
+/identidad_visual_utn
 
 # Testing
 /coverage
@@ -40,10 +41,15 @@ docker-compose.override.yml
 storage/logs/*.log
 *.log
 
-# Archivos SQL de backup
+# Archivos SQL de backup (datos sensibles - NO subir a git)
 *.sql
 *.sql.gz
 backup_*.sql
+datos_paicat_completo.sql
+
+# Archivo de datos para instalación (compartir por Drive)
+paicat-data.zip
+bases_externas/seed_datos.sql
 
 # Temporales
 *.swp
@@ -62,5 +68,6 @@ backup_*.sql
 !README.md
 !.env.example
 !.env.testing
+!docker/init-db.sql
 
 

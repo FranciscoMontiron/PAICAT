@@ -83,15 +83,15 @@ return [
             ]) : [],
         ],
 
-        // Alumnos UTN - Base de datos de alumnos del sistema de la facu (Solo Lectura)
+        // Alumnos UTN - Base de datos de alumnos (configurable)
         'alumnos_utn' => [
             'driver' => 'mysql',
             'url' => env('DB_URL_ALUMNOS'),
-            'host' => env('DB_HOST_ALUMNOS', '127.0.0.1'),
-            'port' => env('DB_PORT_ALUMNOS', '3306'),
-            'database' => env('DB_DATABASE_ALUMNOS', 'alumnos_utn'),
-            'username' => env('DB_USERNAME_ALUMNOS', 'root'),
-            'password' => env('DB_PASSWORD_ALUMNOS', ''),
+            'host' => env('DB_HOST_ALUMNOS', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_PORT_ALUMNOS', env('DB_PORT', '3306')),
+            'database' => env('DB_DATABASE_ALUMNOS', 'paicat'),
+            'username' => env('DB_USERNAME_ALUMNOS', env('DB_USERNAME', 'paicat')),
+            'password' => env('DB_PASSWORD_ALUMNOS', env('DB_PASSWORD', '')),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
@@ -104,15 +104,15 @@ return [
             ]) : [],
         ],
 
-        // Sysacad - Base de datos de datos maestros Sysacad (Solo Lectura)
+        // Sysacad - Base de datos Sysacad (configurable, por defecto usa paicat)
         'sysacad' => [
             'driver' => 'mysql',
             'url' => env('DB_URL_SYSACAD'),
-            'host' => env('DB_HOST_SYSACAD', '127.0.0.1'),
-            'port' => env('DB_PORT_SYSACAD', '3306'),
-            'database' => env('DB_DATABASE_SYSACAD', 'sysacad'),
-            'username' => env('DB_USERNAME_SYSACAD', 'root'),
-            'password' => env('DB_PASSWORD_SYSACAD', ''),
+            'host' => env('DB_HOST_SYSACAD', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_PORT_SYSACAD', env('DB_PORT', '3306')),
+            'database' => env('DB_DATABASE_SYSACAD', 'paicat'),
+            'username' => env('DB_USERNAME_SYSACAD', env('DB_USERNAME', 'paicat')),
+            'password' => env('DB_PASSWORD_SYSACAD', env('DB_PASSWORD', '')),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
@@ -180,7 +180,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
         ],
 
         'default' => [

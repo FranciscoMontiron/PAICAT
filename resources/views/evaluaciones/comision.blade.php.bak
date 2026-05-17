@@ -1,0 +1,330 @@
+@extends('layouts.app')
+@section('title', 'Evaluaciones - ' . $comision->nombre)
+@section('content')
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {{-- Header con breadcrumb --}}
+    <div class="mb-6">
+        <nav class="flex mb-3" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 text-sm">
+                <li>
+                    <a href="{{ route('evaluaciones.index') }}" class="text-gray-500 hover:text-utn-blue-dark">Evaluaciones</a>
+                </li>
+                <li class="flex items-center">
+                    <svg class="w-4 h-4 text-gray-400 mx-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-gray-700 font-medium">{{ $comision->nombre }}</span>
+                </li>
+            </ol>
+        </nav>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">{{ $comision->nombre }}</h1>
+                <div class="flex items-center gap-3 mt-1 text-gray-600">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-utn-blue/10 text-utn-blue-dark">
+                        {{ $comision->periodo }} {{ $comision->anio }}
+                    </span>
+                    @if($comision->turno)
+                        <span class="capitalize">{{ $comision->turno }}</span>
+                    @endif
+                    @if($comision->modalidad)
+                        <span>• {{ $comision->modalidad }}</span>
+                    @endif
+                    @if($comision->municipio)
+                        <span>• {{ $comision->municipio->nombre }}</span>
+                    @endif
+                </div>
+            </div>
+            <div class="flex gap-2">
+                @if(auth()->user()->hasPermission('evaluaciones.crear'))
+                <button onclick="document.getElementById('modalNuevaEvaluacion').classList.remove('hidden')"
+                        class="inline-flex items-center px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nueva Evaluación
+                </button>
+                @endif
+                <a href="{{ route('evaluaciones.notas.index', $comision) }}"
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Sábana de Notas
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {{-- Mensajes --}}
+    @if(session('success'))
+    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-r-lg">
+        <p class="text-sm text-green-700">{{ session('success') }}</p>
+    </div>
+    @endif
+    @if(session('error'))
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+        <p class="text-sm text-red-700">{{ session('error') }}</p>
+    </div>
+    @endif
+
+    {{-- Estadísticas rápidas --}}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+            <p class="text-sm text-gray-600">Alumnos Inscriptos</p>
+            <p class="text-2xl font-bold text-utn-blue-dark">{{ $alumnosCount }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
+            <p class="text-sm text-gray-600">Materias</p>
+            <p class="text-2xl font-bold text-purple-600">{{ $materias->count() }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+            <p class="text-sm text-gray-600">Evaluaciones</p>
+            <p class="text-2xl font-bold text-green-600">{{ $evaluaciones->flatten()->count() }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
+            <p class="text-sm text-gray-600">Notas Cargadas</p>
+            <p class="text-2xl font-bold text-orange-600">{{ $evaluaciones->flatten()->sum(fn($e) => $e->notas->count()) }}</p>
+        </div>
+    </div>
+
+    {{-- Evaluaciones por Materia --}}
+    @if($materias->count() > 0)
+        @foreach($materias as $materia)
+            @php
+                $evalsMateria = $evaluaciones->get($materia->id, collect());
+            @endphp
+            <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
+                {{-- Header de materia --}}
+                <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-5 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">{{ $materia->nombre }}</h3>
+                            <p class="text-purple-200 text-sm">{{ $evalsMateria->count() }} evaluación(es)</p>
+                        </div>
+                    </div>
+                    @if(auth()->user()->hasPermission('evaluaciones.crear'))
+                    <button onclick="abrirModalConMateria({{ $materia->id }}, '{{ $materia->nombre }}')"
+                            class="text-white/80 hover:text-white text-sm font-medium flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Agregar
+                    </button>
+                    @endif
+                </div>
+
+                {{-- Evaluaciones de la materia --}}
+                @if($evalsMateria->count() > 0)
+                <div class="divide-y divide-gray-100">
+                    @foreach($evalsMateria as $evaluacion)
+                    <div class="p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                {{-- Tipo badge --}}
+                                <span class="px-2.5 py-1 text-xs font-medium rounded-full
+                                    @switch($evaluacion->tipo)
+                                        @case('parcial') bg-utn-blue/10 text-utn-blue-dark @break
+                                        @case('recuperatorio') bg-orange-100 text-orange-700 @break
+                                        @case('trabajo_practico') bg-green-100 text-green-700 @break
+                                        @case('examen_final') bg-red-100 text-red-700 @break
+                                        @case('integrador') bg-purple-100 text-purple-700 @break
+                                        @default bg-gray-100 text-gray-700
+                                    @endswitch">
+                                    {{ $evaluacion->tipo_nombre }}
+                                </span>
+                                <div>
+                                    <h4 class="font-medium text-gray-900">{{ $evaluacion->nombre }}</h4>
+                                    <div class="flex items-center gap-3 text-sm text-gray-500 mt-0.5">
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            {{ $evaluacion->fecha->format('d/m/Y') }}
+                                        </span>
+                                        @if($evaluacion->instancia)
+                                        <span>• Instancia {{ $evaluacion->instancia }}</span>
+                                        @endif
+                                        @if($evaluacion->peso_porcentual)
+                                        <span>• {{ $evaluacion->peso_porcentual }}%</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                {{-- Notas cargadas --}}
+                                <div class="text-center">
+                                    <p class="text-lg font-bold {{ $evaluacion->notas->count() > 0 ? 'text-green-600' : 'text-gray-400' }}">
+                                        {{ $evaluacion->notas->count() }}/{{ $alumnosCount }}
+                                    </p>
+                                    <p class="text-xs text-gray-500">notas</p>
+                                </div>
+                                {{-- Acciones --}}
+                                <div class="flex items-center gap-2">
+                                    <a href="{{ route('evaluaciones.carga-masiva', $evaluacion) }}"
+                                       class="inline-flex items-center px-3 py-1.5 text-sm bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
+                                       title="Cargar notas">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                        Notas
+                                    </a>
+                                    @if(auth()->user()->hasPermission('evaluaciones.editar'))
+                                    <a href="{{ route('evaluaciones.edit', $evaluacion) }}"
+                                       class="p-1.5 text-gray-400 hover:text-utn-blue-dark rounded-lg hover:bg-blue-50 transition-colors"
+                                       title="Editar">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                        </svg>
+                                    </a>
+                                    @endif
+                                    @if(auth()->user()->hasPermission('evaluaciones.eliminar'))
+                                    <form action="{{ route('evaluaciones.destroy', $evaluacion) }}" method="POST" class="inline"
+                                          onsubmit="return confirm('¿Eliminar esta evaluación?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors" title="Eliminar">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <div class="p-8 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <p class="mt-2 text-gray-500">No hay evaluaciones para esta materia</p>
+                    @if(auth()->user()->hasPermission('evaluaciones.crear'))
+                    <button onclick="abrirModalConMateria({{ $materia->id }}, '{{ $materia->nombre }}')"
+                            class="mt-3 text-utn-blue-dark hover:text-utn-blue-dark text-sm font-medium">
+                        + Crear primera evaluación
+                    </button>
+                    @endif
+                </div>
+                @endif
+            </div>
+        @endforeach
+    @else
+        <div class="bg-white rounded-xl shadow-md p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">Sin materias asignadas</h3>
+            <p class="mt-2 text-gray-500">Esta comisión no tiene materias asignadas. Configúrelas primero en la gestión de comisiones.</p>
+            <a href="{{ route('comisiones.edit', $comision) }}" class="mt-4 inline-block text-utn-blue-dark hover:text-utn-blue-dark">
+                Ir a configurar comisión
+            </a>
+        </div>
+    @endif
+</div>
+
+{{-- Modal Nueva Evaluación --}}
+<div id="modalNuevaEvaluacion" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Nueva Evaluación</h3>
+                <button onclick="document.getElementById('modalNuevaEvaluacion').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form action="{{ route('evaluaciones.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="comision" value="{{ $comision->id }}">
+                <input type="hidden" name="anio" value="{{ $comision->anio }}">
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Materia <span class="text-red-500">*</span></label>
+                        <select name="materia_id" id="materiaSelect" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark">
+                            <option value="">Seleccionar materia...</option>
+                            @foreach($materias as $materia)
+                                <option value="{{ $materia->id }}">{{ $materia->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark" placeholder="Ej: Primer Parcial">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo <span class="text-red-500">*</span></label>
+                            <select name="tipo" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark">
+                                @foreach(\App\Models\Evaluacion::TIPOS as $key => $label)
+                                    <option value="{{ $key }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Instancia</label>
+                            <select name="instancia" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark">
+                                <option value="">Sin instancia</option>
+                                @foreach(\App\Models\Evaluacion::instanciasDisponibles() as $key => $label)
+                                    <option value="{{ $key }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha <span class="text-red-500">*</span></label>
+                            <input type="date" name="fecha" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark" value="{{ date('Y-m-d') }}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Peso %</label>
+                            <input type="number" name="porcentual" min="0" max="100" step="0.01" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark" placeholder="Ej: 25">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                        <textarea name="descripcion" rows="2" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark" placeholder="Descripción opcional..."></textarea>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" name="cuenta_promedio" value="1" checked class="rounded border-gray-300 text-utn-blue-dark focus:ring-utn-blue-dark">
+                        <label class="ml-2 text-sm text-gray-700">Cuenta para el promedio</label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                    <button type="button" onclick="document.getElementById('modalNuevaEvaluacion').classList.add('hidden')" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark">
+                        Crear Evaluación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalConMateria(materiaId, materiaNombre) {
+    document.getElementById('materiaSelect').value = materiaId;
+    document.getElementById('modalNuevaEvaluacion').classList.remove('hidden');
+}
+</script>
+@endsection

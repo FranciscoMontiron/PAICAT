@@ -11,6 +11,13 @@ class Role extends Model
         'nombre',
         'slug',
         'descripcion',
+        'solo_contenido_asignado',
+        'visibilidad_general',
+    ];
+
+    protected $casts = [
+        'solo_contenido_asignado' => 'boolean',
+        'visibilidad_general' => 'boolean',
     ];
 
     /**

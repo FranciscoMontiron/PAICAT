@@ -1,0 +1,191 @@
+@extends('layouts.app')
+@section('title', 'Vista Previa - Asignación Aleatoria')
+@section('content')
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Vista Previa de Asignación</h1>
+            <p class="text-gray-600 mt-1">Revisa la asignación propuesta antes de confirmar</p>
+        </div>
+        <a href="{{ route('asignacion-alumnos.index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg transition duration-200 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Volver
+        </a>
+    </div>
+
+    <!-- Resumen -->
+    @php
+    $totalAsignar = collect($simulacion)->sum('cantidadAsignados');
+    @endphp
+    <div class="bg-gradient-to-r from-utn-dark to-utn-dark-light rounded-lg shadow-lg p-6 mb-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold">{{ $totalAsignar }} alumnos serán asignados</h2>
+                <p class="opacity-90">a {{ count($simulacion) }} comisiones</p>
+                @if(isset($agruparPorCarrera) && $agruparPorCarrera)
+                <p class="mt-2 text-sm bg-white/20 inline-block px-3 py-1 rounded-full">
+                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Agrupados por carrera
+                </p>
+                @endif
+                @if(isset($filtrarEspecialidad) && $filtrarEspecialidad && isset($especialidades[$filtrarEspecialidad]))
+                <p class="mt-2 text-sm bg-white/20 inline-block px-3 py-1 rounded-full">
+                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    Filtrado por: {{ $especialidades[$filtrarEspecialidad] }}
+                </p>
+                @endif
+            </div>
+            <div class="bg-white/20 p-4 rounded-full">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de confirmación -->
+    <form method="POST" action="{{ route('asignacion-alumnos.ejecutar') }}" id="formConfirmar"
+          data-confirm="¿Estás seguro de ejecutar la asignación de {{ $totalAsignar }} alumnos?" data-confirm-title="Confirmar asignación">
+        @csrf
+        @foreach($comisionesIds as $id)
+        <input type="hidden" name="comisiones[]" value="{{ $id }}">
+        @endforeach
+        @if(isset($agruparPorCarrera) && $agruparPorCarrera)
+        <input type="hidden" name="agrupar_por_carrera" value="1">
+        @endif
+        @if(isset($filtrarEspecialidad) && $filtrarEspecialidad)
+        <input type="hidden" name="filtrar_especialidad" value="{{ $filtrarEspecialidad }}">
+        @endif
+
+        <!-- Detalle por comisión -->
+        <div class="space-y-6 mb-6">
+            @foreach($simulacion as $item)
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">
+                                {{ $item['comision']->nombre }}
+                                <span class="font-mono text-sm text-gray-500 ml-2">({{ $item['comision']->codigo }})</span>
+                            </h3>
+                            <p class="text-sm text-gray-600">
+                                {{ $item['comision']->turno }} - {{ $item['comision']->modalidad }}
+                                @if($item['comision']->docente)
+                                | Docente: {{ $item['comision']->docente->nombre_completo }}
+                                @endif
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold text-green-600">{{ $item['cantidadAsignados'] }}</span>
+                            <span class="text-gray-500">/ {{ $item['cuposDisponibles'] }} cupos</span>
+                        </div>
+                    </div>
+                    @if(isset($item['distribucionPorCarrera']) && $item['distribucionPorCarrera']->count() > 0 && isset($agruparPorCarrera) && $agruparPorCarrera)
+                    <div class="mt-3 pt-3 border-t border-gray-200">
+                        <span class="text-xs font-medium text-gray-500 mr-2">Distribución por carrera:</span>
+                        @foreach($item['distribucionPorCarrera'] as $espId => $cantidad)
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-utn-blue/10 text-utn-dark mr-1">
+                            {{ isset($especialidades[$espId]) ? Str::limit($especialidades[$espId], 20) : 'Sin carrera' }}: {{ $cantidad }}
+                        </span>
+                        @endforeach
+                    </div>
+                    @endif
+                </div>
+
+                @if($item['asignados']->count() > 0)
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        @foreach($item['asignados'] as $inscripcion)
+                        @php
+                        $person = $inscripcion->getPerson();
+                        @endphp
+                        <div class="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition">
+                            <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <span class="text-green-700 font-semibold text-sm">
+                                    {{ $person ? strtoupper(substr($person->nombre ?? '', 0, 1) . substr($person->apellido ?? '', 0, 1)) : '?' }}
+                                </span>
+                            </div>
+                            <div class="ml-3 flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">
+                                    {{ $person ? ($person->apellido . ', ' . $person->nombre) : 'Inscripción #' . $inscripcion->id }}
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    {{ $inscripcion->especialidad_nombre ?? 'Sin especialidad' }}
+                                </p>
+                            </div>
+                            <label class="flex items-center cursor-pointer ml-2" title="Excluir de la asignación">
+                                <input type="checkbox" name="excluir[]" value="{{ $inscripcion->id }}"
+                                    class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                                <span class="ml-1 text-xs text-gray-500">Excluir</span>
+                            </label>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @else
+                <div class="p-6 text-center text-gray-500">
+                    <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p>No hay alumnos elegibles para esta comisión</p>
+                </div>
+                @endif
+            </div>
+            @endforeach
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex justify-between items-center bg-white rounded-lg shadow p-4">
+            <div class="text-sm text-gray-600">
+                <svg class="w-5 h-5 inline-block mr-1 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Marca "Excluir" para quitar alumnos específicos de la asignación
+            </div>
+            <div class="flex space-x-4">
+                <a href="{{ route('asignacion-alumnos.index') }}"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-lg transition duration-200">
+                    Cancelar
+                </a>
+                @if($totalAsignar > 0)
+                <button type="submit" id="btnConfirmar"
+                    class="bg-green-700 hover:bg-green-800 text-white font-semibold px-6 py-3 rounded-lg transition duration-200 flex items-center shadow-md">
+                    <svg id="btnConfirmarIcon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <svg id="btnConfirmarSpinner" class="hidden animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="btnConfirmarText">Confirmar Asignación</span>
+                </button>
+                @endif
+            </div>
+        </div>
+    </form>
+</div>
+@push('scripts')
+<script>
+document.getElementById('formConfirmar').addEventListener('submit', function(e) {
+    // No bloquear si es el confirm dialog el que lo maneja
+    const btn = document.getElementById('btnConfirmar');
+    if (btn) {
+        btn.disabled = true;
+        const icon = document.getElementById('btnConfirmarIcon');
+        const spinner = document.getElementById('btnConfirmarSpinner');
+        const text = document.getElementById('btnConfirmarText');
+        if (icon) icon.classList.add('hidden');
+        if (spinner) spinner.classList.remove('hidden');
+        if (text) text.textContent = 'Asignando alumnos...';
+    }
+});
+</script>
+@endpush
+@endsection
