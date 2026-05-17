@@ -12,8 +12,8 @@ class ImportAlumnosCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'paicat:import-alumnos 
-                            {--file=bases_externas/alumos.sql : Ruta al archivo SQL}
+    protected $signature = 'paicat:import-alumnos
+                            {--file=bases_externas/alumnos.sql : Ruta al archivo SQL}
                             {--connection=alumnos_utn : Conexión de BD a usar}';
 
     /**

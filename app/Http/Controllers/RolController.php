@@ -139,6 +139,7 @@ class RolController extends Controller
             ['nombre' => 'Ver reportes', 'slug' => 'reportes.ver', 'descripcion' => 'Puede ver reportes'],
             ['nombre' => 'Generar reportes', 'slug' => 'reportes.generar', 'descripcion' => 'Puede generar reportes'],
             ['nombre' => 'Gestionar roles', 'slug' => 'roles.gestionar', 'descripcion' => 'Puede gestionar roles y permisos'],
+            ['nombre' => 'Solicitar cambio de comisión', 'slug' => 'solicitud-cambio.ver', 'descripcion' => 'Puede solicitar cambio de comisión para alumnos desde el acceso rápido'],
         ];
 
         $created = 0;

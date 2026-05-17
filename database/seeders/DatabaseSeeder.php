@@ -2,33 +2,46 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Database\Seeders\Sysacad\SysacadDataSeeder;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
-     * 
-     * Las 3 bases de datos del sistema:
-     * 1. paicat - BD principal (roles, permisos, usuarios admin)
-     * 2. sysacad - Datos maestros desde Excel (países, provincias, escuelas)
-     * 3. alumnos_utn - Datos de alumnos desde backup SQL (persons, academico_datos)
+     *
+     * INSTRUCCIONES DE INSTALACIÓN DESDE CERO:
+     *
+     * 1. Ejecutar migraciones y seeders base:
+     *    docker compose exec app php artisan migrate:fresh --seed
+     *
+     * 2. Importar datos de Sysacad (requiere el archivo Excel en database/data/Datos Sysacad.xlsx):
+     *    El SysacadDataSeeder se ejecuta automáticamente en el paso 1.
+     *
+     * 3. Importar datos de alumnos (alumnos_utn) - requiere backup SQL externo:
+     *    docker compose exec mariadb mysql -u paicat -ppaicat alumnos_utn < bases_externas/seed_datos.sql
+     *
+     * 4. (Opcional - solo desarrollo) Datos de prueba:
+     *    docker compose exec app php artisan db:seed --class=AlumnosPruebaSeeder
+     *    docker compose exec app php artisan db:seed --class=AsistenciaTestSeeder
+     *    docker compose exec app php artisan db:seed --class=ReInscripcionTestSeeder
+     *
+     * CREDENCIALES ADMIN: admin@paicat.utn.edu.ar / admin123
+     *
+     * DATOS NO RECUPERABLES SIN BACKUP:
+     *   - Municipios, aulas y comisiones (no tienen seeder de producción)
+     *   - Inscripciones y cursadas reales
      */
     public function run(): void
     {
-        // Datos de la BD principal (paicat)
+        // BD principal: roles, permisos y usuario admin
         $this->call([
             RolesAndPermissionsSeeder::class,
             CreateAdminUserSeeder::class,
+            ConfiguracionSeeder::class,
         ]);
 
-        // Datos maestros de Sysacad - desde Excel (database/data/Datos Sysacad.xlsx)
+        // Datos maestros de Sysacad (requiere database/data/Datos Sysacad.xlsx)
         $this->call(SysacadDataSeeder::class);
-
-        // Datos de alumnos (alumnos_utn) - desde backup SQL externo
-        // Importar manualmente: docker compose exec mariadb mysql -u paicat -ppaicat paicat < bases_externas/seed_datos.sql
     }
 }

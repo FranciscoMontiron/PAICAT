@@ -289,9 +289,9 @@
                         @endif
 
                         {{-- MENÚ: Académico --}}
-                        @if(auth()->user()->hasPermission('comisiones.ver'))
+                        @if(auth()->user()->hasPermission('comisiones.ver') || auth()->user()->hasPermission('inscripciones.ver') || auth()->user()->hasPermission('solicitud-cambio.ver'))
                         <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-                            <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 {{ request()->routeIs('comisiones.*') || request()->routeIs('asistencias.*') || request()->routeIs('evaluaciones.*') || request()->routeIs('materias.*') || request()->routeIs('asignacion-alumnos.*') || request()->routeIs('solicitudes.*') ? 'bg-white text-utn-blue-dark' : 'text-white hover:bg-white/10' }}">
+                            <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 {{ request()->routeIs('comisiones.*') || request()->routeIs('asistencias.*') || request()->routeIs('evaluaciones.*') || request()->routeIs('materias.*') || request()->routeIs('asignacion-alumnos.*') || request()->routeIs('solicitudes.*') || request()->routeIs('solicitud-cambio.*') ? 'bg-white text-utn-blue-dark' : 'text-white hover:bg-white/10' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                                 </svg>
@@ -302,12 +302,14 @@
                             </button>
                             <div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute left-0 mt-0 w-56 bg-white rounded-b-lg shadow-xl z-50" style="display: none;">
                                 <div class="py-1">
+                                    @if(auth()->user()->hasPermission('comisiones.ver'))
                                     <a href="{{ route('comisiones.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('comisiones.*') ? 'bg-blue-50 text-utn-blue-dark font-medium' : '' }}">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                         </svg>
                                         Comisiones
                                     </a>
+                                    @endif
                                     @if(auth()->user()->hasPermission('asistencias.ver'))
                                     <a href="{{ route('asistencias.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('asistencias.*') ? 'bg-blue-50 text-utn-blue-dark font-medium' : '' }}">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,6 +324,15 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
                                         Evaluaciones
+                                    </a>
+                                    @endif
+                                    @if(auth()->user()->hasPermission('solicitud-cambio.ver'))
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="{{ route('solicitud-cambio.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('solicitud-cambio.*') ? 'bg-blue-50 text-utn-blue-dark font-medium' : '' }}">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                                        </svg>
+                                        Solicitar Cambio de Comisión
                                     </a>
                                     @endif
                                     @if(auth()->user()->hasPermission('comisiones.editar'))
@@ -388,7 +399,7 @@
                         @endif
 
                         {{-- MENÚ: Administración --}}
-                        @if(auth()->user()->hasPermission('usuarios.ver') || config('app.debug'))
+                        @if(auth()->user()->hasPermission('usuarios.ver'))
                         <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
                             <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 {{ request()->routeIs('usuarios.*') || request()->routeIs('roles.*') || request()->routeIs('developer') || request()->routeIs('configuracion.*') ? 'bg-white text-utn-blue-dark' : 'text-white hover:bg-white/10' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -418,12 +429,14 @@
                                         </svg>
                                         Usuarios
                                     </a>
+                                    @if(auth()->user()->hasPermission('roles.gestionar'))
                                     <a href="{{ route('roles.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('roles.*') ? 'bg-blue-50 text-utn-blue-dark font-medium' : '' }}">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                         </svg>
                                         Roles y Permisos
                                     </a>
+                                    @endif
                                     @endif
                                     @if(config('app.debug'))
                                     <a href="{{ route('developer') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('developer') ? 'bg-blue-50 text-utn-blue-dark font-medium' : '' }}">

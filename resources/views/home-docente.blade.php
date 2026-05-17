@@ -135,7 +135,7 @@
                         </div>
 
                         <div class="flex flex-col gap-2">
-                            @if($esPresencial)
+                            @if($esPresencial && auth()->user()->hasPermission('asistencias.ver'))
                                 <a href="{{ route('asistencias.comision.materias', $comision) }}"
                                    class="w-full bg-utn-blue-darker hover:bg-utn-dark-light text-white text-center px-3 py-2 rounded-lg transition text-sm font-medium flex items-center justify-center gap-1">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -165,10 +165,19 @@ class AulaController extends Controller
     private function generarCodigoAula(string $nombre, int $municipioId): string
     {
         $municipio = Municipio::find($municipioId);
-        $prefijoMuni = $municipio ? strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $municipio->nombre), 0, 3)) : 'XXX';
+        $prefijo = $municipio
+            ? strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $municipio->nombre), 0, 3))
+            : 'XXX';
 
-        $numero = Aula::where('municipio_id', $municipioId)->count() + 1;
+        // max(id) en lugar de count() para no retroceder cuando se eliminan aulas
+        $siguiente = (Aula::where('municipio_id', $municipioId)->max('id') ?? 0) + 1;
+        $codigo = $prefijo . '-A' . str_pad($siguiente, 2, '0', STR_PAD_LEFT);
 
-        return strtoupper($prefijoMuni) . '-A' . str_pad($numero, 2, '0', STR_PAD_LEFT);
+        // Fallback con timestamp si el código ya existe (edge case de IDs no-secuenciales)
+        if (Aula::where('codigo', $codigo)->exists()) {
+            $codigo .= '-' . substr((string) time(), -4);
+        }
+
+        return $codigo;
     }
 }

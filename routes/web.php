@@ -357,6 +357,13 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{role}', [App\Http\Controllers\RolController::class, 'destroy'])->name('destroy');
     });
 
+    // Acceso rápido: Solicitar cambio de comisión (docentes y usuarios con inscripciones.ver)
+    Route::prefix('solicitud-cambio')->name('solicitud-cambio.')->middleware('permission:solicitud-cambio.ver')->group(function () {
+        Route::get('/', [App\Http\Controllers\SolicitudRapidaController::class, 'index'])->name('index');
+        Route::get('/{inscripcion}/form', [App\Http\Controllers\SolicitudRapidaController::class, 'form'])->name('form');
+        Route::post('/{inscripcion}/store', [App\Http\Controllers\SolicitudRapidaController::class, 'store'])->name('store');
+    });
+
     // Módulo: Solicitudes de Cambio
     Route::prefix('solicitudes')->name('solicitudes.')->middleware('permission:comisiones.editar')->group(function () {
         Route::get('/', [App\Http\Controllers\SolicitudCambioController::class, 'index'])->name('index');
