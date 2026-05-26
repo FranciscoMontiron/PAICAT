@@ -14,18 +14,18 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 min-h-screen font-sans antialiased">
+<body class="bg-gradient-to-br from-utn-dark via-utn-dark-light to-black min-h-screen font-sans antialiased">
     <div class="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div class="w-full max-w-md space-y-8">
             <!-- Logo and Title -->
             <div class="text-center">
                 <div class="mx-auto h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-lg mb-6">
-                    <svg class="h-10 w-10 text-utn-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="h-10 w-10 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                     </svg>
                 </div>
                 <h1 class="text-4xl font-bold text-white mb-2">PAICAT</h1>
-                <p class="text-blue-200 text-sm">Curso de Ingreso - UTN FRLP</p>
+                <p class="text-utn-blue-light text-sm">Curso de Ingreso - UTN {{ \App\Services\ConfiguracionService::get('sigla_institucion', 'FRLP') }}</p>
             </div>
 
             <!-- Login Form -->
@@ -77,7 +77,7 @@
                                     required
                                     autofocus
                                     autocomplete="username"
-                                    class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('email') border-red-500 @enderror"
+                                    class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('email') border-red-500 @enderror"
                                     placeholder="tu@email.com"
                                 >
                             </div>
@@ -100,7 +100,7 @@
                                     name="password"
                                     required
                                     autocomplete="current-password"
-                                    class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent @error('password') border-red-500 @enderror"
+                                    class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent @error('password') border-red-500 @enderror"
                                     placeholder="••••••••"
                                 >
                             </div>
@@ -112,7 +112,7 @@
                                 id="remember"
                                 type="checkbox"
                                 name="remember"
-                                class="h-4 w-4 text-utn-blue focus:ring-utn-blue border-gray-300 rounded"
+                                class="h-4 w-4 text-utn-blue-dark focus:ring-utn-blue-dark border-gray-300 rounded"
                             >
                             <label for="remember" class="ml-2 block text-sm text-gray-700">
                                 Recordarme
@@ -123,7 +123,7 @@
                         <div>
                             <button
                                 type="submit"
-                                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-utn-blue hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-utn-blue transition-colors"
+                                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-utn-blue-darker hover:bg-utn-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-utn-blue-dark transition-colors"
                             >
                                 Iniciar Sesión
                             </button>
@@ -134,8 +134,8 @@
                     <div class="mt-8 pt-6 border-t border-gray-200">
                         <p class="text-xs text-center text-gray-500">
                             Sistema de Gestión del Curso de Ingreso<br>
-                            <span class="font-semibold text-utn-blue">Universidad Tecnológica Nacional</span><br>
-                            Facultad Regional La Plata
+                            <span class="font-semibold text-utn-blue-dark">Universidad Tecnológica Nacional</span><br>
+                            {{ \App\Services\ConfiguracionService::get('nombre_institucion', 'Facultad Regional La Plata') }}
                         </p>
                     </div>
                 </div>
@@ -143,7 +143,7 @@
 
             <!-- Additional Info -->
             <div class="text-center">
-                <p class="text-sm text-blue-100">
+                <p class="text-sm text-gray-300">
                     ¿Problemas para acceder? Contacta al administrador
                 </p>
             </div>

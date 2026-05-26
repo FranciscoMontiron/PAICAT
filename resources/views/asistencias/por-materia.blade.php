@@ -64,7 +64,7 @@
             </div>
 
             <div class="mt-4 flex gap-2">
-                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors">
+                <button type="submit" class="px-4 py-2 bg-utn-blue-darker text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors">
                     Filtrar
                 </button>
                 @if($materiaId || $comisionId || $fechaDesde || $fechaHasta)
@@ -80,8 +80,8 @@
         {{-- Info de materia seleccionada --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-indigo-100 rounded-lg">
-                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-3 bg-utn-blue/10 rounded-lg">
+                    <svg class="w-6 h-6 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                     </svg>
                 </div>
@@ -90,7 +90,7 @@
                     <p class="text-sm text-gray-500">Codigo: {{ $materiaSeleccionada->codigo }} | {{ $comisionesMateria->count() }} comision(es) activa(s)</p>
                 </div>
                 @if($comisionSeleccionada)
-                    <div class="ml-auto px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    <div class="ml-auto px-3 py-1 bg-utn-blue/10 text-utn-blue-dark rounded-full text-sm font-medium">
                         {{ $comisionSeleccionada->nombre }} - {{ $comisionSeleccionada->turno }}
                     </div>
                 @endif
@@ -126,8 +126,8 @@
                                 <tr class="hover:bg-gray-50 {{ $estadistica['en_riesgo'] ? 'bg-red-50' : '' }}">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
-                                            <div class="w-8 h-8 flex-shrink-0 bg-indigo-100 rounded-full flex items-center justify-center">
-                                                <span class="text-xs font-medium text-indigo-600">{{ substr($estadistica['alumno_nombre'], 0, 2) }}</span>
+                                            <div class="w-8 h-8 flex-shrink-0 bg-utn-blue/10 rounded-full flex items-center justify-center">
+                                                <span class="text-xs font-medium text-utn-blue-dark">{{ substr($estadistica['alumno_nombre'], 0, 2) }}</span>
                                             </div>
                                             <div class="ml-3">
                                                 <div class="text-sm font-medium text-gray-900">{{ $estadistica['alumno_nombre'] }}</div>
@@ -144,9 +144,9 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-green-600 font-medium">{{ $estadistica['presentes'] }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-yellow-600 font-medium">{{ $estadistica['tardanzas'] }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-red-600 font-medium">{{ $estadistica['ausentes'] }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-blue-600 font-medium">{{ $estadistica['justificados'] }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-utn-blue-dark font-medium">{{ $estadistica['justificados'] }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $estadistica['porcentaje'] >= config('paicat.asistencia_minima', 75) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $estadistica['porcentaje'] >= \App\Services\ConfiguracionService::get('asistencia_minima', 75) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                             {{ $estadistica['porcentaje'] }}%
                                         </span>
                                     </td>
@@ -218,7 +218,7 @@
                                                 'presente' => 'bg-green-100 text-green-800',
                                                 'ausente' => 'bg-red-100 text-red-800',
                                                 'tardanza' => 'bg-yellow-100 text-yellow-800',
-                                                'justificado' => 'bg-blue-100 text-blue-800',
+                                                'justificado' => 'bg-utn-blue/10 text-utn-blue-dark',
                                             ];
                                         @endphp
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $estadoColors[$asistencia->estado] ?? 'bg-gray-100 text-gray-800' }}">

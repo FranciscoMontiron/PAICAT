@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Evaluacion;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateEvaluacionRequest extends FormRequest
@@ -26,7 +27,7 @@ class UpdateEvaluacionRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'descripcion' => 'nullable|string|max:255',
-            'tipo' => 'required|in:parcial,recuperatorio,examen_final,trabajo_practico',
+            'tipo' => 'required|in:' . implode(',', array_keys(Evaluacion::tiposDisponibles())),
             'fecha' => 'required|date',
             'porcentual' => 'required|numeric|min:0|max:100',
             'comision' => 'nullable|exists:comisiones,id',

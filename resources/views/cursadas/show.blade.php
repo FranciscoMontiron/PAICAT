@@ -3,15 +3,19 @@
 @section('title', 'Detalle Cursada')
 
 @section('content')
+@php
+    $notaAprobacion = \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+    $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
+@endphp
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     {{-- Breadcrumb --}}
     <nav class="mb-4 text-sm">
         <ol class="flex items-center space-x-2">
-            <li><a href="{{ route('comisiones.index') }}" class="text-utn-blue hover:underline">Comisiones</a></li>
+            <li><a href="{{ route('comisiones.index') }}" class="text-utn-blue-dark hover:underline">Comisiones</a></li>
             <li><span class="text-gray-400">/</span></li>
-            <li><a href="{{ route('comisiones.show', $comision) }}" class="text-utn-blue hover:underline">{{ $comision->codigo }}</a></li>
+            <li><a href="{{ route('comisiones.show', $comision) }}" class="text-utn-blue-dark hover:underline">{{ $comision->codigo }}</a></li>
             <li><span class="text-gray-400">/</span></li>
-            <li><a href="{{ route('cursadas.index', $comision) }}" class="text-utn-blue hover:underline">Cursadas</a></li>
+            <li><a href="{{ route('cursadas.index', $comision) }}" class="text-utn-blue-dark hover:underline">Cursadas</a></li>
             <li><span class="text-gray-400">/</span></li>
             <li class="text-gray-500">Detalle</li>
         </ol>
@@ -20,7 +24,7 @@
     @php
         $estudiante = $cursada->getEstudiante();
         $estadoColors = [
-            'cursando' => 'bg-blue-100 text-blue-800 border-blue-200',
+            'cursando' => 'bg-utn-blue/10 text-utn-blue-dark border-blue-200',
             'aprobado' => 'bg-green-100 text-green-800 border-green-200',
             'desaprobado' => 'bg-red-100 text-red-800 border-red-200',
             'libre' => 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -41,10 +45,10 @@
         </div>
         <div class="flex items-center gap-3">
             <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border {{ $estadoColors[$cursada->estado] ?? 'bg-gray-100 text-gray-800' }}">
-                {{ \App\Models\Cursada::ESTADOS[$cursada->estado] ?? $cursada->estado }}
+                {{ \App\Models\Cursada::getEstados()[$cursada->estado] ?? $cursada->estado }}
             </span>
             <a href="{{ route('cursadas.edit', [$comision, $cursada]) }}"
-               class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors">
+               class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors">
                 Editar
             </a>
         </div>
@@ -82,7 +86,7 @@
                     <h2 class="text-lg font-semibold text-gray-900">Notas</h2>
                     <form action="{{ route('cursadas.recalcular-nota', [$comision, $cursada]) }}" method="POST" class="inline">
                         @csrf
-                        <button type="submit" class="text-sm text-utn-blue hover:underline">
+                        <button type="submit" class="text-sm text-utn-blue-dark hover:underline">
                             Recalcular promedio
                         </button>
                     </form>
@@ -105,7 +109,7 @@
                                     <tr>
                                         <td class="px-4 py-2 text-sm text-gray-900">{{ $nota->evaluacion?->nombre ?? 'N/A' }}</td>
                                         <td class="px-4 py-2 text-sm text-gray-500">{{ ucfirst($nota->evaluacion?->tipo ?? '-') }}</td>
-                                        <td class="px-4 py-2 text-sm font-medium {{ ($nota->nota ?? 0) >= 6 ? 'text-green-600' : 'text-red-600' }}">
+                                        <td class="px-4 py-2 text-sm font-medium {{ ($nota->nota ?? 0) >= $notaAprobacion ? 'text-green-600' : 'text-red-600' }}">
                                             {{ $nota->nota !== null ? number_format($nota->nota, 2) : '-' }}
                                         </td>
                                         <td class="px-4 py-2 text-sm text-gray-500">{{ $nota->fecha_carga?->format('d/m/Y') ?? '-' }}</td>
@@ -149,18 +153,18 @@
                             <p class="text-xs text-gray-500">Tardanzas</p>
                         </div>
                         <div class="text-center">
-                            <p class="text-2xl font-bold text-blue-600">{{ $justificadas }}</p>
+                            <p class="text-2xl font-bold text-utn-blue-dark">{{ $justificadas }}</p>
                             <p class="text-xs text-gray-500">Justificadas</p>
                         </div>
                     </div>
                     <div class="bg-gray-200 rounded-full h-4 overflow-hidden">
-                        <div class="h-full {{ $porcentaje >= 75 ? 'bg-green-500' : ($porcentaje >= 50 ? 'bg-yellow-500' : 'bg-red-500') }}"
+                        <div class="h-full {{ $porcentaje >= $asistenciaMinima ? 'bg-green-500' : ($porcentaje >= 50 ? 'bg-yellow-500' : 'bg-red-500') }}"
                              style="width: {{ $porcentaje }}%"></div>
                     </div>
-                    <p class="text-center text-sm mt-2 {{ $porcentaje >= 75 ? 'text-green-600' : 'text-red-600' }}">
+                    <p class="text-center text-sm mt-2 {{ $porcentaje >= $asistenciaMinima ? 'text-green-600' : 'text-red-600' }}">
                         {{ number_format($porcentaje, 1) }}% de asistencia
-                        @if($porcentaje < 75)
-                            <span class="text-red-600 font-medium">(mínimo requerido: 75%)</span>
+                        @if($porcentaje < $asistenciaMinima)
+                            <span class="text-red-600 font-medium">(mínimo requerido: {{ $asistenciaMinima }}%)</span>
                         @endif
                     </p>
                 @endif
@@ -199,7 +203,7 @@
                     @endif
                     <div>
                         <dt class="text-sm font-medium text-gray-500">Nota Final</dt>
-                        <dd class="mt-1 text-lg font-bold {{ ($cursada->nota_final ?? 0) >= 6 ? 'text-green-600' : 'text-red-600' }}">
+                        <dd class="mt-1 text-lg font-bold {{ ($cursada->nota_final ?? 0) >= $notaAprobacion ? 'text-green-600' : 'text-red-600' }}">
                             {{ $cursada->nota_final !== null ? number_format($cursada->nota_final, 2) : 'Sin calcular' }}
                         </dd>
                     </div>
@@ -238,8 +242,8 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Nuevo Estado</label>
-                            <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
-                                @foreach(\App\Models\Cursada::ESTADOS as $key => $label)
+                            <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
+                                @foreach(\App\Models\Cursada::getEstados() as $key => $label)
                                     <option value="{{ $key }}" {{ $cursada->estado == $key ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
@@ -247,10 +251,10 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Observación (opcional)</label>
                             <textarea name="observacion" rows="2"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent"
                                       placeholder="Motivo del cambio..."></textarea>
                         </div>
-                        <button type="submit" class="w-full px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors">
+                        <button type="submit" class="w-full px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors">
                             Guardar Estado
                         </button>
                     </div>

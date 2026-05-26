@@ -13,14 +13,14 @@
         <div class="flex flex-wrap gap-2">
             @if(auth()->user()->hasPermission('inscripciones.crear'))
             <a href="{{ route('inscripciones.importar.show') }}"
-               class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2">
+               class="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-colors duration-200 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                 </svg>
                 Importar Masivo
             </a>
             <a href="{{ route('inscripciones.create') }}"
-               class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center gap-2">
+               class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-utn-dark transition-colors duration-200 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -76,14 +76,14 @@
                     <label for="buscar" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
                     <input type="text" name="buscar" id="buscar" value="{{ request('buscar') }}"
                            placeholder="Nombre, DNI o email..."
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                 </div>
 
                 <div>
                     <label for="estado_documentacion" class="block text-sm font-medium text-gray-700 mb-1">Documentación</label>
-                    <select name="estado_documentacion" id="estado_documentacion" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                    <select name="estado_documentacion" id="estado_documentacion" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Todos</option>
-                        @foreach(\App\Models\Inscripcion::ESTADOS_DOCUMENTACION as $key => $value)
+                        @foreach(\App\Models\Inscripcion::getEstadosDocumentacion() as $key => $value)
                             <option value="{{ $key }}" {{ request('estado_documentacion') == $key ? 'selected' : '' }}>{{ $value }}</option>
                         @endforeach
                     </select>
@@ -91,9 +91,9 @@
 
                 <div>
                     <label for="estado_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Estado Ingreso</label>
-                    <select name="estado_ingreso" id="estado_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                    <select name="estado_ingreso" id="estado_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Todos</option>
-                        @foreach(\App\Models\Inscripcion::ESTADOS_INGRESO as $key => $value)
+                        @foreach(\App\Models\Inscripcion::getEstadosIngreso() as $key => $value)
                             <option value="{{ $key }}" {{ request('estado_ingreso') == $key ? 'selected' : '' }}>{{ $value }}</option>
                         @endforeach
                     </select>
@@ -101,7 +101,7 @@
 
                 <div>
                     <label for="anio_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Año</label>
-                    <select name="anio_ingreso" id="anio_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                    <select name="anio_ingreso" id="anio_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Todos</option>
                         @foreach($aniosDisponibles as $anio)
                             <option value="{{ $anio }}" {{ request('anio_ingreso') == $anio ? 'selected' : '' }}>{{ $anio }}</option>
@@ -111,7 +111,7 @@
 
                 <div>
                     <label for="modalidad" class="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
-                    <select name="modalidad" id="modalidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                    <select name="modalidad" id="modalidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Todas</option>
                         @foreach($modalidades as $modalidad)
                             <option value="{{ $modalidad }}" {{ request('modalidad') == $modalidad ? 'selected' : '' }}>{{ $modalidad }}</option>
@@ -121,7 +121,7 @@
 
                 <div>
                     <label for="turno_ingreso" class="block text-sm font-medium text-gray-700 mb-1">Turno Ingreso</label>
-                    <select name="turno_ingreso" id="turno_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                    <select name="turno_ingreso" id="turno_ingreso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Todos</option>
                         @foreach($turnos as $turno)
                             <option value="{{ $turno }}" {{ request('turno_ingreso') == $turno ? 'selected' : '' }}>{{ $turno }}</option>
@@ -131,7 +131,7 @@
 
                 <div>
                     <label for="especialidad" class="block text-sm font-medium text-gray-700 mb-1">Especialidad</label>
-                    <select name="especialidad" id="especialidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                    <select name="especialidad" id="especialidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Todas</option>
                         @foreach($especialidades as $esp)
                             <option value="{{ $esp->id_sysacad }}" {{ request('especialidad') == $esp->id_sysacad ? 'selected' : '' }}>{{ $esp->nombre }}</option>
@@ -140,7 +140,7 @@
                 </div>
 
                 <div class="flex items-end gap-2">
-                    <button type="submit" class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-200">
+                    <button type="submit" class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-utn-dark transition-colors duration-200">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
@@ -194,8 +194,8 @@
                     {{-- Alumno con avatar, nombre, email y DNI --}}
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-3">
-                            <div class="flex-shrink-0 h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center">
-                                <span class="text-indigo-600 font-semibold text-xs">
+                            <div class="flex-shrink-0 h-9 w-9 rounded-full bg-utn-blue/10 flex items-center justify-center">
+                                <span class="text-utn-blue-dark font-semibold text-xs">
                                     {{ $persona ? strtoupper(substr($persona->nombre ?? '', 0, 1)) . strtoupper(substr($persona->apellido ?? '', 0, 1)) : '??' }}
                                 </span>
                             </div>
@@ -233,20 +233,20 @@
                     <td class="px-4 py-3 text-center">
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
                             @if($inscripcion->estado_documentacion === 'pendiente') bg-yellow-100 text-yellow-800
-                            @elseif($inscripcion->estado_documentacion === 'validada') bg-blue-100 text-blue-800
+                            @elseif($inscripcion->estado_documentacion === 'validada') bg-utn-blue/10 text-utn-blue-dark
                             @elseif($inscripcion->estado_documentacion === 'confirmada') bg-green-100 text-green-800
                             @elseif($inscripcion->estado_documentacion === 'incompleta') bg-orange-100 text-orange-800
                             @elseif($inscripcion->estado_documentacion === 'rechazada') bg-red-100 text-red-800
                             @else bg-gray-100 text-gray-800
                             @endif">
-                            {{ \App\Models\Inscripcion::ESTADOS_DOCUMENTACION[$inscripcion->estado_documentacion] ?? $inscripcion->estado_documentacion ?? 'N/A' }}
+                            {{ \App\Models\Inscripcion::getEstadosDocumentacion()[$inscripcion->estado_documentacion] ?? $inscripcion->estado_documentacion ?? 'N/A' }}
                         </span>
                     </td>
                     {{-- Estado Ingreso --}}
                     <td class="px-4 py-3 text-center">
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
-                            @if($inscripcion->estado_ingreso === 'inscripto') bg-blue-100 text-blue-800
-                            @elseif($inscripcion->estado_ingreso === 'cursando') bg-indigo-100 text-indigo-800
+                            @if($inscripcion->estado_ingreso === 'inscripto') bg-utn-blue/10 text-utn-blue-dark
+                            @elseif($inscripcion->estado_ingreso === 'cursando') bg-utn-blue/10 text-utn-dark
                             @elseif($inscripcion->estado_ingreso === 'aprobado') bg-green-100 text-green-800
                             @elseif($inscripcion->estado_ingreso === 'desaprobado') bg-red-100 text-red-800
                             @elseif($inscripcion->estado_ingreso === 'libre') bg-orange-100 text-orange-800
@@ -254,7 +254,7 @@
                             @elseif($inscripcion->estado_ingreso === 'cancelado') bg-red-100 text-red-800
                             @else bg-gray-100 text-gray-800
                             @endif">
-                            {{ \App\Models\Inscripcion::ESTADOS_INGRESO[$inscripcion->estado_ingreso] ?? $inscripcion->estado_ingreso ?? 'N/A' }}
+                            {{ \App\Models\Inscripcion::getEstadosIngreso()[$inscripcion->estado_ingreso] ?? $inscripcion->estado_ingreso ?? 'N/A' }}
                         </span>
                     </td>
                     {{-- Acciones --}}
@@ -270,14 +270,14 @@
                             </a>
                             @if(auth()->user()->hasPermission('inscripciones.editar') && $inscripcion->puedeModificarse())
                             <a href="{{ route('inscripciones.edit', $inscripcion) }}" 
-                               class="p-1.5 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" 
+                               class="p-1.5 rounded bg-utn-blue/10 text-utn-blue-dark hover:bg-utn-blue/20 transition-colors" 
                                title="Editar">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
                             </a>
                             @endif
-                            @if(!in_array($inscripcion->estado_documentacion, ['validada', 'confirmada']))
+                            @if(auth()->user()->hasPermission('inscripciones.editar') && !in_array($inscripcion->estado_documentacion, ['validada', 'confirmada']))
                             <a href="{{ route('inscripciones.show', $inscripcion) }}#documentacion"
                                class="p-1.5 rounded bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
                                title="Validar documentación">
@@ -297,7 +297,7 @@
                         </svg>
                         <p class="mt-2">No hay inscripciones registradas</p>
                         @if(auth()->user()->hasPermission('inscripciones.crear'))
-                        <a href="{{ route('inscripciones.create') }}" class="mt-2 inline-block text-utn-blue hover:text-blue-800 text-sm">
+                        <a href="{{ route('inscripciones.create') }}" class="mt-2 inline-block text-utn-blue-dark hover:text-utn-blue-dark text-sm">
                             Registrar primera inscripción
                         </a>
                         @endif

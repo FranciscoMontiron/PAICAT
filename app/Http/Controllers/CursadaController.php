@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Comision;
 use App\Models\Cursada;
 use App\Models\InscripcionComision;
+use App\Services\ConfiguracionService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -70,7 +71,7 @@ class CursadaController extends Controller
     public function update(Request $request, Comision $comision, Cursada $cursada): RedirectResponse
     {
         $validated = $request->validate([
-            'estado' => 'required|in:' . implode(',', array_keys(Cursada::ESTADOS)),
+            'estado' => 'required|in:' . implode(',', array_keys(Cursada::getEstados())),
             'modalidad' => 'nullable|string|max:50',
             'nota_final' => 'nullable|numeric|min:0|max:10',
             'resultado' => 'nullable|string|max:100',
@@ -101,14 +102,14 @@ class CursadaController extends Controller
     public function cambiarEstado(Request $request, Comision $comision, Cursada $cursada): RedirectResponse
     {
         $validated = $request->validate([
-            'estado' => 'required|in:' . implode(',', array_keys(Cursada::ESTADOS)),
+            'estado' => 'required|in:' . implode(',', array_keys(Cursada::getEstados())),
             'observacion' => 'nullable|string|max:500',
         ]);
 
         $cursada->cambiarEstado($validated['estado'], auth()->id(), $validated['observacion'] ?? null);
 
         return redirect()->back()
-            ->with('success', 'Estado actualizado a: ' . Cursada::ESTADOS[$validated['estado']]);
+            ->with('success', 'Estado actualizado a: ' . (Cursada::getEstados()[$validated['estado']] ?? $validated['estado']));
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Http\Requests\ValidarDocumentacionRequest;
 use App\Models\AlumnosUtn\Person;
 use App\Models\Cursada;
 use App\Models\Inscripcion;
+use App\Models\Trayectoria;
 use App\Services\DataNormalizationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -147,16 +148,14 @@ class InscripcionController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        // Obtener turnos (conexión sysacad)
-        $turnos = DB::connection('sysacad')->table('sysacad_turnos')
-            ->orderBy('nombre')
-            ->get();
+        // Obtener turnos desde configuración
+        $turnos = Inscripcion::getTurnos();
 
-        // Obtener modalidades
-        $modalidades = Inscripcion::MODALIDADES;
+        // Obtener modalidades desde configuración
+        $modalidades = Inscripcion::getModalidades();
 
-        // Obtener tipos de ingreso
-        $tiposIngreso = Inscripcion::TIPOS_INGRESO;
+        // Obtener tipos de ingreso desde configuración
+        $tiposIngreso = Inscripcion::getTiposIngreso();
 
         // Si se pasa un person_id, precargar datos del alumno
         $personaSeleccionada = null;
@@ -182,12 +181,12 @@ class InscripcionController extends Controller
     {
         $data = $request->validated();
 
-        // Verificar duplicado
-        if (Inscripcion::esDuplicado($data['person_id'], $data['anio_ingreso'])) {
+        // Verificar si ya tiene inscripción activa
+        if (Inscripcion::tieneInscripcionActiva($data['person_id'])) {
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Ya existe una inscripción activa para este alumno en el año seleccionado.');
+                ->with('error', 'Ya existe una inscripción activa para este alumno.');
         }
 
         // Verificar que el alumno existe en alumnos_utn
@@ -326,6 +325,12 @@ class InscripcionController extends Controller
             ->get();
         $resultado['asistencias'] = $asistencias;
 
+        // Cargar notas finales por materia (puestas por el docente)
+        $notasFinales = \App\Models\NotaFinalMateria::where('inscripcion_id', $inscripcion->id)
+            ->where('comision_id', $comision->id)
+            ->get()
+            ->keyBy('materia_id');
+
         // Procesar notas por materia
         $notasPorMateria = [];
         $materiasAprobadas = 0;
@@ -342,8 +347,8 @@ class InscripcionController extends Controller
                 ->get();
 
             $notasMateria = [];
-            $mejorNota = null;
-            $aprobada = false;
+            $sumaNotas = 0;
+            $cantidadNotas = 0;
 
             foreach ($evaluaciones as $evaluacion) {
                 $nota = \App\Models\Nota::where('inscripcion_id', $inscripcion->id)
@@ -356,14 +361,21 @@ class InscripcionController extends Controller
                 ];
 
                 if ($nota && $nota->nota !== null) {
-                    if ($mejorNota === null || $nota->nota > $mejorNota) {
-                        $mejorNota = $nota->nota;
-                    }
-                    if ($nota->nota >= 6) {
-                        $aprobada = true;
-                    }
+                    $sumaNotas += $nota->nota;
+                    $cantidadNotas++;
                 }
             }
+
+            // Nota sugerida = promedio de todas las evaluaciones
+            $notaSugerida = $cantidadNotas > 0 ? round($sumaNotas / $cantidadNotas, 2) : null;
+
+            // Nota final = la que puso el docente (desde nota_final_materias)
+            $notaFinalMateria = $notasFinales->get($materia->id);
+            $notaFinal = $notaFinalMateria?->nota_final;
+
+            // Aprobada usando el snapshot guardado al momento de cargar la nota.
+            // Si no tiene snapshot (registros anteriores), usa el método del modelo que también lo contempla.
+            $aprobada = $notaFinalMateria !== null && $notaFinalMateria->estaAprobada();
 
             if ($aprobada) {
                 $materiasAprobadas++;
@@ -372,7 +384,15 @@ class InscripcionController extends Controller
             $notasPorMateria[$materia->id] = [
                 'materia' => $materia,
                 'notas' => $notasMateria,
-                'nota_final' => $mejorNota,
+                'nota_sugerida' => $notaSugerida,
+                'nota_final' => $notaFinal,
+                'nota_final_materia' => $notaFinalMateria,
+                // Snapshot de la nota mínima usada al calificar esta materia.
+                // Si hay nota final cargada, tomar el snapshot del registro.
+                // Si todavía no hay nota final, usar la config actual (cursada en curso).
+                'nota_aprobacion' => $notaFinalMateria
+                    ? (float) ($notaFinalMateria->nota_aprobacion_snapshot ?? 6)
+                    : (float) \App\Services\ConfiguracionService::get('nota_aprobacion', 6),
                 'aprobada' => $aprobada,
             ];
         }
@@ -388,7 +408,7 @@ class InscripcionController extends Controller
             'porcentaje_asistencia' => $porcentajeAsistencia,
         ];
 
-        // Puede aprobar si todas las materias están aprobadas y no está ya aprobado
+        // Puede aprobar si todas las materias tienen nota final aprobada y no está ya aprobado
         $resultado['puedeAprobarCursada'] = $totalMaterias > 0
             && $materiasAprobadas === $totalMaterias
             && $inscripcion->estado_ingreso !== Inscripcion::INGRESO_APROBADO;
@@ -417,13 +437,11 @@ class InscripcionController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        // Obtener turnos (conexión sysacad)
-        $turnos = DB::connection('sysacad')->table('sysacad_turnos')
-            ->orderBy('nombre')
-            ->get();
+        // Obtener turnos desde configuración
+        $turnos = Inscripcion::getTurnos();
 
-        $modalidades = Inscripcion::MODALIDADES;
-        $tiposIngreso = Inscripcion::TIPOS_INGRESO;
+        $modalidades = Inscripcion::getModalidades();
+        $tiposIngreso = Inscripcion::getTiposIngreso();
 
         return view('inscripciones.edit', compact(
             'inscripcion',
@@ -794,6 +812,36 @@ class InscripcionController extends Controller
             ->orderBy('nombre')
             ->paginate(25);
 
+        // Detectar alumnos que se reinscribirían (tienen inscripciones canceladas previas)
+        $personIdsPagina = $alumnosDisponibles->pluck('id')->toArray();
+        $reinscripciones = [];
+
+        if (!empty($personIdsPagina)) {
+            $inscripcionesCanceladas = Inscripcion::withTrashed()
+                ->whereIn('person_id', $personIdsPagina)
+                ->where(function ($q) {
+                    $q->where('estado', Inscripcion::ESTADO_CANCELADO)
+                      ->orWhere('estado_ingreso', Inscripcion::INGRESO_CANCELADO);
+                })
+                ->orderBy('anio_ingreso', 'desc')
+                ->get()
+                ->groupBy('person_id');
+
+            foreach ($inscripcionesCanceladas as $personId => $inscripciones) {
+                $reinscripciones[$personId] = $inscripciones->map(function ($insc) {
+                    return [
+                        'anio_ingreso' => $insc->anio_ingreso,
+                        'estado' => $insc->estado,
+                        'estado_ingreso' => $insc->estado_ingreso,
+                        'created_at' => $insc->created_at?->format('d/m/Y'),
+                        'especialidad_nombre' => $insc->especialidad_nombre,
+                    ];
+                })->toArray();
+            }
+        }
+
+        $cantidadReinscripciones = count($reinscripciones);
+
         // Cargar especialidades indexadas por id_sysacad para mostrar nombres en la tabla
         $especialidades = DB::connection('sysacad')->table('sysacad_especialidades')
             ->get()
@@ -830,7 +878,9 @@ class InscripcionController extends Controller
             'especialidades',
             'turnos',
             'modalidades',
-            'aniosDisponibles'
+            'aniosDisponibles',
+            'reinscripciones',
+            'cantidadReinscripciones'
         ));
     }
 
@@ -858,6 +908,7 @@ class InscripcionController extends Controller
         $errores = 0;
         $duplicados = 0;
         $sinDatosAcademicos = 0;
+        $reinscriptos = 0;
 
         // Inicializar servicio de normalización
         $normalizador = new DataNormalizationService();
@@ -886,21 +937,19 @@ class InscripcionController extends Controller
                 // El año de ingreso se toma de los datos académicos del alumno
                 $anioIngreso = $datosAcademicos->ingreso_carrera;
 
-                // Verificar duplicado con el año de ingreso del alumno
-                if (Inscripcion::esDuplicado($personId, $anioIngreso)) {
+                // Verificar si ya tiene inscripción activa (cursando, aprobado, etc.)
+                if (Inscripcion::tieneInscripcionActiva($personId)) {
                     $duplicados++;
                     continue;
                 }
 
-                // Normalizar datos antes de crear la inscripción
+                // Normalizar datos
                 $modalidadNormalizada = $normalizador->normalizarModalidad($datosAcademicos->modalidad);
                 $turnoIngresoNormalizado = $normalizador->normalizarTurno($datosAcademicos->turno_ingreso);
                 $turnoCarreraNormalizado = $normalizador->normalizarTurno($datosAcademicos->turno_carrera);
                 $tipoIngresoNormalizado = $normalizador->normalizarTipoIngreso($datosAcademicos->tipo_ingreso);
 
-                // Crear inscripción con datos normalizados
-                Inscripcion::create([
-                    'person_id' => $personId,
+                $datosInscripcion = [
                     'anio_ingreso' => $anioIngreso,
                     'especialidad_id_sysacad' => $datosAcademicos->especialidad_id,
                     'especialidad_alternativa_id_sysacad' => $datosAcademicos->especialidad_alternativa_id,
@@ -912,16 +961,66 @@ class InscripcionController extends Controller
                     'estado_documentacion' => Inscripcion::DOC_PENDIENTE,
                     'estado_ingreso' => Inscripcion::INGRESO_INSCRIPTO,
                     'usuario_registro_id' => auth()->id(),
-                ]);
+                ];
 
-                $importados++;
+                // Verificar si tiene inscripción cancelada existente → REINSCRIPCIÓN
+                $inscripcionCancelada = Inscripcion::inscripcionCancelada($personId);
+
+                if ($inscripcionCancelada) {
+                    // Restaurar si estaba soft-deleted
+                    if ($inscripcionCancelada->trashed()) {
+                        $inscripcionCancelada->restore();
+                    }
+
+                    // Actualizar la inscripción existente con los nuevos datos
+                    $inscripcionCancelada->update(array_merge($datosInscripcion, [
+                        'observaciones' => 'Reinscripción - Actualizada con datos del nuevo formulario (año anterior: ' . $inscripcionCancelada->anio_ingreso . ')',
+                        'doc_dni_validado' => false,
+                        'doc_titulo_validado' => false,
+                        'doc_analitico_validado' => false,
+                        'observaciones_documentacion' => null,
+                        'usuario_validacion_id' => null,
+                        'fecha_validacion' => null,
+                    ]));
+
+                    // Registrar nueva trayectoria de reinscripción
+                    Trayectoria::registrarEvento(
+                        $inscripcionCancelada->id,
+                        Trayectoria::ESTADO_ACTIVO,
+                        'Reinscripción al curso de ingreso ' . $anioIngreso,
+                        null,
+                        auth()->id()
+                    );
+
+                    $reinscriptos++;
+                    $importados++;
+                } else {
+                    // Nueva inscripción (alumno sin registro previo en PAICAT)
+                    $inscripcion = Inscripcion::create(array_merge($datosInscripcion, [
+                        'person_id' => $personId,
+                    ]));
+
+                    // Trayectoria inicial
+                    Trayectoria::registrarEvento(
+                        $inscripcion->id,
+                        Trayectoria::ESTADO_ACTIVO,
+                        'Inscripción importada desde formulario de preinscripción',
+                        null,
+                        auth()->id()
+                    );
+
+                    $importados++;
+                }
             }
 
             DB::commit();
 
-            $mensaje = "Importación completada: {$importados} inscripciones creadas.";
+            $mensaje = "Importación completada: {$importados} inscripciones procesadas.";
+            if ($reinscriptos > 0) {
+                $mensaje .= " {$reinscriptos} reinscripciones actualizadas.";
+            }
             if ($duplicados > 0) {
-                $mensaje .= " {$duplicados} duplicados omitidos.";
+                $mensaje .= " {$duplicados} con inscripción activa (omitidos).";
             }
             if ($sinDatosAcademicos > 0) {
                 $mensaje .= " {$sinDatosAcademicos} sin datos académicos.";
@@ -1018,7 +1117,7 @@ class InscripcionController extends Controller
                 $especialidad?->nombre ?? 'N/A',
                 $inscripcion->modalidad,
                 $inscripcion->tipo_ingreso,
-                Inscripcion::ESTADOS[$inscripcion->estado] ?? $inscripcion->estado,
+                Inscripcion::getEstados()[$inscripcion->estado] ?? $inscripcion->estado,
                 $inscripcion->created_at->format('d/m/Y H:i'),
             ];
         }
@@ -1104,6 +1203,54 @@ class InscripcionController extends Controller
         }
 
         return $query->pluck('id')->toArray();
+    }
+
+    /**
+     * Guardar nota final de una materia para un alumno (puesta por el docente)
+     */
+    public function guardarNotaFinalMateria(Request $request, Inscripcion $inscripcion): RedirectResponse
+    {
+        $validated = $request->validate([
+            'materia_id' => 'required|exists:materias,id',
+            'comision_id' => 'required|exists:comisiones,id',
+            'nota_final' => 'required|numeric|min:0|max:10',
+            'observaciones' => 'nullable|string|max:500',
+        ]);
+
+        \App\Models\NotaFinalMateria::updateOrCreate(
+            [
+                'inscripcion_id' => $inscripcion->id,
+                'comision_id' => $validated['comision_id'],
+                'materia_id' => $validated['materia_id'],
+            ],
+            [
+                'nota_final' => $validated['nota_final'],
+                // Snapshot de la nota mínima vigente al momento de cargar la nota.
+                'nota_aprobacion_snapshot' => \App\Services\ConfiguracionService::get('nota_aprobacion', 6),
+                'cargado_por' => auth()->id(),
+                'observaciones' => $validated['observaciones'] ?? null,
+            ]
+        );
+
+        return redirect()->back()->with('success', 'Nota final de materia guardada correctamente.');
+    }
+
+    /**
+     * Eliminar nota final de una materia
+     */
+    public function eliminarNotaFinalMateria(Request $request, Inscripcion $inscripcion): RedirectResponse
+    {
+        $validated = $request->validate([
+            'materia_id' => 'required|exists:materias,id',
+            'comision_id' => 'required|exists:comisiones,id',
+        ]);
+
+        \App\Models\NotaFinalMateria::where('inscripcion_id', $inscripcion->id)
+            ->where('comision_id', $validated['comision_id'])
+            ->where('materia_id', $validated['materia_id'])
+            ->delete();
+
+        return redirect()->back()->with('success', 'Nota final eliminada.');
     }
 
     /**
@@ -1234,7 +1381,7 @@ class InscripcionController extends Controller
         ]);
 
         // Verificar límite configurable de solicitudes por año
-        $maxSolicitudes = config('paicat.max_solicitudes_cambio', 3);
+        $maxSolicitudes = \App\Services\ConfiguracionService::get('max_solicitudes_cambio', 3);
         if ($maxSolicitudes > 0) {
             $solicitudesAnio = $inscripcion->solicitudesCambio()
                 ->whereYear('created_at', now()->year)
@@ -1325,7 +1472,7 @@ class InscripcionController extends Controller
      */
     public function inactivos(Request $request): View
     {
-        $diasLimite = $request->input('dias', config('paicat.dias_inactividad', 30));
+        $diasLimite = $request->input('dias', \App\Services\ConfiguracionService::get('dias_inactividad', 30));
         $fechaLimite = now()->subDays($diasLimite);
 
         // Obtener inscripciones cursando con comisión activa

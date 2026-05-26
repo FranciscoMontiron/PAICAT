@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class InscripcionComision extends Model
@@ -68,6 +69,18 @@ class InscripcionComision extends Model
         return $this->hasMany(Nota::class, 'inscripcion_comision_id');
     }
 
+    public function alumno(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            User::class,                    // Modelo final que queremos obtener
+            AcademicoDato::class,           // Modelo intermedio
+            'id',                           // Foreign key en academico_datos (relaciona con academico_dato_id)
+            'id',                           // Foreign key en users (relaciona con academicoDato->user_id)
+            'academico_dato_id',            // Local key en inscripcion_comisiones
+            'user_id'                       // Local key en academico_datos
+        );
+    }
+
     /**
      * Calcular promedio ponderado de notas
      * Usa el peso_porcentual de cada evaluación
@@ -111,6 +124,36 @@ class InscripcionComision extends Model
     }
 
     /**
+     * Obtiene la cursada relacionada a esta inscripción-comisión (si existe).
+     * Se usa para acceder a los parámetros snapshot cuando la cursada ya finalizó.
+     */
+    public function getCursadaRelacionada(): ?Cursada
+    {
+        return Cursada::where('inscripcion_id', $this->inscripcion_id)
+            ->where('comision_id', $this->comision_id)
+            ->first();
+    }
+
+    /**
+     * Retorna los parámetros de evaluación efectivos para esta inscripción.
+     * Si hay una cursada finalizada con snapshot, usa esos valores históricos.
+     * Si la cursada está activa o no existe, usa la configuración actual.
+     */
+    public function getParametrosEfectivos(): array
+    {
+        $cursada = $this->getCursadaRelacionada();
+        if ($cursada && $cursada->estaFinalizada()) {
+            return $cursada->getParametrosEfectivos();
+        }
+
+        return [
+            'nota_aprobacion'   => (float) \App\Services\ConfiguracionService::get('nota_aprobacion', 6),
+            'nota_regular'      => (float) \App\Services\ConfiguracionService::get('nota_minima_regular', 4),
+            'asistencia_minima' => (float) \App\Services\ConfiguracionService::get('asistencia_minima', 75),
+        ];
+    }
+
+    /**
      * Determinar condición final del alumno
      * @return array ['condicion' => string, 'color' => string, 'descripcion' => string]
      */
@@ -118,34 +161,25 @@ class InscripcionComision extends Model
     {
         $promedio = $this->calcularPromedioPonderado();
         $porcentajeAsistencia = $this->calcularPorcentajeAsistencia();
-        $minimoAsistencia = config('paicat.porcentaje_asistencia_minimo', 75);
-        
-        // Sin notas cargadas
-        if ($promedio === null) {
-            return [
-                'condicion' => 'Sin evaluar',
-                'color' => 'gray',
-                'descripcion' => 'No hay notas cargadas',
-            ];
-        }
 
-        // Verificar asistencia
-        $cumpleAsistencia = $porcentajeAsistencia >= $minimoAsistencia;
+        $params = $this->getParametrosEfectivos();
+        $notaAprobacion   = $params['nota_aprobacion'];
+        $notaMinimaRegular = $params['nota_regular'];
+        $minimoAsistencia  = $params['asistencia_minima'];
 
-        // Lógica de condición
-        if ($promedio >= 6 && $cumpleAsistencia) {
+        if ($promedio >= $notaAprobacion && $cumpleAsistencia) {
             return [
                 'condicion' => 'Promocionado',
                 'color' => 'green',
                 'descripcion' => "Promedio: $promedio - Asistencia: {$porcentajeAsistencia}%",
             ];
-        } elseif ($promedio >= 4 && $cumpleAsistencia) {
+        } elseif ($promedio >= $notaMinimaRegular && $cumpleAsistencia) {
             return [
                 'condicion' => 'Regular',
                 'color' => 'blue',
                 'descripcion' => "Promedio: $promedio - Debe rendir final",
             ];
-        } elseif ($promedio >= 4 && !$cumpleAsistencia) {
+        } elseif ($promedio >= $notaMinimaRegular && !$cumpleAsistencia) {
             return [
                 'condicion' => 'Libre por asistencia',
                 'color' => 'yellow',
@@ -174,7 +208,8 @@ class InscripcionComision extends Model
     public function puedeRendirRecuperatorio(): bool
     {
         $promedio = $this->calcularPromedioPonderado();
-        return $promedio !== null && $promedio < 6;
+        $notaAprobacion = $this->getParametrosEfectivos()['nota_aprobacion'];
+        return $promedio !== null && $promedio < $notaAprobacion;
     }
 
     /**
@@ -207,16 +242,25 @@ class InscripcionComision extends Model
      */
     public function estaEnRiesgo(): bool
     {
-        $minimo = config('paicat.porcentaje_asistencia_minimo', 75);
+        $minimo = $this->getParametrosEfectivos()['asistencia_minima'];
         return $this->calcularPorcentajeAsistencia() < $minimo;
     }
 
     /**
-     * Acceso rápido al usuario del alumno
+     * Acceso rápido al usuario del alumno (ACCESSOR MANTENIDO)
+     * 
+     * Este accessor proporciona un fallback cuando la relación alumno() no está disponible
+     * (por ejemplo, cuando no existe academico_dato_id).
+     * 
      * Intenta obtenerlo desde academicoDato, si no desde inscripcion->person
      */
     public function getAlumnoAttribute()
     {
+        // Si la relación alumno() está cargada, usarla
+        if ($this->relationLoaded('alumno') && $this->alumno) {
+            return $this->alumno;
+        }
+
         // Primero intentar desde academico_dato
         if ($this->academicoDato && $this->academicoDato->user) {
             return $this->academicoDato->user;

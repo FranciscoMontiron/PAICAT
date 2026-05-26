@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Evaluacion;
 use Illuminate\Foundation\Http\FormRequest;
 
 
@@ -26,7 +27,7 @@ class StoreEvaluacionRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'descripcion' => 'nullable|string|max:255',
-            'tipo' => 'required|in:parcial,recuperatorio,examen_final,trabajo_practico,integrador,otro',
+            'tipo' => 'required|in:' . implode(',', array_keys(Evaluacion::tiposDisponibles())),
             'instancia' => 'nullable|integer|min:1|max:3',
             'fecha' => 'required|date',
             'porcentual' => 'required|numeric|min:0|max:100',

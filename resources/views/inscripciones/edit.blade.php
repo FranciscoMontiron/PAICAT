@@ -33,8 +33,8 @@
         <h3 class="text-sm font-medium text-gray-500 mb-2">Alumno</h3>
         <div class="flex items-center">
             <div class="flex-shrink-0 h-12 w-12">
-                <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <span class="text-indigo-600 font-semibold">
+                <div class="h-12 w-12 rounded-full bg-utn-blue/10 flex items-center justify-center">
+                    <span class="text-utn-blue-dark font-semibold">
                         {{ $persona ? strtoupper(substr($persona->nombre ?? '', 0, 1)) . strtoupper(substr($persona->apellido ?? '', 0, 1)) : '??' }}
                     </span>
                 </div>
@@ -58,7 +58,7 @@
                 <div>
                     <label for="especialidad_id_sysacad" class="block text-sm font-medium text-gray-700 mb-2">Especialidad *</label>
                     <select name="especialidad_id_sysacad" id="especialidad_id_sysacad" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Seleccionar especialidad</option>
                         @foreach($especialidades as $esp)
                             <option value="{{ $esp->id_sysacad }}" {{ old('especialidad_id_sysacad', $inscripcion->especialidad_id_sysacad) == $esp->id_sysacad ? 'selected' : '' }}>{{ $esp->nombre }}</option>
@@ -70,7 +70,7 @@
                 <div>
                     <label for="especialidad_alternativa_id_sysacad" class="block text-sm font-medium text-gray-700 mb-2">Especialidad Alternativa</label>
                     <select name="especialidad_alternativa_id_sysacad" id="especialidad_alternativa_id_sysacad"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Sin especialidad alternativa</option>
                         @foreach($especialidades as $esp)
                             <option value="{{ $esp->id_sysacad }}" {{ old('especialidad_alternativa_id_sysacad', $inscripcion->especialidad_alternativa_id_sysacad) == $esp->id_sysacad ? 'selected' : '' }}>{{ $esp->nombre }}</option>
@@ -82,7 +82,7 @@
                 <div>
                     <label for="modalidad" class="block text-sm font-medium text-gray-700 mb-2">Modalidad *</label>
                     <select name="modalidad" id="modalidad" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         @foreach($modalidades as $key => $value)
                             <option value="{{ $key }}" {{ old('modalidad', $inscripcion->modalidad) == $key ? 'selected' : '' }}>{{ $value }}</option>
                         @endforeach
@@ -93,7 +93,7 @@
                 <div>
                     <label for="tipo_ingreso" class="block text-sm font-medium text-gray-700 mb-2">Tipo de Ingreso *</label>
                     <select name="tipo_ingreso" id="tipo_ingreso" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         @foreach($tiposIngreso as $key => $value)
                             <option value="{{ $key }}" {{ old('tipo_ingreso', $inscripcion->tipo_ingreso) == $key ? 'selected' : '' }}>{{ $value }}</option>
                         @endforeach
@@ -104,10 +104,10 @@
                 <div>
                     <label for="turno_ingreso" class="block text-sm font-medium text-gray-700 mb-2">Turno de Ingreso</label>
                     <select name="turno_ingreso" id="turno_ingreso"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Seleccionar turno</option>
-                        @foreach($turnos as $turno)
-                            <option value="{{ $turno->nombre }}" {{ old('turno_ingreso', $inscripcion->turno_ingreso) == $turno->nombre ? 'selected' : '' }}>{{ $turno->nombre }}</option>
+                        @foreach($turnos as $key => $value)
+                            <option value="{{ $key }}" {{ old('turno_ingreso', $inscripcion->turno_ingreso) == $key ? 'selected' : '' }}>{{ $value }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -116,10 +116,10 @@
                 <div>
                     <label for="turno_carrera" class="block text-sm font-medium text-gray-700 mb-2">Turno de Carrera</label>
                     <select name="turno_carrera" id="turno_carrera"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <option value="">Seleccionar turno</option>
-                        @foreach($turnos as $turno)
-                            <option value="{{ $turno->nombre }}" {{ old('turno_carrera', $inscripcion->turno_carrera) == $turno->nombre ? 'selected' : '' }}>{{ $turno->nombre }}</option>
+                        @foreach($turnos as $key => $value)
+                            <option value="{{ $key }}" {{ old('turno_carrera', $inscripcion->turno_carrera) == $key ? 'selected' : '' }}>{{ $value }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -128,7 +128,7 @@
                 <div class="md:col-span-2">
                     <label for="observaciones" class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
                     <textarea name="observaciones" id="observaciones" rows="3"
-                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">{{ old('observaciones', $inscripcion->observaciones) }}</textarea>
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">{{ old('observaciones', $inscripcion->observaciones) }}</textarea>
                 </div>
             </div>
 
@@ -139,7 +139,7 @@
                     Cancelar
                 </a>
                 <button type="submit"
-                        class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors duration-200">
+                        class="px-6 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors duration-200">
                     Guardar Cambios
                 </button>
             </div>

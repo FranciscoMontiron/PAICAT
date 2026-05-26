@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Services\ConfiguracionService;
 
 class Cursada extends Model
 {
@@ -34,6 +35,11 @@ class Cursada extends Model
         self::ESTADO_BAJA => 'Baja',
     ];
 
+    public static function getEstados(): array
+    {
+        return self::ESTADOS;
+    }
+
     /**
      * Nota mínima para aprobar (ingreso UTN)
      */
@@ -47,6 +53,9 @@ class Cursada extends Model
         'modalidad',
         'resultado',
         'nota_final',
+        'nota_aprobacion_snapshot',
+        'nota_regular_snapshot',
+        'asistencia_minima_snapshot',
         'es_recursante',
         'fecha_inicio',
         'fecha_fin',
@@ -58,6 +67,9 @@ class Cursada extends Model
     protected $casts = [
         'anio' => 'integer',
         'nota_final' => 'decimal:2',
+        'nota_aprobacion_snapshot' => 'decimal:2',
+        'nota_regular_snapshot' => 'decimal:2',
+        'asistencia_minima_snapshot' => 'decimal:2',
         'es_recursante' => 'boolean',
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
@@ -195,9 +207,17 @@ class Cursada extends Model
                 "[" . now()->format('d/m/Y H:i') . "] Estado cambiado a {$nuevoEstado}: {$observacion}";
         }
 
-        // Si se aprueba o desaprueba, registrar fecha fin
+        // Si se aprueba o desaprueba, registrar fecha fin y hacer snapshot de parámetros
         if (in_array($nuevoEstado, [self::ESTADO_APROBADO, self::ESTADO_DESAPROBADO, self::ESTADO_LIBRE])) {
             $this->fecha_fin = $this->fecha_fin ?? now();
+
+            // Snapshot de los parámetros vigentes al momento de la finalización.
+            // Solo se toma la primera vez (no se sobreescribe si ya existe).
+            if ($this->nota_aprobacion_snapshot === null) {
+                $this->nota_aprobacion_snapshot = ConfiguracionService::get('nota_aprobacion', 6);
+                $this->nota_regular_snapshot    = ConfiguracionService::get('nota_minima_regular', 4);
+                $this->asistencia_minima_snapshot = ConfiguracionService::get('asistencia_minima', 75);
+            }
         }
 
         return $this->save();
@@ -227,11 +247,37 @@ class Cursada extends Model
     }
 
     /**
+     * Retorna los parámetros efectivos de evaluación para esta cursada.
+     * Si la cursada ya está finalizada y tiene snapshot, usa esos valores.
+     * Si no tiene snapshot (cursadas anteriores a la funcionalidad), usa los
+     * valores originales del sistema (6 / 4 / 75) para no verse afectada
+     * por cambios posteriores de configuración.
+     * Solo las cursadas activas (CURSANDO) usan la configuración actual.
+     */
+    public function getParametrosEfectivos(): array
+    {
+        if ($this->estaFinalizada()) {
+            return [
+                'nota_aprobacion'  => (float) ($this->nota_aprobacion_snapshot  ?? 6),
+                'nota_regular'     => (float) ($this->nota_regular_snapshot     ?? 4),
+                'asistencia_minima' => (float) ($this->asistencia_minima_snapshot ?? 75),
+            ];
+        }
+
+        return [
+            'nota_aprobacion'  => (float) ConfiguracionService::get('nota_aprobacion', 6),
+            'nota_regular'     => (float) ConfiguracionService::get('nota_minima_regular', 4),
+            'asistencia_minima' => (float) ConfiguracionService::get('asistencia_minima', 75),
+        ];
+    }
+
+    /**
      * Determinar si aprueba basado en nota final
      */
     public function determinaAprobacion(): bool
     {
-        return $this->nota_final !== null && $this->nota_final >= self::NOTA_APROBACION;
+        $notaMinima = $this->getParametrosEfectivos()['nota_aprobacion'];
+        return $this->nota_final !== null && $this->nota_final >= $notaMinima;
     }
 
     /**

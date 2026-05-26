@@ -71,6 +71,16 @@ class SolicitudCambio extends Model
         self::ESTADO_TRUEQUE_DETECTADO => 'Trueque Detectado',
     ];
 
+    public static function getTipos(): array
+    {
+        return self::TIPOS;
+    }
+
+    public static function getEstados(): array
+    {
+        return self::ESTADOS;
+    }
+
     /**
      * Relación con la inscripción
      */
@@ -116,7 +126,7 @@ class SolicitudCambio extends Model
      */
     public function getTipoNombreAttribute(): string
     {
-        return self::TIPOS[$this->tipo] ?? $this->tipo;
+        return static::getTipos()[$this->tipo] ?? $this->tipo;
     }
 
     /**
@@ -124,7 +134,7 @@ class SolicitudCambio extends Model
      */
     public function getEstadoNombreAttribute(): string
     {
-        return self::ESTADOS[$this->estado] ?? $this->estado;
+        return static::getEstados()[$this->estado] ?? $this->estado;
     }
 
     /**
@@ -136,11 +146,15 @@ class SolicitudCambio extends Model
     }
 
     /**
-     * Verificar si puede ser procesada
+     * Verificar si puede ser procesada (pendiente, en revisión o trueque detectado)
      */
     public function puedeSerProcesada(): bool
     {
-        return $this->isPendiente();
+        return in_array($this->estado, [
+            self::ESTADO_PENDIENTE,
+            self::ESTADO_EN_REVISION,
+            self::ESTADO_TRUEQUE_DETECTADO,
+        ]);
     }
 
     /**

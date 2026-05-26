@@ -3,6 +3,9 @@
 @section('title', 'Cursadas')
 
 @section('content')
+@php
+    $notaAprobacion = \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+@endphp
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     {{-- Header --}}
     <div class="mb-6">
@@ -18,7 +21,7 @@
         </div>
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
             <p class="text-sm text-gray-600">Cursando</p>
-            <p class="text-2xl font-bold text-blue-600">{{ $estadisticas['cursando'] }}</p>
+            <p class="text-2xl font-bold text-utn-blue-dark">{{ $estadisticas['cursando'] }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
             <p class="text-sm text-gray-600">Aprobados</p>
@@ -41,11 +44,11 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Buscar alumno</label>
                 <input type="text" name="buscar" value="{{ request('buscar') }}"
                        placeholder="Nombre, apellido o documento..."
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
             </div>
             <div class="w-48">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Comisión</label>
-                <select name="comision_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                <select name="comision_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todas</option>
                     @foreach($comisiones as $comision)
                         <option value="{{ $comision->id }}" {{ request('comision_id') == $comision->id ? 'selected' : '' }}>
@@ -56,23 +59,23 @@
             </div>
             <div class="w-40">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todos</option>
-                    @foreach(\App\Models\Cursada::ESTADOS as $key => $label)
+                    @foreach(\App\Models\Cursada::getEstados() as $key => $label)
                         <option value="{{ $key }}" {{ request('estado') == $key ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="w-32">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Año</label>
-                <select name="anio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                <select name="anio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todos</option>
                     @for($y = date('Y'); $y >= date('Y') - 5; $y--)
                         <option value="{{ $y }}" {{ request('anio') == $y ? 'selected' : '' }}>{{ $y }}</option>
                     @endfor
                 </select>
             </div>
-            <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors">
+            <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors">
                 Filtrar
             </button>
             @if(request()->hasAny(['buscar', 'comision_id', 'estado', 'anio']))
@@ -112,7 +115,7 @@
                             @php
                                 $estudiante = $cursada->getEstudiante();
                                 $estadoColors = [
-                                    'cursando' => 'bg-blue-100 text-blue-800',
+                                    'cursando' => 'bg-utn-blue/10 text-utn-blue-dark',
                                     'aprobado' => 'bg-green-100 text-green-800',
                                     'desaprobado' => 'bg-red-100 text-red-800',
                                     'libre' => 'bg-yellow-100 text-yellow-800',
@@ -130,14 +133,14 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <a href="{{ route('comisiones.show', $cursada->comision) }}" class="text-utn-blue hover:underline">
+                                    <a href="{{ route('comisiones.show', $cursada->comision) }}" class="text-utn-blue-dark hover:underline">
                                         {{ $cursada->comision->codigo ?? 'N/A' }}
                                     </a>
                                     <div class="text-sm text-gray-500">{{ $cursada->comision->nombre ?? '' }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $estadoColors[$cursada->estado] ?? 'bg-gray-100 text-gray-800' }}">
-                                        {{ \App\Models\Cursada::ESTADOS[$cursada->estado] ?? $cursada->estado }}
+                                        {{ \App\Models\Cursada::getEstados()[$cursada->estado] ?? $cursada->estado }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -145,7 +148,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @if($cursada->nota_final !== null)
-                                        <span class="font-medium {{ $cursada->nota_final >= 6 ? 'text-green-600' : 'text-red-600' }}">
+                                        <span class="font-medium {{ $cursada->nota_final >= $notaAprobacion ? 'text-green-600' : 'text-red-600' }}">
                                             {{ number_format($cursada->nota_final, 2) }}
                                         </span>
                                     @else
@@ -164,7 +167,7 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div class="flex items-center gap-2">
                                         <a href="{{ route('cursadas.show', [$cursada->comision, $cursada]) }}"
-                                           class="text-utn-blue hover:text-blue-800" title="Ver detalle">
+                                           class="text-utn-blue-dark hover:text-utn-blue-dark" title="Ver detalle">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>

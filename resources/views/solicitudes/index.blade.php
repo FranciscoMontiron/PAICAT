@@ -10,6 +10,7 @@
             <h1 class="text-3xl font-bold text-gray-900">Solicitudes de Cambio</h1>
             <p class="text-gray-600 mt-1">Gestión de solicitudes de cambio de comisión</p>
         </div>
+        @if(auth()->user()->hasPermission('comisiones.editar'))
         <div class="mt-4 sm:mt-0">
             <form action="{{ route('solicitudes.detectar-trueques') }}" method="POST" class="inline">
                 @csrf
@@ -21,6 +22,7 @@
                 </button>
             </form>
         </div>
+        @endif
     </div>
 
     {{-- Estadísticas --}}
@@ -35,7 +37,7 @@
         </div>
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
             <p class="text-sm text-gray-600">En Revisión</p>
-            <p class="text-2xl font-bold text-blue-600">{{ $estadisticas['en_revision'] }}</p>
+            <p class="text-2xl font-bold text-utn-blue-dark">{{ $estadisticas['en_revision'] }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
             <p class="text-sm text-gray-600">Aprobadas Hoy</p>
@@ -50,18 +52,18 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Buscar alumno</label>
                 <input type="text" name="buscar" value="{{ request('buscar') }}"
                        placeholder="Nombre, apellido o documento..."
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
             </div>
             <div class="w-48">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todos</option>
-                    @foreach(\App\Models\SolicitudCambio::ESTADOS as $key => $label)
+                    @foreach(\App\Models\SolicitudCambio::getEstados() as $key => $label)
                         <option value="{{ $key }}" {{ request('estado') == $key ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
-            <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors">
+            <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors">
                 Filtrar
             </button>
             @if(request()->hasAny(['buscar', 'estado']))
@@ -84,7 +86,7 @@
         </div>
     @endif
     @if(session('info'))
-        <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-lg">
+        <div class="bg-utn-blue/10 border-l-4 border-blue-500 text-utn-blue-dark p-4 mb-6 rounded-lg">
             {{ session('info') }}
         </div>
     @endif
@@ -106,8 +108,9 @@
                 @forelse($solicitudes as $solicitud)
                     @php
                         $alumno = $solicitud->inscripcion?->alumno;
+                        $destinoActiva = $solicitud->comisionDestino ? $solicitud->comisionDestino->isActiva() : true;
+                        $tieneCupos = $destinoActiva && ($solicitud->comisionDestino?->tieneCuposDisponibles() ?? true);
                         $cuposDestino = $solicitud->comisionDestino?->cupos_disponibles;
-                        $tieneCupos = $solicitud->comisionDestino?->tieneCuposDisponibles() ?? true;
                     @endphp
                     <tr class="{{ $solicitud->estado === 'trueque_detectado' ? 'bg-purple-50' : '' }}">
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -161,7 +164,7 @@
                             <span class="px-2 py-1 text-xs rounded-full
                                 @switch($solicitud->estado)
                                     @case('pendiente') bg-yellow-100 text-yellow-800 @break
-                                    @case('en_revision') bg-blue-100 text-blue-800 @break
+                                    @case('en_revision') bg-utn-blue/10 text-utn-blue-dark @break
                                     @case('aprobada') bg-green-100 text-green-800 @break
                                     @case('rechazada') bg-red-100 text-red-800 @break
                                     @case('cancelada') bg-gray-100 text-gray-800 @break
@@ -173,8 +176,10 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($solicitud->comisionDestino)
-                                @if($solicitud->comisionDestino->esVirtual())
-                                    <span class="text-sm text-green-600">Sin límite</span>
+                                @if(!$destinoActiva)
+                                    <span class="text-sm text-red-600 font-medium" title="Estado: {{ ucfirst($solicitud->comisionDestino->estado) }}">No activa</span>
+                                @elseif($solicitud->comisionDestino->esVirtual())
+                                    <span class="text-sm text-green-600">Sin limite</span>
                                 @elseif($tieneCupos)
                                     <span class="text-sm text-green-600">{{ $cuposDestino }} disponibles</span>
                                 @else
@@ -193,7 +198,7 @@
                                     {{-- Botón Aprobar --}}
                                     @if($tieneCupos)
                                         <form action="{{ route('solicitudes.aprobar', $solicitud) }}" method="POST" class="inline"
-                                              onsubmit="return confirm('{{ $solicitud->solicitud_trueque_id ? '¿Aprobar este trueque? Ambos alumnos serán cambiados de comisión.' : '¿Aprobar esta solicitud?' }}')">
+                                              data-confirm="{{ $solicitud->solicitud_trueque_id ? '¿Aprobar este trueque? Ambos alumnos serán cambiados de comisión.' : '¿Aprobar esta solicitud?' }}" data-confirm-title="Aprobar solicitud" data-confirm-text="Aprobar">
                                             @csrf
                                             <button type="submit" class="text-green-600 hover:text-green-900" title="Aprobar">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +224,7 @@
 
                                     {{-- Ver detalle --}}
                                     <a href="{{ route('inscripciones.show', $solicitud->inscripcion_id) }}"
-                                       class="text-blue-600 hover:text-blue-900" title="Ver inscripción">
+                                       class="text-utn-blue-dark hover:text-utn-dark" title="Ver inscripción">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -289,8 +294,11 @@
 </div>
 
 <script>
+var rechazarBaseUrl = "{{ url('solicitudes') }}";
+
 function abrirModalRechazo(solicitudId) {
-    document.getElementById('formRechazo').action = '/solicitudes/' + solicitudId + '/rechazar';
+    document.getElementById('formRechazo').action = rechazarBaseUrl + '/' + solicitudId + '/rechazar';
+    document.getElementById('motivo_rechazo').value = '';
     document.getElementById('modalRechazo').classList.remove('hidden');
 }
 
@@ -302,6 +310,13 @@ function cerrarModalRechazo() {
 // Cerrar modal al hacer clic fuera
 document.getElementById('modalRechazo').addEventListener('click', function(e) {
     if (e.target === this) {
+        cerrarModalRechazo();
+    }
+});
+
+// Cerrar con Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !document.getElementById('modalRechazo').classList.contains('hidden')) {
         cerrarModalRechazo();
     }
 });

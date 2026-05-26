@@ -145,6 +145,59 @@ class Inscripcion extends Model
         'Extensivo' => 'Extensivo',
     ];
 
+    // ==================== MÉTODOS DE ACCESO ====================
+
+    /**
+     * Obtiene estados de inscripción desde configuración.
+     */
+    public static function getEstados(): array
+    {
+        return self::ESTADOS;
+    }
+
+    /**
+     * Obtiene estados de documentación (lógica del sistema).
+     */
+    public static function getEstadosDocumentacion(): array
+    {
+        return self::ESTADOS_DOCUMENTACION;
+    }
+
+    /**
+     * Obtiene estados de ingreso desde configuración.
+     */
+    public static function getEstadosIngreso(): array
+    {
+        return self::ESTADOS_INGRESO;
+    }
+
+    /**
+     * Obtiene modalidades (datos fijos de alumnos_utn).
+     */
+    public static function getModalidades(): array
+    {
+        return self::MODALIDADES;
+    }
+
+    /**
+     * Obtiene tipos de ingreso (datos fijos de alumnos_utn).
+     */
+    public static function getTiposIngreso(): array
+    {
+        return self::TIPOS_INGRESO;
+    }
+
+    /**
+     * Obtiene turnos (datos fijos de alumnos_utn).
+     */
+    public static function getTurnos(): array
+    {
+        return [
+            'mañana' => 'Mañana',
+            'tardenoche' => 'TardeNoche',
+        ];
+    }
+
     /**
      * Obtener la persona (alumno) desde alumnos_utn
      * Nota: No es una relación Eloquent tradicional por ser otra BD
@@ -447,16 +500,40 @@ class Inscripcion extends Model
     }
 
     /**
-     * Verificar si es un duplicado potencial
-     * Nota: La BD tiene unique constraint en (person_id, anio_ingreso) sin considerar estado,
-     * por lo que debemos verificar cualquier registro existente, incluyendo soft-deleted
+     * Verificar si el alumno ya tiene una inscripción activa (no cancelada/baja).
+     * Unique constraint: solo puede haber UNA inscripción por person_id.
      */
-    public static function esDuplicado(int $personId, int $anioIngreso): bool
+    public static function tieneInscripcionActiva(int $personId): bool
+    {
+        return self::where('person_id', $personId)
+            ->whereNotIn('estado', [self::ESTADO_CANCELADO, self::ESTADO_BAJA])
+            ->whereNotIn('estado_ingreso', [self::INGRESO_CANCELADO, self::INGRESO_BAJA])
+            ->exists();
+    }
+
+    /**
+     * Obtener la inscripción existente de un alumno (cancelada o no).
+     * Incluye soft-deleted para detectar cualquier registro previo.
+     */
+    public static function inscripcionExistente(int $personId): ?self
     {
         return self::withTrashed()
             ->where('person_id', $personId)
-            ->where('anio_ingreso', $anioIngreso)
-            ->exists();
+            ->first();
+    }
+
+    /**
+     * Verificar si el alumno tiene una inscripción cancelada que se puede reactivar.
+     */
+    public static function inscripcionCancelada(int $personId): ?self
+    {
+        return self::withTrashed()
+            ->where('person_id', $personId)
+            ->where(function ($q) {
+                $q->where('estado', self::ESTADO_CANCELADO)
+                  ->orWhere('estado_ingreso', self::INGRESO_CANCELADO);
+            })
+            ->first();
     }
 
     /**

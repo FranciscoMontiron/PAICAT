@@ -22,9 +22,9 @@
 
         {{-- Sección: Información General --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-            <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100 border-b border-indigo-200">
+            <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100 border-b border-utn-blue/20">
                 <div class="flex items-center gap-3">
-                    <div class="p-2 bg-indigo-600 rounded-lg">
+                    <div class="p-2 bg-utn-blue-darker rounded-lg">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
@@ -64,10 +64,10 @@
                             <label class="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition-colors">
                                 <input type="checkbox" name="materias[]" value="{{ $materia->id }}"
                                     {{ in_array($materia->id, old('materias', [])) ? 'checked' : '' }}
-                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    class="rounded border-gray-300 text-utn-blue-dark focus:ring-indigo-500">
                                 <div>
                                     <span class="text-sm font-medium text-gray-900">{{ $materia->nombre }}</span>
-                                    <span class="text-xs text-gray-500 ml-1">[{{ $materia->codigo }}]</span>
+                                    <span class="text-xs text-gray-500 ml-1">[{{ $materia->tipo }}]</span>
                                 </div>
                             </label>
                             @endforeach
@@ -200,7 +200,7 @@
                             Cupo Máximo <span class="text-red-500 cupo-required">*</span>
                         </label>
                         <div class="relative">
-                            <input type="number" name="cupo_maximo" id="cupo_maximo" value="{{ old('cupo_maximo', 80) }}" min="1" max="200"
+                            <input type="number" name="cupo_maximo" id="cupo_maximo" value="{{ old('cupo_maximo', 80) }}" min="1" max="500"
                                 class="w-full px-4 py-2.5 pr-16 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">alumnos</span>
                         </div>
@@ -251,7 +251,7 @@
             </div>
         </div>
 
-        {{-- Sección: Docentes Asignados --}}
+        {{-- Sección: Personal Asignado --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
             <div class="px-6 py-4 bg-gradient-to-r from-amber-50 to-amber-100 border-b border-amber-200">
                 <div class="flex items-center gap-3">
@@ -261,8 +261,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-900">Docentes Asignados</h2>
-                        <p class="text-sm text-gray-600">Selecciona uno o más docentes para esta comisión</p>
+                        <h2 class="text-lg font-semibold text-gray-900">Personal Asignado</h2>
+                        <p class="text-sm text-gray-600">Selecciona el personal que trabajara en esta comision (docentes, tutores, bedeles, etc.)</p>
                     </div>
                 </div>
             </div>
@@ -272,19 +272,28 @@
                     <svg class="w-10 h-10 mx-auto text-amber-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9.253a2.5 2.5 0 11-3.536 3.536L12.5 6.5" />
                     </svg>
-                    <p class="text-sm text-amber-800">No hay docentes disponibles.</p>
-                    <p class="text-xs text-amber-600">Primero debes registrar usuarios con rol docente.</p>
+                    <p class="text-sm text-amber-800">No hay personal disponible para asignar.</p>
+                    <p class="text-xs text-amber-600">Solo se puede asignar usuarios cuyo rol tenga habilitado "Solo ve contenido asignado".</p>
                 </div>
                 @else
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto p-1">
-                    @foreach($docentes as $docente)
-                    <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-amber-300 hover:bg-amber-50/50 cursor-pointer transition-colors">
-                        <input type="checkbox" name="docentes[]" value="{{ $docente->id }}"
-                            {{ in_array($docente->id, old('docentes', [])) ? 'checked' : '' }}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-72 overflow-y-auto p-1">
+                    @foreach($docentes as $persona)
+                    <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-amber-300 hover:bg-amber-50/50 cursor-pointer transition-all has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50">
+                        <input type="checkbox" name="docentes[]" value="{{ $persona->id }}"
+                            {{ in_array($persona->id, old('docentes', [])) ? 'checked' : '' }}
                             class="rounded border-gray-300 text-amber-600 focus:ring-amber-500 w-5 h-5">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 truncate">{{ $docente->nombre_completo }}</p>
-                            <p class="text-xs text-gray-500 truncate">{{ $docente->email }}</p>
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ $persona->nombre_completo }}</p>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                @foreach($persona->roles as $role)
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                                    @if($role->slug === 'docente') bg-blue-100 text-blue-700
+                                    @elseif($role->slug === 'tutor') bg-purple-100 text-purple-700
+                                    @elseif($role->slug === 'bedel') bg-green-100 text-green-700
+                                    @else bg-gray-100 text-gray-600
+                                    @endif">{{ $role->nombre }}</span>
+                                @endforeach
+                            </div>
                         </div>
                     </label>
                     @endforeach
@@ -293,7 +302,7 @@
                     <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Puedes seleccionar múltiples docentes. El primero seleccionado será el docente principal.
+                    El personal asignado podra ver y gestionar esta comision desde su panel. El primero seleccionado sera el responsable principal.
                 </p>
                 @endif
                 @error('docentes')
@@ -358,7 +367,7 @@
                 Cancelar
             </a>
             <button type="submit"
-                class="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition-all flex items-center gap-2">
+                class="px-6 py-2.5 bg-utn-blue-darker text-white font-medium rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition-all flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>

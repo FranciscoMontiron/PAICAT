@@ -51,7 +51,7 @@
                     <div>
                         <label for="fecha" class="text-sm font-medium text-gray-700 mb-2 block">Fecha de la Clase</label>
                         <input type="date" name="fecha" id="fecha" value="{{ $fecha }}"
-                               class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                         <p class="mt-1 text-xs text-gray-500">Puedes cambiar la fecha de esta asistencia</p>
                     </div>
                     <div>
@@ -160,7 +160,7 @@
                                         <input type="radio" 
                                                name="asistencias[{{ $index }}][estado]" 
                                                value="justificado"
-                                               class="w-5 h-5 text-blue-600 focus:ring-blue-500"
+                                               class="w-5 h-5 text-utn-blue-dark focus:ring-utn-blue-dark"
                                                {{ $estadoActual == 'justificado' ? 'checked' : '' }}>
                                     </td>
                                     <td class="px-6 py-4">
@@ -185,7 +185,7 @@
                         <a href="{{ route('asistencias.historial', $comision) }}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
                             Cancelar
                         </a>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200 font-medium">
+                        <button type="submit" class="bg-utn-blue-darker hover:bg-utn-dark-light text-white px-6 py-2 rounded-lg transition duration-200 font-medium">
                             <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
@@ -215,10 +215,17 @@
     }
 
     // Confirmación antes de enviar
-    document.getElementById('asistenciaForm').addEventListener('submit', function(e) {
-        const confirm = window.confirm('¿Confirmar actualización de la asistencia?');
-        if (!confirm) {
-            e.preventDefault();
+    document.getElementById('asistenciaForm').addEventListener('submit', async function(e) {
+        if (this.dataset.confirmBypassed) return;
+        e.preventDefault();
+        const ok = await paiConfirm({
+            title: 'Confirmar actualización',
+            message: '¿Confirmar actualización de la asistencia?'
+        });
+        if (ok) {
+            this.dataset.confirmBypassed = 'true';
+            this.requestSubmit ? this.requestSubmit() : this.submit();
+            delete this.dataset.confirmBypassed;
         }
     });
 </script>

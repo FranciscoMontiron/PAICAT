@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Inscripcion;
+use App\Services\ConfiguracionService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,12 +27,12 @@ class UpdateInscripcionRequest extends FormRequest
         return [
             'especialidad_id_sysacad' => 'required|integer',
             'especialidad_alternativa_id_sysacad' => 'nullable|integer',
-            'modalidad' => ['required', Rule::in(array_keys(Inscripcion::MODALIDADES))],
+            'modalidad' => ['required', Rule::in(array_keys(Inscripcion::getModalidades()))],
             'turno_ingreso' => 'nullable|string|max:50',
             'turno_carrera' => 'nullable|string|max:50',
-            'tipo_ingreso' => ['required', Rule::in(array_keys(Inscripcion::TIPOS_INGRESO))],
+            'tipo_ingreso' => ['required', Rule::in(array_keys(Inscripcion::getTiposIngreso()))],
             'sede_id_sysacad' => 'nullable|integer',
-            'estado' => ['nullable', Rule::in(array_keys(Inscripcion::ESTADOS))],
+            'estado' => ['nullable', Rule::in(array_keys(Inscripcion::getEstados()))],
             'observaciones' => 'nullable|string|max:1000',
         ];
     }

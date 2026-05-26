@@ -23,7 +23,7 @@ class SolicitudCambioController extends Controller
                 'inscripcion',
                 'comisionOrigen',
                 'comisionDestino',
-                'solicitudTrueque',
+                'solicitudTrueque.inscripcion',
                 'procesadoPor',
             ])
             ->orderByRaw("CASE
@@ -41,30 +41,36 @@ class SolicitudCambioController extends Controller
 
         if ($request->filled('buscar')) {
             $termino = $request->buscar;
-            $query->whereHas('inscripcion', function ($q) use ($termino) {
-                // Buscar por person_id en alumnos_utn
-                $personIds = \App\Models\AlumnosUtn\Person::on('alumnos_utn')
-                    ->where(function ($q2) use ($termino) {
-                        $q2->where('nombre', 'like', "%{$termino}%")
-                            ->orWhere('apellido', 'like', "%{$termino}%")
-                            ->orWhere('documento', 'like', "%{$termino}%");
-                    })
-                    ->pluck('id')
-                    ->toArray();
-                $q->whereIn('person_id', $personIds);
+            // Usar subquery en la BD de alumnos para evitar traer todos los IDs a memoria
+            $dbAlumnos = DB::connection('alumnos_utn')->getDatabaseName();
+            $query->whereHas('inscripcion', function ($q) use ($termino, $dbAlumnos) {
+                $q->whereIn('person_id', function ($subquery) use ($termino, $dbAlumnos) {
+                    $subquery->from("{$dbAlumnos}.persons")
+                        ->select('id')
+                        ->where(function ($q2) use ($termino) {
+                            $q2->where('nombre', 'like', "%{$termino}%")
+                                ->orWhere('apellido', 'like', "%{$termino}%")
+                                ->orWhere('documento', 'like', "%{$termino}%");
+                        });
+                });
             });
         }
 
         $solicitudes = $query->paginate(20);
 
-        // Estadísticas
+        // Estadísticas globales en una sola query
+        $statsRaw = SolicitudCambio::query()
+            ->selectRaw("SUM(CASE WHEN estado = ? THEN 1 ELSE 0 END) as pendientes", [SolicitudCambio::ESTADO_PENDIENTE])
+            ->selectRaw("SUM(CASE WHEN estado = ? THEN 1 ELSE 0 END) as trueques", [SolicitudCambio::ESTADO_TRUEQUE_DETECTADO])
+            ->selectRaw("SUM(CASE WHEN estado = ? THEN 1 ELSE 0 END) as en_revision", [SolicitudCambio::ESTADO_EN_REVISION])
+            ->selectRaw("SUM(CASE WHEN estado = ? AND DATE(fecha_procesamiento) = ? THEN 1 ELSE 0 END) as aprobadas_hoy", [SolicitudCambio::ESTADO_APROBADA, today()->toDateString()])
+            ->first();
+
         $estadisticas = [
-            'pendientes' => SolicitudCambio::where('estado', SolicitudCambio::ESTADO_PENDIENTE)->count(),
-            'trueques' => SolicitudCambio::where('estado', SolicitudCambio::ESTADO_TRUEQUE_DETECTADO)->count(),
-            'en_revision' => SolicitudCambio::where('estado', SolicitudCambio::ESTADO_EN_REVISION)->count(),
-            'aprobadas_hoy' => SolicitudCambio::where('estado', SolicitudCambio::ESTADO_APROBADA)
-                ->whereDate('fecha_procesamiento', today())
-                ->count(),
+            'pendientes' => (int) ($statsRaw->pendientes ?? 0),
+            'trueques' => (int) ($statsRaw->trueques ?? 0),
+            'en_revision' => (int) ($statsRaw->en_revision ?? 0),
+            'aprobadas_hoy' => (int) ($statsRaw->aprobadas_hoy ?? 0),
         ];
 
         return view('solicitudes.index', compact('solicitudes', 'estadisticas'));
@@ -108,18 +114,37 @@ class SolicitudCambioController extends Controller
             return $this->aprobarTrueque($solicitud);
         }
 
-        // Verificar cupos en comisión destino
-        if ($solicitud->comision_destino_id) {
-            $comisionDestino = Comision::find($solicitud->comision_destino_id);
-            if ($comisionDestino && !$comisionDestino->tieneCuposDisponibles()) {
-                return back()->with('error', 'No hay cupos disponibles en la comisión destino.');
-            }
-        }
-
         try {
             DB::connection('paicat')->beginTransaction();
 
-            // Realizar el cambio según el tipo
+            // Re-verificar estado con lock para evitar race condition
+            $solicitud = SolicitudCambio::lockForUpdate()->find($solicitud->id);
+            if (!$solicitud || !$solicitud->puedeSerProcesada()) {
+                DB::connection('paicat')->rollBack();
+                return back()->with('error', 'Esta solicitud ya fue procesada por otro usuario.');
+            }
+
+            // Verificar cupos en comisión destino con lock
+            if ($solicitud->comision_destino_id) {
+                $comisionDestino = Comision::lockForUpdate()->find($solicitud->comision_destino_id);
+
+                if (!$comisionDestino) {
+                    DB::connection('paicat')->rollBack();
+                    return back()->with('error', 'La comision destino ya no existe.');
+                }
+
+                if (!$comisionDestino->isActiva()) {
+                    DB::connection('paicat')->rollBack();
+                    return back()->with('error', 'La comision destino no esta activa (estado: ' . $comisionDestino->estado . ').');
+                }
+
+                if (!$comisionDestino->tieneCuposDisponibles()) {
+                    DB::connection('paicat')->rollBack();
+                    return back()->with('error', 'No hay cupos disponibles en la comision destino.');
+                }
+            }
+
+            // Realizar el cambio
             $this->ejecutarCambio($solicitud);
 
             // Actualizar estado de la solicitud
@@ -145,14 +170,52 @@ class SolicitudCambioController extends Controller
      */
     protected function aprobarTrueque(SolicitudCambio $solicitud): RedirectResponse
     {
-        $solicitudTrueque = $solicitud->solicitudTrueque;
-
-        if (!$solicitudTrueque || !$solicitudTrueque->puedeSerProcesada()) {
-            return back()->with('error', 'La solicitud de trueque vinculada no está disponible.');
-        }
-
         try {
             DB::connection('paicat')->beginTransaction();
+
+            // Re-obtener ambas solicitudes con lock para evitar race conditions
+            $solicitud = SolicitudCambio::lockForUpdate()->find($solicitud->id);
+            if (!$solicitud || !$solicitud->puedeSerProcesada()) {
+                DB::connection('paicat')->rollBack();
+                return back()->with('error', 'Esta solicitud ya fue procesada por otro usuario.');
+            }
+
+            $solicitudTrueque = $solicitud->solicitud_trueque_id
+                ? SolicitudCambio::lockForUpdate()->find($solicitud->solicitud_trueque_id)
+                : null;
+
+            if (!$solicitudTrueque || !$solicitudTrueque->puedeSerProcesada()) {
+                DB::connection('paicat')->rollBack();
+                return back()->with('error', 'La solicitud de trueque vinculada no esta disponible o ya fue procesada.');
+            }
+
+            // Verificar simetría del trueque
+            if ($solicitudTrueque->solicitud_trueque_id !== $solicitud->id) {
+                DB::connection('paicat')->rollBack();
+                return back()->with('error', 'Error de integridad: las solicitudes de trueque no estan vinculadas correctamente.');
+            }
+
+            // Lockear las comisiones involucradas para evitar race conditions en cupos
+            $comisionIds = array_filter(array_unique([
+                $solicitud->comision_origen_id,
+                $solicitud->comision_destino_id,
+                $solicitudTrueque->comision_origen_id,
+                $solicitudTrueque->comision_destino_id,
+            ]));
+            if (!empty($comisionIds)) {
+                Comision::lockForUpdate()->whereIn('id', $comisionIds)->get();
+            }
+
+            // Verificar que las comisiones destino esten activas
+            foreach ([$solicitud, $solicitudTrueque] as $sol) {
+                if ($sol->comision_destino_id) {
+                    $destino = Comision::find($sol->comision_destino_id);
+                    if ($destino && !$destino->isActiva()) {
+                        DB::connection('paicat')->rollBack();
+                        return back()->with('error', "La comision destino '{$destino->nombre}' no esta activa.");
+                    }
+                }
+            }
 
             // Ejecutar ambos cambios
             $this->ejecutarCambio($solicitud);
@@ -178,7 +241,7 @@ class SolicitudCambioController extends Controller
 
             return redirect()
                 ->route('solicitudes.index')
-                ->with('success', 'Trueque aprobado. Ambos alumnos han sido cambiados de comisión.');
+                ->with('success', 'Trueque aprobado. Ambos alumnos han sido cambiados de comision.');
         } catch (\Exception $e) {
             DB::connection('paicat')->rollBack();
             return back()->with('error', 'Error al procesar el trueque: ' . $e->getMessage());
@@ -192,8 +255,10 @@ class SolicitudCambioController extends Controller
     {
         $inscripcion = $solicitud->inscripcion;
 
-        // Todas las solicitudes se resuelven como cambio de comisión
-        // ya que la comisión contiene turno, modalidad y periodo
+        if (!$inscripcion) {
+            throw new \RuntimeException('La inscripcion asociada a la solicitud no existe.');
+        }
+
         $this->cambiarComision($inscripcion, $solicitud);
     }
 
@@ -211,10 +276,10 @@ class SolicitudCambioController extends Controller
                 ->whereIn('estado', ['inscripto', 'confirmado'])
                 ->update(['estado' => 'trasladado']);
 
-            // Decrementar cupo de comisión origen
+            // Sincronizar cupo de comisión origen
             $comisionOrigen = Comision::find($solicitud->comision_origen_id);
             if ($comisionOrigen) {
-                $comisionOrigen->decrementarCupo();
+                $comisionOrigen->sincronizarCupo();
                 $comisionOrigenNombre = $comisionOrigen->nombre;
             }
         }
@@ -226,11 +291,11 @@ class SolicitudCambioController extends Controller
             'fecha_inscripcion' => now(),
         ]);
 
-        // Incrementar cupo de comisión destino
+        // Sincronizar cupo de comisión destino
         $comisionDestino = Comision::find($solicitud->comision_destino_id);
-        $comisionDestinoNombre = $comisionDestino?->nombre ?? 'Comisión #' . $solicitud->comision_destino_id;
+        $comisionDestinoNombre = $comisionDestino?->nombre ?? 'Comision #' . $solicitud->comision_destino_id;
         if ($comisionDestino) {
-            $comisionDestino->incrementarCupo();
+            $comisionDestino->sincronizarCupo();
         }
 
         // Sincronizar datos de la inscripción con la nueva comisión
@@ -238,19 +303,16 @@ class SolicitudCambioController extends Controller
         $detallesCambios = [];
 
         if ($comisionDestino) {
-            // Sincronizar modalidad
             if ($comisionDestino->modalidad && $comisionDestino->modalidad !== $inscripcion->modalidad) {
                 $detallesCambios[] = "Modalidad: {$inscripcion->modalidad} → {$comisionDestino->modalidad}";
                 $cambiosInscripcion['modalidad'] = $comisionDestino->modalidad;
             }
 
-            // Sincronizar turno
             if ($comisionDestino->turno && $comisionDestino->turno !== $inscripcion->turno_carrera) {
                 $detallesCambios[] = "Turno: {$inscripcion->turno_carrera} → {$comisionDestino->turno}";
                 $cambiosInscripcion['turno_carrera'] = $comisionDestino->turno;
             }
 
-            // Sincronizar tipo de ingreso (periodo: Intensivo/Extensivo)
             if ($comisionDestino->periodo && $comisionDestino->periodo !== $inscripcion->tipo_ingreso) {
                 $detallesCambios[] = "Tipo ingreso: {$inscripcion->tipo_ingreso} → {$comisionDestino->periodo}";
                 $cambiosInscripcion['tipo_ingreso'] = $comisionDestino->periodo;
@@ -263,8 +325,8 @@ class SolicitudCambioController extends Controller
 
         // Registrar en trayectoria
         $motivo = $comisionOrigenNombre
-            ? "Cambio de comisión: {$comisionOrigenNombre} → {$comisionDestinoNombre}"
-            : "Asignado a comisión {$comisionDestinoNombre}";
+            ? "Cambio de comision: {$comisionOrigenNombre} → {$comisionDestinoNombre}"
+            : "Asignado a comision {$comisionDestinoNombre}";
 
         if (!empty($detallesCambios)) {
             $motivo .= '. Datos actualizados: ' . implode(', ', $detallesCambios);
@@ -296,26 +358,54 @@ class SolicitudCambioController extends Controller
             return back()->with('error', 'Esta solicitud ya fue procesada.');
         }
 
-        // Si es un trueque, rechazar ambas solicitudes
-        if ($solicitud->estado === SolicitudCambio::ESTADO_TRUEQUE_DETECTADO && $solicitud->solicitud_trueque_id) {
-            $solicitud->solicitudTrueque->update([
-                'estado' => SolicitudCambio::ESTADO_RECHAZADA,
-                'motivo_rechazo' => 'Trueque rechazado: ' . $request->motivo_rechazo,
-                'procesado_por' => auth()->id(),
-                'fecha_procesamiento' => now(),
-            ]);
+        try {
+            DB::connection('paicat')->beginTransaction();
+
+            // Re-verificar con lock
+            $solicitud = SolicitudCambio::lockForUpdate()->find($solicitud->id);
+            if (!$solicitud || !$solicitud->puedeSerProcesada()) {
+                DB::connection('paicat')->rollBack();
+                return back()->with('error', 'Esta solicitud ya fue procesada por otro usuario.');
+            }
+
+            // Si es un trueque, rechazar ambas solicitudes
+            if ($solicitud->estado === SolicitudCambio::ESTADO_TRUEQUE_DETECTADO && $solicitud->solicitud_trueque_id) {
+                $solicitudTrueque = SolicitudCambio::lockForUpdate()->find($solicitud->solicitud_trueque_id);
+                if ($solicitudTrueque && $solicitudTrueque->puedeSerProcesada()) {
+                    $solicitudTrueque->update([
+                        'estado' => SolicitudCambio::ESTADO_RECHAZADA,
+                        'motivo_rechazo' => 'Trueque rechazado: ' . $request->motivo_rechazo,
+                        'procesado_por' => auth()->id(),
+                        'fecha_procesamiento' => now(),
+                        'solicitud_trueque_id' => null, // Limpiar referencia para permitir futura detección
+                    ]);
+                }
+                // Limpiar referencia de trueque en la solicitud actual también
+                $solicitud->update([
+                    'estado' => SolicitudCambio::ESTADO_RECHAZADA,
+                    'motivo_rechazo' => $request->motivo_rechazo,
+                    'procesado_por' => auth()->id(),
+                    'fecha_procesamiento' => now(),
+                    'solicitud_trueque_id' => null,
+                ]);
+            } else {
+                $solicitud->update([
+                    'estado' => SolicitudCambio::ESTADO_RECHAZADA,
+                    'motivo_rechazo' => $request->motivo_rechazo,
+                    'procesado_por' => auth()->id(),
+                    'fecha_procesamiento' => now(),
+                ]);
+            }
+
+            DB::connection('paicat')->commit();
+
+            return redirect()
+                ->route('solicitudes.index')
+                ->with('success', 'Solicitud rechazada.');
+        } catch (\Exception $e) {
+            DB::connection('paicat')->rollBack();
+            return back()->with('error', 'Error al rechazar la solicitud: ' . $e->getMessage());
         }
-
-        $solicitud->update([
-            'estado' => SolicitudCambio::ESTADO_RECHAZADA,
-            'motivo_rechazo' => $request->motivo_rechazo,
-            'procesado_por' => auth()->id(),
-            'fecha_procesamiento' => now(),
-        ]);
-
-        return redirect()
-            ->route('solicitudes.index')
-            ->with('success', 'Solicitud rechazada.');
     }
 
     /**
@@ -323,6 +413,7 @@ class SolicitudCambioController extends Controller
      */
     public function detectarTrueques(): RedirectResponse
     {
+        // Incluir solicitudes que fueron rechazadas como trueque pero aún son pendientes de re-detección
         $solicitudesPendientes = SolicitudCambio::where('estado', SolicitudCambio::ESTADO_PENDIENTE)
             ->where('tipo', SolicitudCambio::TIPO_COMISION)
             ->whereNotNull('comision_destino_id')
@@ -334,15 +425,33 @@ class SolicitudCambioController extends Controller
         foreach ($solicitudesPendientes as $solicitud) {
             $trueque = SolicitudCambio::detectarTrueque($solicitud);
             if ($trueque && $trueque->solicitud_trueque_id === null) {
-                $solicitud->update([
-                    'estado' => SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
-                    'solicitud_trueque_id' => $trueque->id,
-                ]);
-                $trueque->update([
-                    'estado' => SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
-                    'solicitud_trueque_id' => $solicitud->id,
-                ]);
-                $truequesDetectados++;
+                DB::connection('paicat')->beginTransaction();
+                try {
+                    // Lock ambas para evitar detección duplicada
+                    $sol = SolicitudCambio::lockForUpdate()->find($solicitud->id);
+                    $tru = SolicitudCambio::lockForUpdate()->find($trueque->id);
+
+                    if ($sol && $tru
+                        && $sol->estado === SolicitudCambio::ESTADO_PENDIENTE
+                        && $tru->estado === SolicitudCambio::ESTADO_PENDIENTE
+                        && $sol->solicitud_trueque_id === null
+                        && $tru->solicitud_trueque_id === null
+                    ) {
+                        $sol->update([
+                            'estado' => SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+                            'solicitud_trueque_id' => $tru->id,
+                        ]);
+                        $tru->update([
+                            'estado' => SolicitudCambio::ESTADO_TRUEQUE_DETECTADO,
+                            'solicitud_trueque_id' => $sol->id,
+                        ]);
+                        $truequesDetectados++;
+                    }
+
+                    DB::connection('paicat')->commit();
+                } catch (\Exception $e) {
+                    DB::connection('paicat')->rollBack();
+                }
             }
         }
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ConfiguracionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -16,7 +17,6 @@ class Materia extends Model
     protected $table = 'materias';
 
     protected $fillable = [
-        'codigo',
         'nombre',
         'descripcion',
         'anio_cursado',
@@ -47,6 +47,11 @@ class Materia extends Model
         self::TIPO_OPTATIVA => 'Optativa',
         self::TIPO_NIVELACION => 'Nivelación',
     ];
+
+    public static function getTipos(): array
+    {
+        return ConfiguracionService::get('tipos_materia', self::TIPOS);
+    }
 
     /**
      * Relación N:M con comisiones (una materia puede estar en varias comisiones)
@@ -124,6 +129,70 @@ class Materia extends Model
      */
     public function getNombreCompletoAttribute(): string
     {
-        return "[{$this->codigo}] {$this->nombre}";
+        return "{$this->nombre}";
+    }
+
+    /**
+     * Calcular estadísticas de asistencia para esta materia en una comisión específica
+     * 
+     * @param int $comisionId ID de la comisión
+     * @return array Estadísticas con total_clases, promedio_asistencia, alumnos_en_riesgo
+     */
+    public function estadisticasAsistencia(int $comisionId): array
+    {
+        // Obtener todas las asistencias de esta materia en esta comisión
+        $asistencias = $this->asistencias()
+            ->whereHas('inscripcionComision', function ($query) use ($comisionId) {
+                $query->where('comision_id', $comisionId);
+            })
+            ->with('inscripcionComision')
+            ->get();
+
+        if ($asistencias->isEmpty()) {
+            return [
+                'total_clases' => 0,
+                'promedio_asistencia' => 0,
+                'alumnos_en_riesgo' => 0,
+            ];
+        }
+
+        // Contar clases únicas (fechas distintas)
+        $totalClases = $asistencias->pluck('fecha')->unique()->count();
+
+        // Calcular promedio de asistencia
+        $totalRegistros = $asistencias->count();
+        $presentes = $asistencias->whereIn('estado', ['presente', 'justificado'])->count();
+        $tardanzas = $asistencias->where('estado', 'tardanza')->count();
+        
+        $puntos = $presentes + ($tardanzas * 0.5);
+        $promedioAsistencia = $totalRegistros > 0 ? round(($puntos / $totalRegistros) * 100, 1) : 0;
+
+        // Calcular alumnos en riesgo (< 75% de asistencia)
+        $inscripciones = $asistencias->pluck('inscripcion_comision_id')->unique();
+        $alumnosEnRiesgo = 0;
+        $minimoAsistencia = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
+
+        foreach ($inscripciones as $inscripcionId) {
+            $asistenciasAlumno = $asistencias->where('inscripcion_comision_id', $inscripcionId);
+            $totalAlumno = $asistenciasAlumno->count();
+            
+            if ($totalAlumno > 0) {
+                $presentesAlumno = $asistenciasAlumno->whereIn('estado', ['presente', 'justificado'])->count();
+                $tardanzasAlumno = $asistenciasAlumno->where('estado', 'tardanza')->count();
+                
+                $puntosAlumno = $presentesAlumno + ($tardanzasAlumno * 0.5);
+                $porcentajeAlumno = ($puntosAlumno / $totalAlumno) * 100;
+                
+                if ($porcentajeAlumno < $minimoAsistencia) {
+                    $alumnosEnRiesgo++;
+                }
+            }
+        }
+
+        return [
+            'total_clases' => $totalClases,
+            'promedio_asistencia' => $promedioAsistencia,
+            'alumnos_en_riesgo' => $alumnosEnRiesgo,
+        ];
     }
 }

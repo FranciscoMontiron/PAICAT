@@ -19,7 +19,7 @@ class Nota extends Model
      */
     public static function notaAprobacion(): float
     {
-        return (float) config('paicat.nota_aprobacion', 6);
+        return (float) \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
     }
 
     protected $fillable = [

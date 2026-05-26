@@ -58,7 +58,7 @@ class Evaluacion extends Model
      */
     public static function instanciasDisponibles(): array
     {
-        return config('paicat.instancias_evaluacion', [
+        return \App\Services\ConfiguracionService::get('instancias_evaluacion', [
             1 => 'Primera instancia (1er Parcial)',
             2 => 'Segunda instancia (2do Parcial)',
             3 => 'Tercera instancia (3er Parcial)',
@@ -70,7 +70,7 @@ class Evaluacion extends Model
      */
     public static function tiposDisponibles(): array
     {
-        return config('paicat.tipos_evaluacion', self::TIPOS);
+        return \App\Services\ConfiguracionService::get('tipos_evaluacion', self::TIPOS);
     }
 
     /**

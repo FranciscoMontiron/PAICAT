@@ -25,8 +25,8 @@ class AsignacionAlumnosController extends Controller
             ->orderBy('codigo')
             ->get();
 
-        // Estadísticas generales
-        $totalCuposDisponibles = $comisiones->sum('cupos_disponibles');
+        // Estadísticas generales (solo comisiones con cupo definido)
+        $totalCuposDisponibles = $comisiones->sum(fn($c) => $c->cupos_disponibles ?? 0);
 
         // Alumnos sin asignar a ninguna comisión
         $alumnosSinAsignarCollection = $this->obtenerAlumnosSinAsignar();
@@ -62,12 +62,12 @@ class AsignacionAlumnosController extends Controller
         $request->validate([
             'comisiones' => 'required|array|min:1',
             'comisiones.*' => 'exists:comisiones,id',
-            'distribuir_por_carrera' => 'nullable|boolean',
+            'agrupar_por_carrera' => 'nullable|boolean',
             'filtrar_especialidad' => 'nullable|integer',
         ]);
 
         $comisionesIds = $request->comisiones;
-        $distribuirPorCarrera = $request->boolean('distribuir_por_carrera', false);
+        $agruparPorCarrera = $request->boolean('agrupar_por_carrera', false);
         $filtrarEspecialidad = $request->filtrar_especialidad;
 
         // Obtener comisiones seleccionadas
@@ -82,13 +82,13 @@ class AsignacionAlumnosController extends Controller
         }
 
         // Simular asignación
-        $simulacion = $this->simularAsignacion($comisiones, $distribuirPorCarrera, $filtrarEspecialidad);
+        $simulacion = $this->simularAsignacion($comisiones, $agruparPorCarrera, $filtrarEspecialidad);
 
         return view('asignacion-alumnos.preview', [
             'comisiones' => $comisiones,
             'simulacion' => $simulacion,
             'comisionesIds' => $comisionesIds,
-            'distribuirPorCarrera' => $distribuirPorCarrera,
+            'agruparPorCarrera' => $agruparPorCarrera,
             'filtrarEspecialidad' => $filtrarEspecialidad,
             'especialidades' => $this->obtenerEspecialidades(),
         ]);
@@ -104,13 +104,13 @@ class AsignacionAlumnosController extends Controller
             'comisiones.*' => 'exists:comisiones,id',
             'excluir' => 'nullable|array',
             'excluir.*' => 'exists:inscripciones,id',
-            'distribuir_por_carrera' => 'nullable|boolean',
+            'agrupar_por_carrera' => 'nullable|boolean',
             'filtrar_especialidad' => 'nullable|integer',
         ]);
 
         $comisionesIds = $request->comisiones;
         $excluirIds = $request->excluir ?? [];
-        $distribuirPorCarrera = $request->boolean('distribuir_por_carrera', false);
+        $agruparPorCarrera = $request->boolean('agrupar_por_carrera', false);
         $filtrarEspecialidad = $request->filtrar_especialidad;
 
         // Obtener comisiones seleccionadas
@@ -126,13 +126,13 @@ class AsignacionAlumnosController extends Controller
         }
 
         try {
-            $resultado = DB::transaction(function () use ($comisiones, $excluirIds, $distribuirPorCarrera, $filtrarEspecialidad) {
-                return $this->ejecutarAsignacionEquitativa($comisiones, $excluirIds, $distribuirPorCarrera, $filtrarEspecialidad);
+            $resultado = DB::transaction(function () use ($comisiones, $excluirIds, $agruparPorCarrera, $filtrarEspecialidad) {
+                return $this->ejecutarAsignacion($comisiones, $excluirIds, $agruparPorCarrera, $filtrarEspecialidad);
             });
 
             $mensaje = "Se asignaron {$resultado['total']} alumnos a {$resultado['comisiones']} comisiones.";
-            if ($distribuirPorCarrera) {
-                $mensaje .= " (Distribución equitativa por carrera)";
+            if ($agruparPorCarrera) {
+                $mensaje .= " (Agrupados por carrera)";
             }
 
             return redirect()->route('asignacion-alumnos.index')
@@ -144,15 +144,13 @@ class AsignacionAlumnosController extends Controller
     }
 
     /**
-     * Obtener inscripciones sin asignar a NINGUNA comisión activa
-     * Solo considera inscripciones_comision activas (no canceladas ni trasladadas)
-     * Un alumno ya asignado a cualquier comisión NO aparece como disponible
+     * Obtener inscripciones sin asignar a NINGUNA comisión activa.
+     * Un alumno ya asignado a cualquier comisión NO aparece como disponible.
      */
-    private function obtenerAlumnosSinAsignar(?array $comisionesIds = null, ?int $filtrarEspecialidad = null)
+    private function obtenerAlumnosSinAsignar(?int $filtrarEspecialidad = null)
     {
         return Inscripcion::activas()
             ->whereDoesntHave('inscripcionesComision', function ($q) {
-                // Solo considerar inscripciones_comision activas en CUALQUIER comisión
                 $q->whereIn('estado', ['inscripto', 'confirmado', 'aprobado']);
             })
             ->when($filtrarEspecialidad, fn($q) => $q->where('especialidad_id_sysacad', $filtrarEspecialidad))
@@ -160,27 +158,34 @@ class AsignacionAlumnosController extends Controller
     }
 
     /**
-     * Filtrar alumnos elegibles por requisitos (Turno, Modalidad, Tipo Ingreso)
-     * Ignora especialidad según reglas de ingreso.
+     * Filtrar alumnos elegibles por requisitos de la comisión.
+     * Reglas: Modalidad, Tipo Ingreso (periodo), Turno, y Año deben coincidir.
      */
     private function filtrarPorRequisitos($inscripciones, Comision $comision)
     {
         return $inscripciones->filter(function ($inscripcion) use ($comision) {
-            // Regla 1: La modalidad debe coincidir (Presencial/Virtual/Semipresencial)
+            // Regla 1: El año de ingreso debe coincidir con el año de la comisión
+            if ($inscripcion->anio_ingreso && $comision->anio) {
+                if ((int) $inscripcion->anio_ingreso !== (int) $comision->anio) {
+                    return false;
+                }
+            }
+
+            // Regla 2: La modalidad debe coincidir (Presencial/Virtual/Semipresencial)
             if ($inscripcion->modalidad && $comision->modalidad) {
                 if (strtolower($inscripcion->modalidad) !== strtolower($comision->modalidad)) {
                     return false;
                 }
             }
 
-            // Regla 2: El tipo de ingreso debe coincidir (Intensivo/Extensivo)
+            // Regla 3: El tipo de ingreso debe coincidir (Intensivo/Extensivo)
             if ($inscripcion->tipo_ingreso && $comision->periodo) {
                 if (strtolower($inscripcion->tipo_ingreso) !== strtolower($comision->periodo)) {
                     return false;
                 }
             }
 
-            // Regla 3: El turno debe coincidir (Mañana/TardeNoche)
+            // Regla 4: El turno debe coincidir (Mañana/TardeNoche) - solo si la comisión tiene turno
             if ($inscripcion->turno_ingreso && $comision->turno) {
                 if (strtolower($inscripcion->turno_ingreso) !== strtolower($comision->turno)) {
                     return false;
@@ -192,36 +197,46 @@ class AsignacionAlumnosController extends Controller
     }
 
     /**
+     * Obtener cupos disponibles reales de una comisión (considera extracupos).
+     * Para virtuales (sin limite) se usa un tope alto para el algoritmo.
+     */
+    private function getCuposParaAsignacion(Comision $comision): int
+    {
+        $cupoTotal = $comision->cupo_total;
+
+        if (is_null($cupoTotal)) {
+            return 9999; // Virtual: sin limite práctico
+        }
+
+        return max(0, $cupoTotal - $comision->cupo_real);
+    }
+
+    /**
      * Obtener especialidades/carreras desde sysacad
      */
     private function obtenerEspecialidades(): array
     {
         try {
-            $especialidades = DB::connection('sysacad')
+            return DB::connection('sysacad')
                 ->table('sysacad_especialidades')
                 ->orderBy('nombre')
                 ->pluck('nombre', 'id_sysacad')
                 ->toArray();
-
-            return $especialidades;
         } catch (\Exception $e) {
-            // Si falla la conexión a sysacad, devolver array vacío
             return [];
         }
     }
 
     /**
-     * Simular asignación sin ejecutar cambios
-     * @param bool $distribuirPorCarrera Si true, distribuye equitativamente por carrera
-     * @param int|null $filtrarEspecialidad Si se especifica, solo asigna alumnos de esa especialidad
+     * Simular asignación sin ejecutar cambios.
      */
-    private function simularAsignacion($comisiones, bool $distribuirPorCarrera = false, ?int $filtrarEspecialidad = null)
+    private function simularAsignacion($comisiones, bool $agruparPorCarrera = false, ?int $filtrarEspecialidad = null)
     {
         $simulacion = [];
         $asignadosGlobal = collect();
 
         // Obtener todos los alumnos sin asignar
-        $alumnosSinAsignar = $this->obtenerAlumnosSinAsignar($comisiones->pluck('id')->toArray(), $filtrarEspecialidad);
+        $alumnosSinAsignar = $this->obtenerAlumnosSinAsignar($filtrarEspecialidad);
 
         // Preparar pool por comisión
         $poolPorComision = [];
@@ -230,22 +245,19 @@ class AsignacionAlumnosController extends Controller
             $poolPorComision[$comision->id] = [
                 'comision' => $comision,
                 'elegibles' => $elegibles,
-                'cuposDisponibles' => max(0, $comision->cupo_maximo - max(0, $comision->cupo_actual)),
+                'cuposDisponibles' => $this->getCuposParaAsignacion($comision),
                 'asignados' => collect(),
             ];
         }
 
-        if ($distribuirPorCarrera) {
-            // Distribución equitativa por carrera: round-robin alternando entre carreras
-            $this->distribuirPorCarreraRoundRobin($poolPorComision, $asignadosGlobal);
+        if ($agruparPorCarrera) {
+            $this->distribuirAgrupandoPorCarrera($poolPorComision, $asignadosGlobal);
         } else {
-            // Distribución equitativa simple: round-robin
             $this->distribuirRoundRobinSimple($poolPorComision, $asignadosGlobal);
         }
 
         // Preparar resultado de simulación
         foreach ($poolPorComision as $data) {
-            // Calcular distribución por carrera en los asignados
             $distribucionPorCarrera = $data['asignados']->groupBy('especialidad_id_sysacad')->map->count();
 
             $simulacion[] = [
@@ -261,11 +273,11 @@ class AsignacionAlumnosController extends Controller
     }
 
     /**
-     * Distribución round-robin simple (sin considerar carrera)
+     * Distribución round-robin simple (sin considerar carrera).
+     * Reparte equitativamente entre comisiones.
      */
     private function distribuirRoundRobinSimple(array &$poolPorComision, &$asignadosGlobal): void
     {
-        // Mezclar alumnos
         foreach ($poolPorComision as &$data) {
             $data['elegibles'] = $data['elegibles']->shuffle();
         }
@@ -292,83 +304,93 @@ class AsignacionAlumnosController extends Controller
     }
 
     /**
-     * Distribución round-robin por carrera
-     * Alterna entre carreras para asegurar distribución equitativa
+     * Distribución agrupando por carrera.
+     *
+     * Prioriza llenar cada comisión con la máxima cantidad posible de una misma carrera.
+     * Algoritmo:
+     *   1. Para cada comisión, determinar cuál carrera tiene más elegibles
+     *   2. Asignar primero todos los de la carrera mayoritaria
+     *   3. Luego completar con las demás carreras si quedan cupos
      */
-    private function distribuirPorCarreraRoundRobin(array &$poolPorComision, &$asignadosGlobal): void
+    private function distribuirAgrupandoPorCarrera(array &$poolPorComision, &$asignadosGlobal): void
     {
-        // Obtener todas las carreras únicas de los elegibles
-        $todasLasCarreras = collect();
-        foreach ($poolPorComision as &$data) {
-            // Agrupar elegibles por carrera y mezclar dentro de cada grupo
-            $data['elegiblesPorCarrera'] = $data['elegibles']
+        // Paso 1: Determinar carrera dominante para cada comisión
+        // Ordenar comisiones por cupos disponibles (las más chicas primero para que no queden sin su carrera)
+        $comisionesOrdenadas = collect($poolPorComision)->sortBy('cuposDisponibles')->keys()->toArray();
+
+        // Rastrear qué carreras ya fueron "asignadas primariamente" a una comisión
+        $carrerasAsignadas = [];
+
+        foreach ($comisionesOrdenadas as $comisionId) {
+            $data = &$poolPorComision[$comisionId];
+            $cuposDisponibles = $data['cuposDisponibles'];
+
+            // Agrupar elegibles no asignados globalmente por carrera
+            $elegiblesPorCarrera = $data['elegibles']
+                ->reject(fn($i) => $asignadosGlobal->contains($i->id))
                 ->groupBy('especialidad_id_sysacad')
-                ->map(fn($group) => $group->shuffle()->values());
+                ->sortByDesc(fn($group) => $group->count());
 
-            $todasLasCarreras = $todasLasCarreras->merge($data['elegiblesPorCarrera']->keys());
-        }
-        $carrerasUnicas = $todasLasCarreras->unique()->shuffle()->values();
+            if ($elegiblesPorCarrera->isEmpty()) {
+                continue;
+            }
 
-        // Índice circular para iterar sobre carreras
-        $carreraIndex = 0;
-        $totalCarreras = $carrerasUnicas->count();
-
-        if ($totalCarreras === 0) {
-            return;
-        }
-
-        $hayMas = true;
-        $iteracionesSinCambio = 0;
-        $maxIteraciones = $totalCarreras * 10; // Límite de seguridad
-
-        while ($hayMas && $iteracionesSinCambio < $maxIteraciones) {
-            $hayMas = false;
-            $carreraActual = $carrerasUnicas[$carreraIndex % $totalCarreras];
-
-            // Iterar sobre comisiones en round-robin
-            foreach ($poolPorComision as &$data) {
-                if ($data['asignados']->count() >= $data['cuposDisponibles']) {
-                    continue;
-                }
-
-                // Buscar alumno de la carrera actual
-                if (!isset($data['elegiblesPorCarrera'][$carreraActual])) {
-                    continue;
-                }
-
-                $elegiblesDeCarrera = $data['elegiblesPorCarrera'][$carreraActual];
-
-                foreach ($elegiblesDeCarrera as $key => $inscripcion) {
-                    if (!$asignadosGlobal->contains($inscripcion->id)) {
-                        $data['asignados']->push($inscripcion);
-                        $asignadosGlobal->push($inscripcion->id);
-                        $data['elegiblesPorCarrera'][$carreraActual]->forget($key);
-                        $hayMas = true;
-                        $iteracionesSinCambio = 0;
-                        break;
-                    }
+            // Elegir la carrera con más elegibles que no haya sido primaria de otra comisión
+            $carreraPrimaria = null;
+            foreach ($elegiblesPorCarrera->keys() as $carreraId) {
+                if (!in_array($carreraId, $carrerasAsignadas)) {
+                    $carreraPrimaria = $carreraId;
+                    break;
                 }
             }
 
-            $carreraIndex++;
-            if (!$hayMas) {
-                $iteracionesSinCambio++;
-                $hayMas = true; // Continuar buscando en otras carreras
+            // Si todas las carreras ya fueron asignadas, tomar la que tenga más elegibles
+            if (is_null($carreraPrimaria)) {
+                $carreraPrimaria = $elegiblesPorCarrera->keys()->first();
+            } else {
+                $carrerasAsignadas[] = $carreraPrimaria;
+            }
+
+            // Paso 2: Asignar primero todos los de la carrera primaria
+            $elegiblesCarreraPrimaria = ($elegiblesPorCarrera[$carreraPrimaria] ?? collect())->shuffle();
+            foreach ($elegiblesCarreraPrimaria as $inscripcion) {
+                if ($data['asignados']->count() >= $cuposDisponibles) {
+                    break;
+                }
+                if (!$asignadosGlobal->contains($inscripcion->id)) {
+                    $data['asignados']->push($inscripcion);
+                    $asignadosGlobal->push($inscripcion->id);
+                }
+            }
+
+            // Paso 3: Completar con otras carreras si quedan cupos
+            $otrasCarreras = $elegiblesPorCarrera->forget($carreraPrimaria);
+            foreach ($otrasCarreras as $carreraId => $elegibles) {
+                $elegibles = $elegibles->shuffle();
+                foreach ($elegibles as $inscripcion) {
+                    if ($data['asignados']->count() >= $cuposDisponibles) {
+                        break 2;
+                    }
+                    if (!$asignadosGlobal->contains($inscripcion->id)) {
+                        $data['asignados']->push($inscripcion);
+                        $asignadosGlobal->push($inscripcion->id);
+                    }
+                }
             }
         }
     }
 
     /**
-     * Ejecutar asignación equitativa (round-robin)
+     * Ejecutar asignación con persistencia en BD.
      */
-    private function ejecutarAsignacionEquitativa($comisiones, array $excluirIds = [], bool $distribuirPorCarrera = false, ?int $filtrarEspecialidad = null)
+    private function ejecutarAsignacion($comisiones, array $excluirIds = [], bool $agruparPorCarrera = false, ?int $filtrarEspecialidad = null)
     {
         $totalAsignados = 0;
         $comisionesConAsignados = 0;
         $asignadosGlobal = collect($excluirIds);
 
         // Obtener todos los alumnos sin asignar
-        $alumnosSinAsignar = $this->obtenerAlumnosSinAsignar($comisiones->pluck('id')->toArray(), $filtrarEspecialidad)
+        $alumnosSinAsignar = $this->obtenerAlumnosSinAsignar($filtrarEspecialidad)
             ->reject(fn($i) => in_array($i->id, $excluirIds));
 
         // Preparar pool por comisión
@@ -378,20 +400,18 @@ class AsignacionAlumnosController extends Controller
             $poolPorComision[$comision->id] = [
                 'comision' => $comision,
                 'elegibles' => $elegibles,
-                'cuposDisponibles' => max(0, $comision->cupo_maximo - max(0, $comision->cupo_actual)),
+                'cuposDisponibles' => $this->getCuposParaAsignacion($comision),
                 'asignados' => collect(),
             ];
         }
 
-        if ($distribuirPorCarrera) {
-            // Distribución equitativa por carrera
-            $this->distribuirPorCarreraRoundRobin($poolPorComision, $asignadosGlobal);
+        if ($agruparPorCarrera) {
+            $this->distribuirAgrupandoPorCarrera($poolPorComision, $asignadosGlobal);
         } else {
-            // Distribución equitativa simple
             $this->distribuirRoundRobinSimple($poolPorComision, $asignadosGlobal);
         }
 
-        // Crear inscripciones a comisión
+        // Persistir asignaciones
         foreach ($poolPorComision as $data) {
             if ($data['asignados']->isEmpty()) {
                 continue;
@@ -400,95 +420,7 @@ class AsignacionAlumnosController extends Controller
             $comisionesConAsignados++;
 
             foreach ($data['asignados'] as $inscripcion) {
-                // Obtener academico_dato_id si existe
-                $academicoDato = $inscripcion->getAcademicoDato();
-
-                $observacion = $distribuirPorCarrera
-                    ? 'Asignación aleatoria automática (distribución por carrera)'
-                    : 'Asignación aleatoria automática';
-
-                // Buscar si existe una inscripción_comision cancelada para reactivarla
-                $inscripcionComisionExistente = InscripcionComision::where('inscripcion_id', $inscripcion->id)
-                    ->where('comision_id', $data['comision']->id)
-                    ->whereIn('estado', ['cancelado', 'trasladado'])
-                    ->first();
-
-                if ($inscripcionComisionExistente) {
-                    // Reactivar la inscripción existente
-                    $inscripcionComisionExistente->update([
-                        'estado' => 'inscripto',
-                        'fecha_inscripcion' => now(),
-                        'observaciones' => $observacion . ' - Reactivada',
-                    ]);
-                } else {
-                    // Crear nueva inscripción a comisión
-                    InscripcionComision::create([
-                        'inscripcion_id' => $inscripcion->id,
-                        'academico_dato_id' => $academicoDato?->id,
-                        'comision_id' => $data['comision']->id,
-                        'fecha_inscripcion' => now(),
-                        'estado' => 'inscripto',
-                        'observaciones' => $observacion,
-                    ]);
-                }
-
-                // Crear o reactivar registro de cursada
-                $anioActual = date('Y');
-                $esRecursante = Cursada::where('inscripcion_id', $inscripcion->id)
-                    ->where('anio', '<', $anioActual)
-                    ->whereIn('estado', [Cursada::ESTADO_DESAPROBADO, Cursada::ESTADO_LIBRE])
-                    ->exists();
-
-                // Buscar cursada existente (puede estar dada de baja por cancelación previa)
-                $cursadaExistente = Cursada::where('inscripcion_id', $inscripcion->id)
-                    ->where('comision_id', $data['comision']->id)
-                    ->where('anio', $anioActual)
-                    ->first();
-
-                if ($cursadaExistente) {
-                    if ($cursadaExistente->estado === Cursada::ESTADO_BAJA) {
-                        $cursadaExistente->update([
-                            'estado' => Cursada::ESTADO_CURSANDO,
-                            'fecha_inicio' => now(),
-                            'fecha_fin' => null,
-                            'usuario_cambio_estado_id' => auth()->id(),
-                            'fecha_cambio_estado' => now(),
-                            'observaciones' => 'Reactivada por reasignación automática',
-                        ]);
-                    }
-                } else {
-                    Cursada::create([
-                        'inscripcion_id' => $inscripcion->id,
-                        'comision_id' => $data['comision']->id,
-                        'anio' => $anioActual,
-                        'estado' => Cursada::ESTADO_CURSANDO,
-                        'modalidad' => $data['comision']->modalidad,
-                        'es_recursante' => $esRecursante,
-                        'fecha_inicio' => now(),
-                    ]);
-                }
-
-                // Actualizar estado de la inscripción a 'cursando'
-                $estadoAnterior = $inscripcion->estado_ingreso;
-                $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_CURSANDO]);
-
-                // Registrar en trayectoria solo si cambió el estado
-                if ($estadoAnterior !== Inscripcion::INGRESO_CURSANDO) {
-                    try {
-                        \App\Models\Trayectoria::registrarEvento(
-                            $inscripcion->id,
-                            \App\Models\Trayectoria::ESTADO_ACTIVO,
-                            'Asignado a comisión ' . $data['comision']->nombre,
-                            null,
-                            auth()->id()
-                        );
-                    } catch (\Exception $e) {
-                        // Si falla por concurrencia, continuar sin detener todo el proceso
-                        \Log::warning("No se pudo crear trayectoria para inscripción {$inscripcion->id}: " . $e->getMessage());
-                    }
-                }
-
-                $data['comision']->incrementarCupo();
+                $this->persistirAsignacion($inscripcion, $data['comision'], $agruparPorCarrera);
                 $totalAsignados++;
             }
         }
@@ -497,5 +429,95 @@ class AsignacionAlumnosController extends Controller
             'total' => $totalAsignados,
             'comisiones' => $comisionesConAsignados,
         ];
+    }
+
+    /**
+     * Persistir una asignación individual (InscripcionComision + Cursada + Trayectoria).
+     */
+    private function persistirAsignacion(Inscripcion $inscripcion, Comision $comision, bool $porCarrera = false): void
+    {
+        $academicoDato = $inscripcion->getAcademicoDato();
+        $observacion = $porCarrera
+            ? 'Asignación automática (agrupada por carrera)'
+            : 'Asignación aleatoria automática';
+
+        // Buscar si existe una inscripción_comision cancelada para reactivarla
+        $existente = InscripcionComision::where('inscripcion_id', $inscripcion->id)
+            ->where('comision_id', $comision->id)
+            ->whereIn('estado', ['cancelado', 'trasladado'])
+            ->first();
+
+        if ($existente) {
+            $existente->update([
+                'estado' => 'inscripto',
+                'fecha_inscripcion' => now(),
+                'observaciones' => $observacion . ' - Reactivada',
+            ]);
+        } else {
+            InscripcionComision::create([
+                'inscripcion_id' => $inscripcion->id,
+                'academico_dato_id' => $academicoDato?->id,
+                'comision_id' => $comision->id,
+                'fecha_inscripcion' => now(),
+                'estado' => 'inscripto',
+                'observaciones' => $observacion,
+            ]);
+        }
+
+        // Crear o reactivar cursada
+        $anioActual = date('Y');
+        $esRecursante = Cursada::where('inscripcion_id', $inscripcion->id)
+            ->where('anio', '<', $anioActual)
+            ->whereIn('estado', [Cursada::ESTADO_DESAPROBADO, Cursada::ESTADO_LIBRE])
+            ->exists();
+
+        $cursadaExistente = Cursada::where('inscripcion_id', $inscripcion->id)
+            ->where('comision_id', $comision->id)
+            ->where('anio', $anioActual)
+            ->first();
+
+        if ($cursadaExistente) {
+            if ($cursadaExistente->estado === Cursada::ESTADO_BAJA) {
+                $cursadaExistente->update([
+                    'estado' => Cursada::ESTADO_CURSANDO,
+                    'fecha_inicio' => now(),
+                    'fecha_fin' => null,
+                    'usuario_cambio_estado_id' => auth()->id(),
+                    'fecha_cambio_estado' => now(),
+                    'observaciones' => 'Reactivada por reasignación automática',
+                ]);
+            }
+        } else {
+            Cursada::create([
+                'inscripcion_id' => $inscripcion->id,
+                'comision_id' => $comision->id,
+                'anio' => $anioActual,
+                'estado' => Cursada::ESTADO_CURSANDO,
+                'modalidad' => $comision->modalidad,
+                'es_recursante' => $esRecursante,
+                'fecha_inicio' => now(),
+            ]);
+        }
+
+        // Actualizar estado de la inscripción
+        $estadoAnterior = $inscripcion->estado_ingreso;
+        $inscripcion->update(['estado_ingreso' => Inscripcion::INGRESO_CURSANDO]);
+
+        // Registrar en trayectoria
+        if ($estadoAnterior !== Inscripcion::INGRESO_CURSANDO) {
+            try {
+                \App\Models\Trayectoria::registrarEvento(
+                    $inscripcion->id,
+                    \App\Models\Trayectoria::ESTADO_ACTIVO,
+                    'Asignado a comisión ' . $comision->nombre,
+                    null,
+                    auth()->id()
+                );
+            } catch (\Exception $e) {
+                \Log::warning("No se pudo crear trayectoria para inscripción {$inscripcion->id}: " . $e->getMessage());
+            }
+        }
+
+        $comision->incrementarCupo();
     }
 }

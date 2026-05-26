@@ -7,7 +7,7 @@
     {{-- Header --}}
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-            <a href="{{ route('municipios.index') }}" class="text-utn-blue hover:text-blue-800 flex items-center gap-1 text-sm mb-2">
+            <a href="{{ route('infraestructura.index', ['tab' => 'municipios']) }}" class="text-utn-blue-dark hover:text-utn-blue-dark flex items-center gap-1 text-sm mb-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                 </svg>
@@ -25,7 +25,7 @@
         </div>
         @if(auth()->user()->hasPermission('municipios.editar'))
         <a href="{{ route('municipios.edit', $municipio) }}"
-           class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center gap-2">
+           class="bg-utn-blue text-white px-4 py-2 rounded-lg hover:bg-utn-dark transition-colors duration-200 flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
             </svg>
@@ -84,7 +84,7 @@
                         @foreach($municipio->comisiones as $comision)
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3">
-                                <a href="{{ route('comisiones.show', $comision) }}" class="text-utn-blue hover:text-blue-800">
+                                <a href="{{ route('comisiones.show', $comision) }}" class="text-utn-blue-dark hover:text-utn-blue-dark">
                                     <div class="text-sm font-medium">{{ $comision->nombre }}</div>
                                     <div class="text-xs text-gray-500">{{ $comision->codigo }}</div>
                                 </a>

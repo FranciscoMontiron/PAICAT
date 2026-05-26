@@ -3,6 +3,7 @@
 @section('title', 'Alumnos en Riesgo')
 
 @section('content')
+@php $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75); @endphp
 <div class="container mx-auto px-4 py-6">
 
     <!-- Header -->
@@ -18,7 +19,13 @@
                 </div>
                 <div>
                     <h1 class="text-3xl font-bold text-red-600">Alumnos en Riesgo por Asistencia</h1>
-                    <p class="text-gray-600 mt-1">Alumnos con porcentaje de asistencia menor al 75%</p>
+                    <p class="text-gray-600 mt-1">
+                        @if(isset($esDocente) && $esDocente)
+                        Alumnos de tus comisiones con porcentaje de asistencia menor al {{ $asistenciaMinima }}%
+                        @else
+                        Alumnos con porcentaje de asistencia menor al {{ $asistenciaMinima }}%
+                        @endif
+                    </p>
                 </div>
             </div>
             <a href="{{ route('asistencias.index') }}" 
@@ -40,7 +47,7 @@
                         Filtrar por Comisión
                     </label>
                     <select name="comision_id" id="comision_id" 
-                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-utn-blue-dark focus:border-blue-500"
                             onchange="this.form.submit()">
                         <option value="">Todas las comisiones</option>
                         @foreach($comisiones as $c)
@@ -70,7 +77,11 @@
                 </svg>
                 <div>
                     <p class="text-red-800 font-semibold">
+                        @if(isset($esDocente) && $esDocente)
+                        Se encontraron {{ $alumnosEnRiesgo->count() }} alumno{{ $alumnosEnRiesgo->count() != 1 ? 's' : '' }} en riesgo en tus comisiones
+                        @else
                         Se encontraron {{ $alumnosEnRiesgo->count() }} alumno{{ $alumnosEnRiesgo->count() != 1 ? 's' : '' }} en riesgo
+                        @endif
                     </p>
                     <p class="text-red-700 text-sm">Es necesario tomar acción inmediata para evitar que pierdan por faltas</p>
                 </div>
@@ -87,7 +98,7 @@
                     $justificados = $inscripcion->asistencias->where('estado', 'justificado')->count();
                     $asistio = $presentes + $tardanzas + $justificados;
                     $porcentaje = $totalAsistencias > 0 ? round(($asistio / $totalAsistencias) * 100, 1) : 0;
-                    $nivelRiesgo = $porcentaje < 70 ? 'critico' : ($porcentaje < 75 ? 'alto' : 'medio');
+                    $nivelRiesgo = $porcentaje < ($asistenciaMinima - 5) ? 'critico' : ($porcentaje < $asistenciaMinima ? 'alto' : 'medio');
                 @endphp
                 <div class="rounded-lg p-5 border-2 transition hover:shadow-md
                     {{ $nivelRiesgo === 'critico' ? 'bg-red-50 border-red-300' : 
@@ -123,7 +134,7 @@
                                 {{ $porcentaje }}%
                             </p>
                             <a href="{{ route('asistencias.alumno.historial', [$inscripcion->comision, $inscripcion]) }}" 
-                               class="inline-flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium">
+                               class="inline-flex items-center gap-1 mt-2 text-utn-blue-dark hover:text-utn-blue-dark text-sm font-medium">
                                 Ver Detalle
                                 <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
@@ -143,7 +154,7 @@
                         </div>
                         <div class="flex justify-between text-xs text-gray-600 mt-1">
                             <span>0%</span>
-                            <span class="font-semibold">Mínimo requerido: 75%</span>
+                            <span class="font-semibold">Mínimo requerido: {{ $asistenciaMinima }}%</span>
                             <span>100%</span>
                         </div>
                     </div>
@@ -157,15 +168,15 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                 <div class="flex items-center gap-2">
                     <span class="px-3 py-1 bg-red-600 text-white rounded-full text-xs font-bold">🚨 CRÍTICO</span>
-                    <span class="text-gray-700">&lt; 70% de asistencia</span>
+                    <span class="text-gray-700">&lt; {{ $asistenciaMinima - 5 }}% de asistencia</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="px-3 py-1 bg-orange-600 text-white rounded-full text-xs font-bold">⚠️ ALTO</span>
-                    <span class="text-gray-700">70% - 74% de asistencia</span>
+                    <span class="text-gray-700">{{ $asistenciaMinima - 5 }}% - {{ $asistenciaMinima - 1 }}% de asistencia</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="px-3 py-1 bg-yellow-600 text-white rounded-full text-xs font-bold">⚠ PRECAUCIÓN</span>
-                    <span class="text-gray-700">75% - 84% de asistencia</span>
+                    <span class="text-gray-700">{{ $asistenciaMinima }}% - {{ $asistenciaMinima + 9 }}% de asistencia</span>
                 </div>
             </div>
         </div>
@@ -179,7 +190,13 @@
                 </svg>
             </div>
             <h3 class="text-2xl font-bold text-gray-800 mb-2">¡Excelente!</h3>
-            <p class="text-gray-600 mb-1">No hay alumnos en riesgo por asistencia</p>
+            <p class="text-gray-600 mb-1">
+                @if(isset($esDocente) && $esDocente)
+                No hay alumnos en riesgo por asistencia en tus comisiones
+                @else
+                No hay alumnos en riesgo por asistencia
+                @endif
+            </p>
             <p class="text-sm text-gray-500">
                 @if($comisionId)
                     en la comisión seleccionada

@@ -59,7 +59,6 @@ class AulaController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:100',
-            'codigo' => 'nullable|string|max:20|unique:aulas,codigo',
             'capacidad' => 'nullable|integer|min:1|max:500',
             'municipio_id' => 'required|exists:municipios,id',
             'ubicacion' => 'nullable|string|max:255',
@@ -67,10 +66,11 @@ class AulaController extends Controller
         ]);
 
         $validated['activa'] = $request->boolean('activa', true);
+        $validated['codigo'] = $this->generarCodigoAula($validated['nombre'], $validated['municipio_id']);
 
         Aula::create($validated);
 
-        return redirect()->route('aulas.index')
+        return redirect()->route('infraestructura.index', ['tab' => 'aulas'])
             ->with('success', 'Aula creada exitosamente.');
     }
 
@@ -102,7 +102,6 @@ class AulaController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:100',
-            'codigo' => 'nullable|string|max:20|unique:aulas,codigo,' . $aula->id,
             'capacidad' => 'nullable|integer|min:1|max:500',
             'municipio_id' => 'required|exists:municipios,id',
             'ubicacion' => 'nullable|string|max:255',
@@ -111,9 +110,13 @@ class AulaController extends Controller
 
         $validated['activa'] = $request->boolean('activa', true);
 
+        if ($aula->nombre !== $validated['nombre'] || $aula->municipio_id != $validated['municipio_id']) {
+            $validated['codigo'] = $this->generarCodigoAula($validated['nombre'], $validated['municipio_id']);
+        }
+
         $aula->update($validated);
 
-        return redirect()->route('aulas.index')
+        return redirect()->route('infraestructura.index', ['tab' => 'aulas'])
             ->with('success', 'Aula actualizada exitosamente.');
     }
 
@@ -142,7 +145,7 @@ class AulaController extends Controller
 
         $aula->delete();
 
-        return redirect()->route('aulas.index')
+        return redirect()->route('infraestructura.index', ['tab' => 'aulas'])
             ->with('success', 'Aula eliminada exitosamente.');
     }
 
@@ -157,5 +160,24 @@ class AulaController extends Controller
             ->get(['id', 'nombre', 'codigo', 'capacidad']);
 
         return response()->json($aulas);
+    }
+
+    private function generarCodigoAula(string $nombre, int $municipioId): string
+    {
+        $municipio = Municipio::find($municipioId);
+        $prefijo = $municipio
+            ? strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $municipio->nombre), 0, 3))
+            : 'XXX';
+
+        // max(id) en lugar de count() para no retroceder cuando se eliminan aulas
+        $siguiente = (Aula::where('municipio_id', $municipioId)->max('id') ?? 0) + 1;
+        $codigo = $prefijo . '-A' . str_pad($siguiente, 2, '0', STR_PAD_LEFT);
+
+        // Fallback con timestamp si el código ya existe (edge case de IDs no-secuenciales)
+        if (Aula::where('codigo', $codigo)->exists()) {
+            $codigo .= '-' . substr((string) time(), -4);
+        }
+
+        return $codigo;
     }
 }

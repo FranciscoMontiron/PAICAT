@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ConfiguracionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,6 +42,36 @@ class Comision extends Model
         'Semipresencial' => 'Semipresencial',
     ];
 
+    public static function getTiposIngreso(): array
+    {
+        return self::TIPOS_INGRESO;
+    }
+
+    public static function getTurnos(): array
+    {
+        return self::TURNOS;
+    }
+
+    public function getTurnoNombreAttribute()
+    {
+        return self::TURNOS[$this->turno] ?? $this->turno;
+    }
+
+    public static function getModalidades(): array
+    {
+        return self::MODALIDADES;
+    }
+
+    public static function getEstados(): array
+    {
+        return ConfiguracionService::get('estados_comision', [
+            'activa' => 'Activa',
+            'cerrada' => 'Cerrada',
+            'finalizada' => 'Finalizada',
+            'cancelada' => 'Cancelada',
+        ]);
+    }
+
     protected $fillable = [
         'nombre',
         'codigo',
@@ -53,8 +84,11 @@ class Comision extends Model
         'aula_id',
         'cupo_maximo',
         'cupo_actual',
+        'extracupos_habilitados',
+        'extracupos',
         'docente_id',
         'estado',
+        'archivada',
         'observaciones',
     ];
 
@@ -62,6 +96,9 @@ class Comision extends Model
         'anio' => 'integer',
         'cupo_maximo' => 'integer',
         'cupo_actual' => 'integer',
+        'extracupos_habilitados' => 'boolean',
+        'extracupos' => 'integer',
+        'archivada' => 'boolean',
     ];
 
     /**
@@ -201,23 +238,35 @@ class Comision extends Model
     }
 
     /**
+     * Obtener el cupo total efectivo (cupo_maximo + extracupos si están habilitados)
+     * Retorna null para comisiones sin límite (virtuales)
+     */
+    public function getCupoTotalAttribute(): ?int
+    {
+        if ($this->esVirtual() || is_null($this->cupo_maximo)) {
+            return null;
+        }
+
+        $total = $this->cupo_maximo;
+
+        if ($this->extracupos_habilitados && $this->extracupos > 0) {
+            $total += $this->extracupos;
+        }
+
+        return $total;
+    }
+
+    /**
      * Verificar si la comisión tiene cupos disponibles
      * Las comisiones virtuales no tienen límite de cupo
-     * Usa el cupo real calculado desde inscripciones activas
      */
     public function tieneCuposDisponibles(): bool
     {
-        // Virtual: sin límite de cupo
-        if ($this->esVirtual()) {
+        if ($this->esVirtual() || is_null($this->cupo_maximo)) {
             return true;
         }
 
-        // Si cupo_maximo es null, 0, o muy alto (9999 = sin límite), es sin límite
-        if (!$this->cupo_maximo || $this->cupo_maximo >= 9999) {
-            return true;
-        }
-
-        return $this->cupo_real < $this->cupo_maximo;
+        return $this->cupo_real < $this->cupo_total;
     }
 
     /**
@@ -226,12 +275,23 @@ class Comision extends Model
      */
     public function getCuposDisponiblesAttribute(): ?int
     {
-        // Virtual o sin límite definido (9999 = sin límite)
-        if ($this->esVirtual() || !$this->cupo_maximo || $this->cupo_maximo >= 9999) {
-            return null; // Sin límite
+        if ($this->esVirtual() || is_null($this->cupo_maximo)) {
+            return null;
         }
 
-        return max(0, $this->cupo_maximo - $this->cupo_real);
+        return max(0, $this->cupo_total - $this->cupo_real);
+    }
+
+    /**
+     * Verificar si la comisión está usando extracupos (superó el cupo base)
+     */
+    public function estaUsandoExtracupos(): bool
+    {
+        if (!$this->extracupos_habilitados || !$this->cupo_maximo) {
+            return false;
+        }
+
+        return $this->cupo_real > $this->cupo_maximo;
     }
 
     /**
@@ -283,14 +343,17 @@ class Comision extends Model
     }
 
     /**
-     * Obtener porcentaje de ocupación (basado en cupo real)
+     * Obtener porcentaje de ocupación (basado en cupo total efectivo)
      */
     public function getPorcentajeOcupacionAttribute(): float
     {
-        if ($this->cupo_maximo == 0) {
+        $cupoTotal = $this->cupo_total;
+
+        if (is_null($cupoTotal) || $cupoTotal == 0) {
             return 0;
         }
-        return round(($this->cupo_real / $this->cupo_maximo) * 100, 2);
+
+        return round(($this->cupo_real / $cupoTotal) * 100, 2);
     }
 
     /**
@@ -324,7 +387,44 @@ class Comision extends Model
     public function scopeConCuposDisponibles($query)
     {
         return $query->where(function ($q) {
-            $q->whereRaw('cupo_maximo > (SELECT COUNT(*) FROM inscripcion_comisiones WHERE inscripcion_comisiones.comision_id = comisiones.id AND inscripcion_comisiones.estado IN (?, ?, ?) AND inscripcion_comisiones.deleted_at IS NULL)', ['inscripto', 'confirmado', 'aprobado']);
+            // Virtuales o sin cupo_maximo: siempre tienen cupo
+            $q->whereNull('cupo_maximo')
+              ->orWhere('modalidad', 'Virtual')
+              // Con cupo: cupo_maximo + extracupos (si habilitados) > inscripciones activas
+              ->orWhereRaw('(cupo_maximo + CASE WHEN extracupos_habilitados = 1 THEN extracupos ELSE 0 END) > (SELECT COUNT(*) FROM inscripcion_comisiones WHERE inscripcion_comisiones.comision_id = comisiones.id AND inscripcion_comisiones.estado IN (?, ?, ?) AND inscripcion_comisiones.deleted_at IS NULL)', ['inscripto', 'confirmado', 'aprobado']);
         });
+    }
+
+    public function calcularPromedioAsistencia()
+    {
+        $inscripciones = $this->inscripciones;
+        
+        if ($inscripciones->isEmpty()) {
+            return 0;
+        }
+        
+        $totalPorcentaje = 0;
+        $contadorAlumnos = 0;
+        
+        foreach ($inscripciones as $inscripcion) {
+            $porcentaje = $inscripcion->calcularPorcentajeAsistencia();
+            $totalPorcentaje += $porcentaje;
+            $contadorAlumnos++;
+        }
+        
+        return $contadorAlumnos > 0 ? $totalPorcentaje / $contadorAlumnos : 0;
+    }
+
+    public function contarAlumnosEnRiesgo()
+    {
+        $contador = 0;
+        
+        foreach ($this->inscripciones as $inscripcion) {
+            if ($inscripcion->estaEnRiesgo()) {
+                $contador++;
+            }
+        }
+        
+        return $contador;
     }
 }

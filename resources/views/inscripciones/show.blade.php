@@ -3,6 +3,10 @@
 @section('title', 'Detalle de Inscripción')
 
 @section('content')
+@php
+    $notaAprobacion = \App\Services\ConfiguracionService::get('nota_aprobacion', 6);
+    $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75);
+@endphp
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     {{-- Mensajes --}}
@@ -34,7 +38,7 @@
             <svg class="h-5 w-5 text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
             </svg>
-            <p class="ml-3 text-sm text-blue-700">{{ session('info') }}</p>
+            <p class="ml-3 text-sm text-utn-blue-dark">{{ session('info') }}</p>
         </div>
     </div>
     @endif
@@ -70,20 +74,20 @@
                 {{-- Badge estado inscripción --}}
                 <span class="px-3 py-1.5 text-sm font-medium rounded-full
                     @if($inscripcion->estado === 'pendiente') bg-yellow-100 text-yellow-800
-                    @elseif($inscripcion->estado === 'documentacion_ok') bg-blue-100 text-blue-800
+                    @elseif($inscripcion->estado === 'documentacion_ok') bg-utn-blue/10 text-utn-blue-dark
                     @elseif($inscripcion->estado === 'confirmado') bg-green-100 text-green-800
                     @elseif($inscripcion->estado === 'cancelado') bg-red-100 text-red-800
                     @else bg-gray-100 text-gray-800
                     @endif">
-                    {{ \App\Models\Inscripcion::ESTADOS[$inscripcion->estado] ?? $inscripcion->estado }}
+                    {{ \App\Models\Inscripcion::getEstados()[$inscripcion->estado] ?? $inscripcion->estado }}
                 </span>
 
                 {{-- Badge estado ingreso --}}
                 @if($inscripcion->estado_ingreso)
                 <span class="px-3 py-1.5 text-sm font-medium rounded-full
                     @switch($inscripcion->estado_ingreso)
-                        @case('inscripto') bg-blue-100 text-blue-800 @break
-                        @case('cursando') bg-indigo-100 text-indigo-800 @break
+                        @case('inscripto') bg-utn-blue/10 text-utn-blue-dark @break
+                        @case('cursando') bg-utn-blue/10 text-utn-dark @break
                         @case('aprobado') bg-green-100 text-green-800 @break
                         @case('desaprobado') bg-red-100 text-red-800 @break
                         @case('libre') bg-orange-100 text-orange-800 @break
@@ -91,7 +95,7 @@
                         @case('cancelado') bg-red-100 text-red-800 @break
                         @default bg-gray-100 text-gray-800
                     @endswitch">
-                    {{ \App\Models\Inscripcion::ESTADOS_INGRESO[$inscripcion->estado_ingreso] ?? $inscripcion->estado_ingreso }}
+                    {{ \App\Models\Inscripcion::getEstadosIngreso()[$inscripcion->estado_ingreso] ?? $inscripcion->estado_ingreso }}
                 </span>
                 @endif
 
@@ -99,7 +103,7 @@
                 <div class="flex gap-2 ml-2">
                     @if(auth()->user()->hasPermission('inscripciones.editar') && $inscripcion->puedeModificarse())
                     <a href="{{ route('inscripciones.edit', $inscripcion) }}"
-                       class="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                       class="inline-flex items-center gap-1.5 bg-utn-blue-darker text-white px-4 py-2 rounded-lg hover:bg-utn-dark-light transition-colors text-sm font-medium">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                         </svg>
@@ -124,7 +128,7 @@
             @if($inscripcion->estado === 'documentacion_ok')
             <form action="{{ route('inscripciones.confirmar', $inscripcion) }}" method="POST" class="inline">
                 @csrf
-                <button type="submit" class="inline-flex items-center gap-1.5 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                <button type="submit" class="inline-flex items-center gap-1.5 bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-colors text-sm font-medium">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     Confirmar Inscripci&oacute;n
                 </button>
@@ -141,7 +145,7 @@
 
             @if($inscripcion->estado === 'cancelado')
             <button type="button" onclick="document.getElementById('modal-reactivar').classList.remove('hidden')"
-                    class="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                    class="inline-flex items-center gap-1.5 bg-utn-blue-darker text-white px-4 py-2 rounded-lg hover:bg-utn-dark-light transition-colors text-sm font-medium">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
@@ -308,7 +312,7 @@
             {{-- COMISION ASIGNADA --}}
             <div class="bg-white shadow-md rounded-xl overflow-hidden">
                 <div class="px-6 py-4 bg-blue-50 border-b border-blue-100">
-                    <h2 class="text-base font-semibold text-blue-800 flex items-center gap-2">
+                    <h2 class="text-base font-semibold text-utn-blue-dark flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                         </svg>
@@ -318,30 +322,30 @@
                 <div class="p-6">
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
                         <div>
-                            <span class="block text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">Nombre</span>
+                            <span class="block text-xs font-medium text-utn-blue-dark uppercase tracking-wide mb-1">Nombre</span>
                             <p class="text-sm font-semibold text-gray-900">{{ $comision->nombre }}</p>
                         </div>
                         <div>
-                            <span class="block text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">Periodo</span>
+                            <span class="block text-xs font-medium text-utn-blue-dark uppercase tracking-wide mb-1">Periodo</span>
                             <p class="text-sm text-gray-900">{{ $comision->periodo ?? 'N/A' }} {{ $comision->anio }}</p>
                         </div>
                         <div>
-                            <span class="block text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">Turno</span>
+                            <span class="block text-xs font-medium text-utn-blue-dark uppercase tracking-wide mb-1">Turno</span>
                             <p class="text-sm text-gray-900">{{ $comision->turno ?? 'No especificado' }}</p>
                         </div>
                         <div>
-                            <span class="block text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">Modalidad</span>
+                            <span class="block text-xs font-medium text-utn-blue-dark uppercase tracking-wide mb-1">Modalidad</span>
                             <p class="text-sm text-gray-900">{{ $comision->modalidad ?? 'N/A' }}</p>
                         </div>
                         @if($comision->municipio)
                         <div>
-                            <span class="block text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">Sede</span>
+                            <span class="block text-xs font-medium text-utn-blue-dark uppercase tracking-wide mb-1">Sede</span>
                             <p class="text-sm text-gray-900">{{ $comision->municipio->nombre }}</p>
                         </div>
                         @endif
                         @if($comision->aula)
                         <div>
-                            <span class="block text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">Aula</span>
+                            <span class="block text-xs font-medium text-utn-blue-dark uppercase tracking-wide mb-1">Aula</span>
                             <p class="text-sm text-gray-900">{{ $comision->aula->nombre }}</p>
                         </div>
                         @endif
@@ -370,7 +374,7 @@
                             <p class="text-sm text-gray-500 mt-1">Materias Aprobadas</p>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-5 text-center">
-                            <span class="text-4xl font-bold {{ ($resumenNotas['porcentaje_asistencia'] ?? 0) >= 75 ? 'text-green-600' : 'text-orange-600' }}">
+                            <span class="text-4xl font-bold {{ ($resumenNotas['porcentaje_asistencia'] ?? 0) >= $asistenciaMinima ? 'text-green-600' : 'text-orange-600' }}">
                                 {{ $resumenNotas['porcentaje_asistencia'] ?? 100 }}%
                             </span>
                             <p class="text-sm text-gray-500 mt-1">Asistencia</p>
@@ -386,7 +390,8 @@
                                 <tr>
                                     <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Materia</th>
                                     <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Evaluaciones</th>
-                                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Nota</th>
+                                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Nota Sugerida</th>
+                                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Nota Final</th>
                                     <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
                                 </tr>
                             </thead>
@@ -407,7 +412,7 @@
                                         <div class="flex flex-wrap justify-center gap-1.5">
                                             @foreach($infoMateria['notas'] as $notaInfo)
                                                 @if($notaInfo['nota'] && $notaInfo['nota']->nota !== null)
-                                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium {{ $notaInfo['nota']->nota >= 6 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}">
+                                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium {{ $notaInfo['nota']->nota >= ($infoMateria['nota_aprobacion'] ?? $notaAprobacion) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}">
                                                     {{ $notaInfo['evaluacion']->tipo_nombre ?? 'Eval' }}: {{ number_format($notaInfo['nota']->nota, 1) }}
                                                 </span>
                                                 @else
@@ -421,13 +426,40 @@
                                         <span class="text-xs text-gray-300">Sin evaluaciones</span>
                                         @endif
                                     </td>
+                                    {{-- Nota Sugerida (promedio de evaluaciones) --}}
                                     <td class="px-5 py-4 text-center">
-                                        @if($infoMateria && $infoMateria['nota_final'] !== null)
-                                        <span class="text-xl font-bold {{ $infoMateria['nota_final'] >= 6 ? 'text-green-600' : 'text-red-600' }}">
-                                            {{ number_format($infoMateria['nota_final'], 1) }}
+                                        @if($infoMateria && $infoMateria['nota_sugerida'] !== null)
+                                        <span class="text-sm font-medium text-gray-500" title="Promedio de todas las evaluaciones">
+                                            {{ number_format($infoMateria['nota_sugerida'], 1) }}
                                         </span>
                                         @else
                                         <span class="text-gray-300">-</span>
+                                        @endif
+                                    </td>
+                                    {{-- Nota Final (puesta por el docente) --}}
+                                    <td class="px-5 py-4 text-center">
+                                        @if($infoMateria && $infoMateria['nota_final'] !== null)
+                                        <span class="text-xl font-bold {{ $infoMateria['nota_final'] >= ($infoMateria['nota_aprobacion'] ?? $notaAprobacion) ? 'text-green-600' : 'text-red-600' }}">
+                                            {{ number_format($infoMateria['nota_final'], 1) }}
+                                        </span>
+                                        @if(auth()->user()->hasPermission('evaluaciones.editar'))
+                                        <button type="button"
+                                            onclick="abrirModalNotaFinal({{ $materia->id }}, '{{ addslashes($materia->nombre) }}', {{ $infoMateria['nota_final'] }}, {{ $infoMateria['nota_sugerida'] ?? 'null' }})"
+                                            class="ml-1 text-gray-400 hover:text-utn-blue-dark text-xs" title="Editar nota final">
+                                            <svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                        </button>
+                                        @endif
+                                        @else
+                                            @if(auth()->user()->hasPermission('evaluaciones.editar'))
+                                            <button type="button"
+                                                onclick="abrirModalNotaFinal({{ $materia->id }}, '{{ addslashes($materia->nombre) }}', null, {{ $infoMateria['nota_sugerida'] ?? 'null' }})"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-utn-blue/10 text-utn-blue-dark hover:bg-utn-blue/20 transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                                Cargar nota
+                                            </button>
+                                            @else
+                                            <span class="text-gray-300">-</span>
+                                            @endif
                                         @endif
                                     </td>
                                     <td class="px-5 py-4 text-center">
@@ -436,6 +468,8 @@
                                             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                                             Aprobada
                                         </span>
+                                        @elseif($infoMateria && $infoMateria['nota_final'] !== null)
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Desaprobada</span>
                                         @elseif($infoMateria && !empty($infoMateria['notas']))
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">En curso</span>
                                         @else
@@ -462,9 +496,9 @@
                                 </h4>
                                 <p class="text-green-600 text-sm mt-1">El alumno complet&oacute; todas las materias del curso de ingreso.</p>
                             </div>
-                            <form action="{{ route('inscripciones.aprobar-cursada', $inscripcion) }}" method="POST" onsubmit="return confirm('Confirma aprobar la cursada de este alumno?')">
+                            <form action="{{ route('inscripciones.aprobar-cursada', $inscripcion) }}" method="POST" data-confirm="¿Confirma aprobar la cursada de este alumno?" data-confirm-title="Aprobar cursada" data-confirm-text="Aprobar">
                                 @csrf
-                                <button type="submit" class="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 transition-colors font-medium whitespace-nowrap">
+                                <button type="submit" class="bg-green-700 text-white px-6 py-2.5 rounded-lg hover:bg-green-800 transition-colors font-medium whitespace-nowrap">
                                     Aprobar Cursada
                                 </button>
                             </form>
@@ -511,7 +545,7 @@
                     <p class="mt-2 text-sm text-gray-500 max-w-sm mx-auto">El alumno a&uacute;n no ha sido asignado a ninguna comisi&oacute;n del curso de ingreso.</p>
                     @if(auth()->user()->hasPermission('comisiones.editar'))
                     <div class="mt-6">
-                        <a href="{{ route('asignacion-alumnos.index') }}" class="inline-flex items-center px-5 py-2.5 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium">
+                        <a href="{{ route('asignacion-alumnos.index') }}" class="inline-flex items-center px-5 py-2.5 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors text-sm font-medium">
                             <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
@@ -569,7 +603,7 @@
                             $etiquetaEvento = '';
                             if ($esCambioComision) {
                                 $etiquetaEvento = 'Cambio de Comisi&oacute;n';
-                                $badgeColor = 'bg-indigo-100 text-indigo-700';
+                                $badgeColor = 'bg-utn-blue/10 text-utn-blue-dark';
                             } elseif ($esCambioModalidad) {
                                 $etiquetaEvento = 'Cambio de Modalidad';
                                 $badgeColor = 'bg-purple-100 text-purple-700';
@@ -601,7 +635,7 @@
                                 <div class="bg-gray-50 rounded-lg p-4">
                                     <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <span class="font-semibold text-gray-900 capitalize text-sm">{{ \App\Models\Trayectoria::ESTADOS[$trayectoria->estado] ?? $trayectoria->estado }}</span>
+                                            <span class="font-semibold text-gray-900 capitalize text-sm">{{ \App\Models\Trayectoria::getEstados()[$trayectoria->estado] ?? $trayectoria->estado }}</span>
                                             @if($badgeColor)
                                             <span class="text-xs px-2 py-0.5 rounded-full font-medium {{ $badgeColor }}">{!! $etiquetaEvento !!}</span>
                                             @endif
@@ -705,7 +739,7 @@
                                           placeholder="Observaciones opcionales...">{{ $inscripcion->observaciones_documentacion }}</textarea>
                             </div>
 
-                            <button type="submit" class="w-full bg-utn-blue text-white px-4 py-2.5 rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium">
+                            <button type="submit" class="w-full bg-utn-blue text-white px-4 py-2.5 rounded-lg hover:bg-utn-dark transition-colors text-sm font-medium">
                                 Guardar Validaci&oacute;n
                             </button>
                         </div>
@@ -749,7 +783,7 @@
                     </h2>
                     @if(auth()->user()->hasPermission('inscripciones.editar'))
                     <button onclick="document.getElementById('modalCondicion').classList.remove('hidden')"
-                        class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-medium transition-colors">
+                        class="text-xs bg-utn-blue/5 text-utn-blue-dark hover:bg-utn-blue/10 px-3 py-1.5 rounded-lg font-medium transition-colors">
                         + Agregar
                     </button>
                     @endif
@@ -805,7 +839,7 @@
                     @if(auth()->user()->hasPermission('inscripciones.editar') || auth()->user()->hasPermission('inscripciones.ver'))
                         @if(!empty($tieneComision) && !$tieneSolicitudPendiente)
                             <button onclick="document.getElementById('modalSolicitudCambio').classList.remove('hidden')"
-                                class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-medium transition-colors">
+                                class="text-xs bg-utn-blue/5 text-utn-blue-dark hover:bg-utn-blue/10 px-3 py-1.5 rounded-lg font-medium transition-colors">
                                 + Nueva
                             </button>
                         @elseif($tieneSolicitudPendiente)
@@ -825,7 +859,7 @@
                         <div class="p-3 rounded-lg {{ $solicitud->estado === 'trueque_detectado' ? 'bg-purple-50 border border-purple-200' : 'bg-gray-50 border border-gray-100' }}">
                             <div class="flex items-center justify-between gap-2">
                                 <div class="min-w-0">
-                                    <span class="text-sm font-medium text-gray-900">{{ \App\Models\SolicitudCambio::TIPOS[$solicitud->tipo] ?? ucfirst($solicitud->tipo) }}</span>
+                                    <span class="text-sm font-medium text-gray-900">{{ \App\Models\SolicitudCambio::getTipos()[$solicitud->tipo] ?? ucfirst($solicitud->tipo) }}</span>
                                     @if($solicitud->tipo === 'comision' && $solicitud->comisionDestino)
                                         <span class="text-xs text-gray-400 ml-1">&rarr; {{ $solicitud->comisionDestino->nombre }}</span>
                                     @endif
@@ -833,7 +867,7 @@
                                 @php
                                 $estadoColors = [
                                     'pendiente' => 'bg-yellow-100 text-yellow-700',
-                                    'en_revision' => 'bg-blue-100 text-blue-700',
+                                    'en_revision' => 'bg-utn-blue/10 text-utn-blue-dark',
                                     'aprobada' => 'bg-green-100 text-green-700',
                                     'rechazada' => 'bg-red-100 text-red-700',
                                     'cancelada' => 'bg-gray-100 text-gray-600',
@@ -841,7 +875,7 @@
                                 ];
                                 @endphp
                                 <span class="px-2 py-0.5 text-xs rounded-full font-medium flex-shrink-0 {{ $estadoColors[$solicitud->estado] ?? 'bg-gray-100 text-gray-600' }}">
-                                    {{ \App\Models\SolicitudCambio::ESTADOS[$solicitud->estado] ?? ucfirst($solicitud->estado) }}
+                                    {{ \App\Models\SolicitudCambio::getEstados()[$solicitud->estado] ?? ucfirst($solicitud->estado) }}
                                 </span>
                             </div>
                             @if($solicitud->solicitud_trueque_id)
@@ -936,7 +970,7 @@
             <div class="mb-4">
                 <label for="motivo_reactivacion" class="block text-sm font-medium text-gray-700 mb-2">Motivo de reactivaci&oacute;n</label>
                 <textarea name="motivo_reactivacion" id="motivo_reactivacion" rows="3"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent"
                           placeholder="Ingrese el motivo de la reactivación..."></textarea>
             </div>
             <div class="flex justify-end gap-2">
@@ -944,7 +978,7 @@
                         class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
                     Volver
                 </button>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+                <button type="submit" class="px-4 py-2 bg-utn-blue-darker text-white rounded-lg hover:bg-utn-dark-light text-sm font-medium">
                     Confirmar Reactivaci&oacute;n
                 </button>
             </div>
@@ -963,33 +997,30 @@
             <div class="p-6 space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                    <select name="tipo" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500">
-                        <option value="discapacidad">Discapacidad</option>
-                        <option value="enfermedad_cronica">Enfermedad Cr&oacute;nica</option>
-                        <option value="situacion_laboral">Situaci&oacute;n Laboral</option>
-                        <option value="situacion_familiar">Situaci&oacute;n Familiar</option>
-                        <option value="condicionalidad_academica">Condicionalidad Acad&eacute;mica</option>
-                        <option value="otra">Otra</option>
+                    <select name="tipo" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark">
+                        @foreach(\App\Models\CondicionParticular::getTipos() as $key => $label)
+                            <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">T&iacute;tulo</label>
-                    <input type="text" name="titulo" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Hipoacusia leve">
+                    <input type="text" name="titulo" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark" placeholder="Ej: Hipoacusia leve">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Descripci&oacute;n</label>
-                    <textarea name="descripcion" rows="3" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500" placeholder="Describa la condición..."></textarea>
+                    <textarea name="descripcion" rows="3" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark" placeholder="Describa la condición..."></textarea>
                 </div>
                 <div>
                     <label class="flex items-center gap-2">
-                        <input type="checkbox" name="requiere_adecuacion" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <input type="checkbox" name="requiere_adecuacion" value="1" class="rounded border-gray-300 text-utn-blue-dark focus:ring-utn-blue-dark">
                         <span class="text-sm text-gray-700">Requiere adecuaciones pedag&oacute;gicas</span>
                     </label>
                 </div>
             </div>
             <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-xl">
                 <button type="button" onclick="document.getElementById('modalCondicion').classList.add('hidden')" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium">Cancelar</button>
-                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Guardar</button>
+                <button type="submit" class="px-4 py-2 bg-utn-blue-darker text-white rounded-lg hover:bg-utn-dark text-sm font-medium">Guardar</button>
             </div>
         </form>
     </div>
@@ -1004,7 +1035,7 @@
         <div class="p-6">
             @if(!empty($tieneComision) && $comision)
                 <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p class="text-sm text-blue-700">
+                    <p class="text-sm text-utn-blue-dark">
                         <span class="font-medium">Comisi&oacute;n actual:</span> {{ $comision->nombre }}
                         ({{ $comision->turno ?? 'Sin turno' }} - {{ $comision->modalidad ?? 'Sin modalidad' }})
                     </p>
@@ -1016,7 +1047,7 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Comisi&oacute;n Destino <span class="text-red-500">*</span></label>
-                            <select name="comision_destino_id" id="comisionDestinoSelect" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500">
+                            <select name="comision_destino_id" id="comisionDestinoSelect" required class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark">
                                 <option value="">Seleccionar comisi&oacute;n...</option>
                                 @if(isset($comisionesDisponibles) && $comisionesDisponibles->count() > 0)
                                     @foreach($comisionesDisponibles as $comisionDisp)
@@ -1051,12 +1082,12 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Motivo <span class="text-red-500">*</span></label>
-                            <textarea name="motivo" required rows="3" minlength="10" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500" placeholder="Explique el motivo del cambio (m&iacute;nimo 10 caracteres)..."></textarea>
+                            <textarea name="motivo" required rows="3" minlength="10" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark" placeholder="Explique el motivo del cambio (m&iacute;nimo 10 caracteres)..."></textarea>
                         </div>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" onclick="document.getElementById('modalSolicitudCambio').classList.add('hidden')" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Enviar Solicitud</button>
+                        <button type="submit" class="px-4 py-2 bg-utn-blue-darker text-white rounded-lg hover:bg-utn-dark text-sm font-medium">Enviar Solicitud</button>
                     </div>
                 </form>
             @else
@@ -1118,6 +1149,106 @@
     </div>
 </div>
 @endif
+
+{{-- Modal Nota Final Materia --}}
+@if(!empty($tieneComision) && $comision && auth()->user()->hasPermission('evaluaciones.editar'))
+<div id="modalNotaFinal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Nota Final de Materia</h3>
+                <button onclick="document.getElementById('modalNotaFinal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <p class="text-sm text-gray-600 mb-4">
+                Materia: <strong id="modalNotaFinalMateriaName"></strong>
+            </p>
+
+            <div id="notaSugeridaContainer" class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <span class="text-xs text-blue-600 font-medium uppercase">Nota Sugerida (promedio evaluaciones)</span>
+                        <p class="text-lg font-bold text-blue-800" id="notaSugeridaValor">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <form action="{{ route('inscripciones.nota-final-materia', $inscripcion) }}" method="POST">
+                @csrf
+                <input type="hidden" name="materia_id" id="modalNotaFinalMateriaId">
+                <input type="hidden" name="comision_id" value="{{ $comision->id }}">
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nota Final <span class="text-red-500">*</span></label>
+                    <input type="number" name="nota_final" id="modalNotaFinalInput" min="0" max="10" step="0.01" required
+                        class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark text-lg font-bold text-center"
+                        placeholder="0.00">
+                    <p class="text-xs text-gray-400 mt-1">Ingrese la nota final de la materia (0 a 10)</p>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+                    <textarea name="observaciones" rows="2" class="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-utn-blue-dark text-sm" placeholder="Opcional..."></textarea>
+                </div>
+
+                <div class="flex items-center justify-between gap-3">
+                    <button type="button" onclick="document.getElementById('modalNotaFinal').classList.add('hidden')"
+                        class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium">
+                        Cancelar
+                    </button>
+                    <div class="flex gap-2">
+                        <button type="button" id="btnUsarSugerida"
+                            class="px-4 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-medium transition-colors">
+                            Usar Sugerida
+                        </button>
+                        <button type="submit"
+                            class="px-5 py-2 text-sm bg-utn-blue text-white rounded-lg hover:bg-utn-dark font-medium transition-colors">
+                            Guardar Nota Final
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
+
+@push('scripts')
+<script>
+    function abrirModalNotaFinal(materiaId, materiaNombre, notaActual, notaSugerida) {
+        document.getElementById('modalNotaFinalMateriaId').value = materiaId;
+        document.getElementById('modalNotaFinalMateriaName').textContent = materiaNombre;
+
+        var input = document.getElementById('modalNotaFinalInput');
+        input.value = notaActual !== null ? notaActual : '';
+
+        var sugeridaContainer = document.getElementById('notaSugeridaContainer');
+        var sugeridaValor = document.getElementById('notaSugeridaValor');
+        var btnSugerida = document.getElementById('btnUsarSugerida');
+
+        if (notaSugerida !== null && notaSugerida !== undefined) {
+            sugeridaContainer.classList.remove('hidden');
+            sugeridaValor.textContent = parseFloat(notaSugerida).toFixed(1);
+            btnSugerida.classList.remove('hidden');
+            btnSugerida.onclick = function() {
+                input.value = parseFloat(notaSugerida).toFixed(2);
+            };
+        } else {
+            sugeridaContainer.classList.add('hidden');
+            btnSugerida.classList.add('hidden');
+        }
+
+        document.getElementById('modalNotaFinal').classList.remove('hidden');
+    }
+</script>
+@endpush
 
 @push('scripts')
 <script>

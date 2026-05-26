@@ -13,6 +13,8 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\AulaController;
 use App\Http\Controllers\DifusionController;
+use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\AutoCrearComisionesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,6 +67,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/{inscripcion}/reactivar', [InscripcionController::class, 'reactivar'])->middleware('permission:inscripciones.editar')->name('reactivar');
         Route::post('/{inscripcion}/aprobar-cursada', [InscripcionController::class, 'aprobarCursada'])->middleware('permission:inscripciones.editar')->name('aprobar-cursada');
         Route::post('/{inscripcion}/aprobar-excepcional', [InscripcionController::class, 'aprobarExcepcional'])->middleware('permission:inscripciones.editar')->name('aprobar-excepcional');
+        Route::post('/{inscripcion}/nota-final-materia', [InscripcionController::class, 'guardarNotaFinalMateria'])->middleware('permission:evaluaciones.editar')->name('nota-final-materia');
+        Route::delete('/{inscripcion}/nota-final-materia', [InscripcionController::class, 'eliminarNotaFinalMateria'])->middleware('permission:evaluaciones.editar')->name('nota-final-materia.destroy');
         Route::post('/{inscripcion}/agregar-condicion', [InscripcionController::class, 'agregarCondicion'])->middleware('permission:inscripciones.editar')->name('agregar-condicion');
         Route::delete('/condicion/{condicion}', [InscripcionController::class, 'desactivarCondicion'])->middleware('permission:inscripciones.editar')->name('desactivar-condicion');
         Route::post('/{inscripcion}/crear-solicitud', [InscripcionController::class, 'crearSolicitud'])->middleware('permission:inscripciones.ver')->name('crear-solicitud');
@@ -86,6 +90,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/{comision}/alumnos-disponibles', [ComisionController::class, 'alumnosDisponibles'])->middleware('permission:comisiones.editar')->name('alumnosDisponibles');
         Route::post('/{comision}/inscribir-alumno', [ComisionController::class, 'inscribirAlumno'])->middleware('permission:comisiones.editar')->name('inscribirAlumno');
         Route::delete('/{comision}/inscripcion/{inscripcion}', [ComisionController::class, 'desinscribirAlumno'])->middleware('permission:comisiones.editar')->name('desinscribirAlumno');
+        Route::post('/{comision}/extracupos', [ComisionController::class, 'actualizarExtracupos'])->middleware('permission:comisiones.editar')->name('actualizarExtracupos');
+        Route::patch('/{comision}/archivar', [ComisionController::class, 'toggleArchivar'])->middleware('permission:comisiones.editar')->name('toggleArchivar');
+    });
+
+    // Módulo 2.1: Auto-creación de comisiones
+    Route::prefix('auto-crear-comisiones')->name('auto-crear-comisiones.')->middleware('permission:comisiones.crear')->group(function () {
+        Route::get('/', [AutoCrearComisionesController::class, 'index'])->name('index');
+        Route::post('/preview', [AutoCrearComisionesController::class, 'preview'])->name('preview');
+        Route::post('/ejecutar', [AutoCrearComisionesController::class, 'ejecutar'])->name('ejecutar');
     });
 
     // Módulo 2.5: Asignación Aleatoria de Alumnos (RF10)
@@ -108,6 +121,54 @@ Route::middleware('auth')->group(function () {
 
         // Alertas de alumnos en riesgo
         Route::get('/alertas', [AsistenciaController::class, 'alertas'])->name('alertas');
+
+        // Ver materias de una comisión
+        Route::get('/comision/{comision}/materias', [AsistenciaController::class, 'comisionMaterias'])
+            ->name('comision.materias');
+
+        // Historial de asistencias por materia
+        Route::get('/comision/{comision}/materia/{materia}/historial', [AsistenciaController::class, 'materiaHistorial'])
+            ->name('materia.historial');
+
+        // Tomar asistencia por materia
+        Route::get('/comision/{comision}/materia/{materia}/tomar', [AsistenciaController::class, 'tomarAsistencia'])
+            ->middleware('permission:asistencias.crear')
+            ->name('tomar');
+
+        // Alias para tomar asistencia
+        Route::get('/comision/{comision}/materia/{materia}/registrar', [AsistenciaController::class, 'tomarAsistencia'])
+            ->middleware('permission:asistencias.crear')
+            ->name('materia.registrar');
+
+        // Guardar asistencia por materia
+        Route::post('/comision/{comision}/materia/{materia}/guardar', [AsistenciaController::class, 'guardarAsistencia'])
+            ->middleware('permission:asistencias.crear')
+            ->name('guardar');
+
+        // Seleccionar alumno para justificar inasistencias por materia
+        Route::get('/comision/{comision}/materia/{materia}/justificar-alumno', [AsistenciaController::class, 'seleccionarAlumnoPorMateria'])
+            ->middleware('permission:asistencias.editar')
+            ->name('materia.seleccionar-alumno');
+
+        // Editar asistencia individual
+        Route::get('/asistencia/{asistencia}/editar', [AsistenciaController::class, 'editarAsistencia'])
+            ->middleware('permission:asistencias.editar')
+            ->name('editar');
+
+        // Actualizar asistencia individual
+        Route::put('/asistencia/{asistencia}/actualizar', [AsistenciaController::class, 'actualizarAsistencia'])
+            ->middleware('permission:asistencias.editar')
+            ->name('actualizar');
+
+        // Editar asistencia por materia
+        Route::get('/comision/{comision}/materia/{materia}/editar', [AsistenciaController::class, 'materiaEditar'])
+            ->middleware('permission:asistencias.editar')
+            ->name('materia.editar');
+
+        // Actualizar asistencia por materia
+        Route::put('/comision/{comision}/materia/{materia}/actualizar', [AsistenciaController::class, 'materiaActualizar'])
+            ->middleware('permission:asistencias.editar')
+            ->name('materia.actualizar');
 
         // Listado de asistencia por materia
         Route::get('/por-materia', [AsistenciaController::class, 'porMateria'])->name('por-materia');
@@ -153,10 +214,16 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:asistencias.editar')
             ->name('alumno.justificar');
 
+        // Alias para justificar (usado en buscador)
+        Route::get('/{comision}/justificar/{inscripcion}', [AsistenciaController::class, 'justificarForm'])
+            ->middleware('permission:asistencias.editar')
+            ->name('justificar');
+
         Route::post('/{comision}/alumno/{inscripcion}/justificar', [AsistenciaController::class, 'justificarStore'])
             ->middleware('permission:asistencias.editar')
             ->name('alumno.justificar.store');
     });
+
 
     // Módulo 4: Evaluaciones
     Route::prefix('evaluaciones')->name('evaluaciones.')->middleware('permission:evaluaciones.ver')->group(function () {
@@ -167,8 +234,10 @@ Route::middleware('auth')->group(function () {
         Route::put('/{evaluacion}', [EvaluacionController::class, 'update'])->middleware('permission:evaluaciones.editar')->name('update');
         Route::delete('/{evaluacion}', [EvaluacionController::class, 'destroy'])->middleware('permission:evaluaciones.eliminar')->name('destroy');
 
-        // Vista de evaluaciones por comisión
+        // Vista de evaluaciones por comisión (planilla docente unificada)
         Route::get('/comision/{comision}', [EvaluacionController::class, 'showComision'])->name('comision');
+        Route::post('/comision/{comision}/notas-materia', [EvaluacionController::class, 'storeNotasMateria'])->middleware('permission:evaluaciones.crear')->name('notas-materia.store');
+        Route::get('/comision/{comision}/exportar-planilla', [EvaluacionController::class, 'exportPlanilla'])->name('exportar-planilla');
 
         // NOTAS - Gestión de notas por comisión
         Route::get('/notas/{comision}', [EvaluacionController::class, 'indexNota'])->name('notas.index');
@@ -199,6 +268,13 @@ Route::middleware('auth')->group(function () {
     // Módulo 5: Reportes
     Route::prefix('reportes')->name('reportes.')->middleware('permission:reportes.ver')->group(function () {
         Route::get('/', [ReporteController::class, 'index'])->name('index');
+        Route::get('/reportes/asistencias', [ReporteController::class, 'reporteasistenciascomision'])->name('reporteasistenciascomision');
+        Route::get('/reportes/inscripciones', [ReporteController::class, 'reporteinscriones'])->name('reporteinscriones');
+        Route::get('/reportes/rendimiento', [ReporteController::class, 'reporterendimiento'])->name('reporterendimiento');
+        Route::get('/reportes/alumnos', [ReporteController::class, 'reportealumnos'])->name('reportealumnos');
+        Route::get('/reportes/alumno/detalle{inscripcion_id}', [ReporteController::class, 'reportealumnosdetalle'])->name('reportealumnosdetalle');
+        Route::get('/reportes/desercion', [ReporteController::class, 'reporteDesercion'])->name('desercion');
+        Route::get('/reportes/resumen-comisiones', [ReporteController::class, 'reporteResumenComisiones'])->name('resumen-comisiones');
     });
 
     // Módulo: Materias (ABM)
@@ -211,6 +287,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/{materia}', [App\Http\Controllers\MateriaController::class, 'update'])->middleware('permission:comisiones.editar')->name('update');
         Route::delete('/{materia}', [App\Http\Controllers\MateriaController::class, 'destroy'])->middleware('permission:comisiones.eliminar')->name('destroy');
     });
+
+    // Módulo: Infraestructura (vista unificada)
+    Route::get('/infraestructura', [App\Http\Controllers\InfraestructuraController::class, 'index'])
+        ->middleware('permission:comisiones.ver')
+        ->name('infraestructura.index');
 
     // Módulo: Municipios (ABM)
     Route::prefix('municipios')->name('municipios.')->middleware('permission:comisiones.ver')->group(function () {
@@ -265,6 +346,25 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/restore', [UsuarioController::class, 'restore'])->middleware('permission:usuarios.eliminar')->name('restore');
     });
 
+    // Módulo: Roles y Permisos
+    Route::prefix('roles')->name('roles.')->middleware('permission:roles.gestionar')->group(function () {
+        Route::get('/', [App\Http\Controllers\RolController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\RolController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\RolController::class, 'store'])->name('store');
+        Route::post('/sync-permissions', [App\Http\Controllers\RolController::class, 'syncPermissions'])->name('sync-permissions');
+        Route::get('/{role}', [App\Http\Controllers\RolController::class, 'show'])->name('show');
+        Route::get('/{role}/edit', [App\Http\Controllers\RolController::class, 'edit'])->name('edit');
+        Route::put('/{role}', [App\Http\Controllers\RolController::class, 'update'])->name('update');
+        Route::delete('/{role}', [App\Http\Controllers\RolController::class, 'destroy'])->name('destroy');
+    });
+
+    // Acceso rápido: Solicitar cambio de comisión (docentes y usuarios con inscripciones.ver)
+    Route::prefix('solicitud-cambio')->name('solicitud-cambio.')->middleware('permission:solicitud-cambio.ver')->group(function () {
+        Route::get('/', [App\Http\Controllers\SolicitudRapidaController::class, 'index'])->name('index');
+        Route::get('/{inscripcion}/form', [App\Http\Controllers\SolicitudRapidaController::class, 'form'])->name('form');
+        Route::post('/{inscripcion}/store', [App\Http\Controllers\SolicitudRapidaController::class, 'store'])->name('store');
+    });
+
     // Módulo: Solicitudes de Cambio
     Route::prefix('solicitudes')->name('solicitudes.')->middleware('permission:comisiones.editar')->group(function () {
         Route::get('/', [App\Http\Controllers\SolicitudCambioController::class, 'index'])->name('index');
@@ -284,4 +384,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/comisiones/{comision}/difundir', [App\Http\Controllers\DifusionController::class, 'createPorComision'])
         ->middleware('permission:difusiones.generar-comision')
         ->name('comisiones.difundir');
+    // Módulo: Configuración del Sistema
+    Route::prefix('configuracion')->name('configuracion.')->middleware('permission:usuarios.ver')->group(function () {
+        Route::get('/', [ConfiguracionController::class, 'index'])->name('index');
+        Route::put('/{variable}', [ConfiguracionController::class, 'update'])->middleware('permission:usuarios.editar')->name('update');
+        Route::post('/{variable}/sincronizar', [ConfiguracionController::class, 'sincronizar'])->middleware('permission:usuarios.editar')->name('sincronizar');
+        Route::get('/{variable}/historial', [ConfiguracionController::class, 'historial'])->name('historial');
+    });
 }); // Cierre del middleware auth

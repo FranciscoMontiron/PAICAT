@@ -29,7 +29,8 @@ class UsuarioController extends Controller
      */
     public function create(): View
     {
-        $roles = Role::orderBy('nombre')->get();
+        $roles = Role::withCount(['users', 'permissions'])->orderBy('nombre')->get();
+        $roles->load('permissions');
         return view('usuarios.create', compact('roles'));
     }
 
@@ -75,7 +76,8 @@ class UsuarioController extends Controller
      */
     public function edit(User $usuario): View
     {
-        $roles = Role::orderBy('nombre')->get();
+        $roles = Role::withCount(['users', 'permissions'])->orderBy('nombre')->get();
+        $roles->load('permissions');
         $usuario->load('roles');
         return view('usuarios.edit', compact('usuario', 'roles'));
     }

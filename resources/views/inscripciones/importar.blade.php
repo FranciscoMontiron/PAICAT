@@ -61,7 +61,7 @@
     {{-- PASO 1: Filtrar alumnos --}}
     <div class="bg-white shadow-md rounded-lg p-6 mb-6">
         <div class="flex items-center gap-3 mb-4">
-            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold text-sm">1</span>
+            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-utn-blue/10 text-utn-blue-dark font-bold text-sm">1</span>
             <h2 class="text-lg font-semibold text-gray-800">Filtrar Alumnos</h2>
         </div>
         <p class="text-sm text-gray-500 mb-4 ml-11">Filtra los alumnos por sus datos de preinscripción.</p>
@@ -101,7 +101,7 @@
                     </select>
                 </div>
                 <div class="flex gap-2">
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
+                    <button type="submit" class="px-4 py-2 bg-utn-blue-darker text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
                         Filtrar
                     </button>
                     @if(request()->hasAny(['buscar', 'modalidad', 'turno_ingreso', 'anio_ingreso', 'incluir_incompletos']))
@@ -116,7 +116,7 @@
             <div class="mt-4">
                 <label class="inline-flex items-center cursor-pointer">
                     <input type="checkbox" name="incluir_incompletos" value="1" {{ request('incluir_incompletos') ? 'checked' : '' }}
-                        class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        class="h-4 w-4 text-utn-blue-dark border-gray-300 rounded focus:ring-indigo-500"
                         onchange="this.form.submit()">
                     <span class="ml-2 text-sm text-gray-700">Incluir alumnos con formulario incompleto</span>
                 </label>
@@ -127,28 +127,54 @@
         <div class="mt-3 ml-11 flex flex-wrap gap-2 items-center">
             <span class="text-xs text-gray-500">Filtros activos:</span>
             @if(request('buscar'))
-            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-utn-blue/10 text-utn-dark rounded">
                 "{{ request('buscar') }}"
             </span>
             @endif
             @if(request('modalidad'))
-            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-utn-blue/10 text-utn-dark rounded">
                 {{ request('modalidad') }}
             </span>
             @endif
             @if(request('turno_ingreso'))
-            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-utn-blue/10 text-utn-dark rounded">
                 Turno: {{ request('turno_ingreso') }}
             </span>
             @endif
             @if(request('anio_ingreso'))
-            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-utn-blue/10 text-utn-dark rounded">
                 Año: {{ request('anio_ingreso') }}
             </span>
             @endif
         </div>
         @endif
     </div>
+
+    {{-- Alerta de reinscripciones detectadas --}}
+    @if($cantidadReinscripciones > 0)
+    <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-amber-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-semibold text-amber-800">
+                    {{ $cantidadReinscripciones }} alumno(s) con reinscripción detectada
+                </h3>
+                <p class="text-sm text-amber-700 mt-1">
+                    Los alumnos marcados con <span class="inline-flex items-center px-1.5 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800">Reinscripción</span>
+                    ya tuvieron inscripciones canceladas en años anteriores. Al importarlos, se creará una nueva trayectoria preservando el historial previo.
+                </p>
+                <button type="button" onclick="document.getElementById('modal-reinscripciones').classList.remove('hidden')"
+                    class="mt-2 text-sm font-medium text-amber-800 underline hover:text-amber-900">
+                    Ver detalle de reinscripciones
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Formulario de importación --}}
     <form action="{{ route('inscripciones.importar') }}" method="POST" id="form-importar">
@@ -159,7 +185,7 @@
             <div class="p-4 border-b bg-gray-50">
                 <div class="flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center gap-3">
-                        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold text-sm">2</span>
+                        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-utn-blue/10 text-utn-blue-dark font-bold text-sm">2</span>
                         <div>
                             <h2 class="text-lg font-semibold text-gray-800">Seleccionar Alumnos</h2>
                             <p class="text-sm text-gray-500">
@@ -169,16 +195,16 @@
                     </div>
                     <div class="flex items-center gap-4">
                         <label class="flex items-center cursor-pointer select-none">
-                            <input type="checkbox" id="seleccionar_pagina" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
+                            <input type="checkbox" id="seleccionar_pagina" class="h-4 w-4 text-utn-blue-dark border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
                             <span class="ml-2 text-sm text-gray-700">Seleccionar página</span>
                         </label>
                         @if($alumnosDisponibles->total() > $alumnosDisponibles->perPage())
                         <button type="button" id="btn-seleccionar-todos"
-                            class="px-3 py-1 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                            class="px-3 py-1 text-xs font-medium bg-utn-blue-darker text-white rounded-lg hover:bg-indigo-700 transition-colors">
                             Seleccionar todos ({{ $alumnosDisponibles->total() }})
                         </button>
                         @endif
-                        <span id="contador_seleccionados" class="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm font-semibold rounded-full">
+                        <span id="contador_seleccionados" class="px-3 py-1 bg-utn-blue/10 text-utn-dark text-sm font-semibold rounded-full">
                             0 seleccionados
                         </span>
                     </div>
@@ -209,17 +235,18 @@
                         $acadDatos = $alumno->academicoDatos->first();
                         $espId = $acadDatos?->especialidad_id;
                         $espNombre = $espId && isset($especialidades[$espId]) ? $especialidades[$espId]->nombre : null;
+                        $esReinscripcion = isset($reinscripciones[$alumno->id]);
                         @endphp
-                        <tr class="hover:bg-gray-50 transition-colors cursor-pointer fila-alumno" data-id="{{ $alumno->id }}">
+                        <tr class="hover:bg-gray-50 transition-colors cursor-pointer fila-alumno {{ $esReinscripcion ? 'bg-amber-50/50' : '' }}" data-id="{{ $alumno->id }}">
                             <td class="px-4 py-3">
                                 <input type="checkbox" name="person_ids[]" value="{{ $alumno->id }}"
-                                    class="checkbox-alumno h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
+                                    class="checkbox-alumno h-4 w-4 text-utn-blue-dark border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-9 w-9">
-                                        <div class="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center">
-                                            <span class="text-indigo-600 font-semibold text-xs">
+                                        <div class="h-9 w-9 rounded-full {{ $esReinscripcion ? 'bg-amber-100' : 'bg-utn-blue/10' }} flex items-center justify-center">
+                                            <span class="{{ $esReinscripcion ? 'text-amber-700' : 'text-utn-blue-dark' }} font-semibold text-xs">
                                                 {{ strtoupper(substr($alumno->nombre ?? '', 0, 1)) }}{{ strtoupper(substr($alumno->apellido ?? '', 0, 1)) }}
                                             </span>
                                         </div>
@@ -227,6 +254,11 @@
                                     <div class="ml-3">
                                         <div class="text-sm font-medium text-gray-900">
                                             {{ $alumno->apellido }}, {{ $alumno->nombre }}
+                                            @if($esReinscripcion)
+                                            <span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800" title="Inscripción cancelada en: {{ collect($reinscripciones[$alumno->id])->pluck('anio_ingreso')->join(', ') }}">
+                                                Reinscripción
+                                            </span>
+                                            @endif
                                         </div>
                                         <div class="text-xs text-gray-500">{{ Str::limit($alumno->email, 25) }}</div>
                                     </div>
@@ -249,7 +281,7 @@
                                 {{ $acadDatos?->turno_ingreso ?? '-' }}
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-semibold rounded bg-indigo-100 text-indigo-800">
+                                <span class="px-2 py-1 text-xs font-semibold rounded bg-utn-blue/10 text-utn-dark">
                                     {{ $acadDatos?->ingreso_carrera ?? '-' }}
                                 </span>
                             </td>
@@ -296,7 +328,7 @@
                 Volver al listado
             </a>
             <button type="button" id="btn-importar"
-                class="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium">
+                class="px-6 py-2.5 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
@@ -338,11 +370,21 @@
                             Todos los datos (especialidad, modalidad, turnos, año de ingreso) se tomarán automáticamente de la preinscripción de cada alumno.
                         </p>
                     </div>
+                    @if($cantidadReinscripciones > 0)
+                    <div class="mt-3 bg-amber-50 rounded-lg p-3 border border-amber-200">
+                        <p class="text-xs text-amber-800 font-medium">
+                            <svg class="w-3.5 h-3.5 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            Algunos alumnos seleccionados son reinscripciones. Se creará una nueva trayectoria preservando el historial anterior.
+                        </p>
+                    </div>
+                    @endif
                 </div>
             </div>
             <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
                 <button type="button" id="btn-confirmar-importar"
-                    class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:w-auto sm:text-sm">
+                    class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-green-700 text-base font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:w-auto sm:text-sm">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
@@ -356,6 +398,76 @@
         </div>
     </div>
 </div>
+
+{{-- Modal de detalle de reinscripciones --}}
+@if($cantidadReinscripciones > 0)
+<div id="modal-reinscripciones" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-reinscripciones-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="document.getElementById('modal-reinscripciones').classList.add('hidden')"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+            <div class="sm:flex sm:items-start">
+                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-amber-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg class="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-reinscripciones-title">
+                        Alumnos con reinscripción ({{ $cantidadReinscripciones }})
+                    </h3>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Estos alumnos ya tuvieron inscripciones canceladas. Al importarlos se crea una nueva inscripción como nueva trayectoria, preservando el historial.
+                    </p>
+                    <div class="mt-4 max-h-96 overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Alumno</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">DNI</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Inscripciones canceladas</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach($alumnosDisponibles as $alumno)
+                                    @if(isset($reinscripciones[$alumno->id]))
+                                    <tr>
+                                        <td class="px-3 py-2 whitespace-nowrap font-medium text-gray-900">
+                                            {{ $alumno->apellido }}, {{ $alumno->nombre }}
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-gray-600">
+                                            {{ $alumno->documento }}
+                                        </td>
+                                        <td class="px-3 py-2">
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($reinscripciones[$alumno->id] as $inscAnterior)
+                                                <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-red-100 text-red-800">
+                                                    {{ $inscAnterior['anio_ingreso'] }}
+                                                    @if($inscAnterior['especialidad_nombre'])
+                                                    - {{ Str::limit($inscAnterior['especialidad_nombre'], 15) }}
+                                                    @endif
+                                                </span>
+                                                @endforeach
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endif
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="document.getElementById('modal-reinscripciones').classList.add('hidden')"
+                    class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:w-auto sm:text-sm">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 @push('scripts')
 <script>
@@ -470,10 +582,11 @@
 
         // Evento del botón importar - validar y abrir modal
         btnImportar.addEventListener('click', function() {
-            var seleccionados = document.querySelectorAll('.checkbox-alumno:checked').length;
+            var seleccionadosPagina = document.querySelectorAll('.checkbox-alumno:checked').length;
+            var totalReal = todosSeleccionados ? {{ $alumnosDisponibles->total() }} : seleccionadosPagina;
 
             // Validar selección de alumnos
-            if (seleccionados === 0) {
+            if (totalReal === 0) {
                 // Scroll a la tabla de alumnos
                 document.getElementById('tabla-alumnos').scrollIntoView({
                     behavior: 'smooth',
@@ -497,15 +610,41 @@
                 return;
             }
 
-            // Todo válido - actualizar información en el modal
-            modalCantidad.textContent = seleccionados;
+            // Todo válido - actualizar información en el modal con el total real
+            modalCantidad.textContent = totalReal;
 
             abrirModal();
         });
 
-        // Confirmar importación
+        // Confirmar importación - mostrar spinner y enviar
         btnConfirmar.addEventListener('click', function() {
-            cerrarModal();
+            // Deshabilitar botones para evitar doble click
+            btnConfirmar.disabled = true;
+            btnCancelar.disabled = true;
+
+            // Reemplazar contenido del modal con spinner
+            var modalContent = btnConfirmar.closest('.sm\\:flex').parentElement;
+            var totalImportar = modalCantidad.textContent;
+            modalContent.innerHTML = `
+                <div class="py-8 text-center">
+                    <svg class="animate-spin h-12 w-12 mx-auto text-green-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900">Importando ${totalImportar} alumnos...</h3>
+                    <p class="text-sm text-gray-500 mt-2">Este proceso puede demorar varios minutos. No cierres ni recargues la pagina.</p>
+                    <div class="mt-4">
+                        <div class="w-48 mx-auto bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-green-600 h-1.5 rounded-full animate-pulse" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Deshabilitar el botón principal también
+            btnImportar.disabled = true;
+            btnImportar.innerHTML = '<svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Importando...';
+
             formImportar.submit();
         });
 
@@ -535,7 +674,7 @@
                     checkboxes.forEach(cb => cb.checked = true);
                     selectPagina.checked = true;
                     btnSeleccionarTodos.textContent = 'Deseleccionar todos';
-                    btnSeleccionarTodos.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    btnSeleccionarTodos.classList.remove('bg-utn-blue-darker', 'hover:bg-indigo-700');
                     btnSeleccionarTodos.classList.add('bg-red-600', 'hover:bg-red-700');
                     contador.textContent = '{{ $alumnosDisponibles->total() }} seleccionados (todos)';
                     btnTexto.textContent = 'Importar {{ $alumnosDisponibles->total() }} Alumnos';
@@ -547,7 +686,7 @@
                     selectPagina.checked = false;
                     btnSeleccionarTodos.textContent = 'Seleccionar todos ({{ $alumnosDisponibles->total() }})';
                     btnSeleccionarTodos.classList.remove('bg-red-600', 'hover:bg-red-700');
-                    btnSeleccionarTodos.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    btnSeleccionarTodos.classList.add('bg-utn-blue-darker', 'hover:bg-indigo-700');
                     actualizarEstado();
                 }
             });
@@ -562,7 +701,7 @@
                     if (btnSeleccionarTodos) {
                         btnSeleccionarTodos.textContent = 'Seleccionar todos ({{ $alumnosDisponibles->total() }})';
                         btnSeleccionarTodos.classList.remove('bg-red-600', 'hover:bg-red-700');
-                        btnSeleccionarTodos.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                        btnSeleccionarTodos.classList.add('bg-utn-blue-darker', 'hover:bg-indigo-700');
                     }
                 }
             });

@@ -24,8 +24,8 @@
                     <p class="text-sm text-gray-600">Alumnos Sin Asignar</p>
                     <p class="text-2xl font-bold text-gray-800">{{ $alumnosSinAsignar }}</p>
                 </div>
-                <div class="bg-blue-100 p-3 rounded-full">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-utn-blue/10 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
                 </div>
@@ -84,16 +84,16 @@
         <div class="bg-white rounded-lg shadow p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">Opciones de Asignación</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Distribuir por Carrera -->
+                <!-- Agrupar por Carrera -->
                 <div class="flex items-start gap-3">
-                    <input type="checkbox" name="distribuir_por_carrera" id="distribuir_por_carrera" value="1"
+                    <input type="checkbox" name="agrupar_por_carrera" id="agrupar_por_carrera" value="1"
                         class="mt-1 rounded border-gray-300 text-green-600 focus:ring-green-500">
                     <div>
-                        <label for="distribuir_por_carrera" class="font-medium text-gray-700 cursor-pointer">
-                            Distribuir equitativamente por carrera
+                        <label for="agrupar_por_carrera" class="font-medium text-gray-700 cursor-pointer">
+                            Agrupar por carrera
                         </label>
                         <p class="text-sm text-gray-500">
-                            Asegura que cada comisión tenga representación de todas las carreras en proporción equitativa.
+                            Prioriza que los alumnos de una misma carrera queden juntos en la misma comisión. Si quedan cupos, se completa con otras carreras.
                         </p>
                     </div>
                 </div>
@@ -122,7 +122,7 @@
                 <div class="flex flex-wrap gap-2">
                     @foreach($alumnosPorCarrera as $espId => $info)
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm
-                        {{ $espId ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800' }}">
+                        {{ $espId ? 'bg-utn-blue/10 text-utn-dark' : 'bg-gray-100 text-gray-800' }}">
                         {{ $info['nombre'] }}: <strong class="ml-1">{{ $info['cantidad'] }}</strong>
                     </span>
                     @endforeach
@@ -137,7 +137,7 @@
                 <div class="flex items-center justify-between">
                     <h2 class="text-lg font-semibold text-gray-800">Seleccionar Comisiones</h2>
                     <div class="flex items-center space-x-2">
-                        <button type="button" id="selectAll" class="text-sm text-blue-600 hover:text-blue-800">
+                        <button type="button" id="selectAll" class="text-sm text-utn-blue-dark hover:text-utn-blue-dark">
                             Seleccionar todas
                         </button>
                         <span class="text-gray-300">|</span>
@@ -181,7 +181,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 @foreach($comision->materias->take(2) as $materia)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 mr-1 mb-1">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-utn-blue/10 text-utn-dark mr-1 mb-1">
                                     {{ $materia->nombre }}
                                 </span>
                                 @endforeach
@@ -191,7 +191,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 @if($comision->turno)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ strtolower($comision->turno) === 'mañana' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' }}">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ strtolower($comision->turno) === 'mañana' ? 'bg-yellow-100 text-yellow-800' : 'bg-utn-blue/10 text-utn-blue-dark' }}">
                                         {{ $comision->turno }}
                                     </span>
                                 @else
@@ -210,15 +210,20 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <span class="text-sm font-medium {{ $comision->cupos_disponibles > 10 ? 'text-green-600' : ($comision->cupos_disponibles > 0 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        {{ $comision->cupos_disponibles }} disponibles
-                                    </span>
-                                    <span class="text-sm text-gray-500 ml-1">({{ $comision->cupo_real }}/{{ $comision->cupo_maximo }})</span>
-                                </div>
-                                <div class="w-24 bg-gray-200 rounded-full h-2 mt-1">
-                                    <div class="bg-green-600 h-2 rounded-full" style="width: {{ min($comision->porcentaje_ocupacion, 100) }}%"></div>
-                                </div>
+                                @if(is_null($comision->cupos_disponibles))
+                                    <span class="text-sm text-gray-400">Sin limite</span>
+                                    <span class="text-sm text-gray-500 ml-1">({{ $comision->cupo_real }} inscriptos)</span>
+                                @else
+                                    <div class="flex items-center">
+                                        <span class="text-sm font-medium {{ $comision->cupos_disponibles > 10 ? 'text-green-600' : ($comision->cupos_disponibles > 0 ? 'text-yellow-600' : 'text-red-600') }}">
+                                            {{ $comision->cupos_disponibles }} disponibles
+                                        </span>
+                                        <span class="text-sm text-gray-500 ml-1">({{ $comision->cupo_real }}/{{ $comision->cupo_total }})</span>
+                                    </div>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2 mt-1">
+                                        <div class="bg-green-700 h-2 rounded-full" style="width: {{ min($comision->porcentaje_ocupacion, 100) }}%"></div>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                         @endforeach
@@ -238,15 +243,19 @@
 
         <!-- Botón de acción -->
         @if($comisiones->count() > 0)
-        <div class="flex justify-end space-x-4">
+        <div class="flex justify-end space-x-4 items-center">
             <span id="selectionCount" class="text-gray-600 py-2">0 comisiones seleccionadas</span>
             <button type="submit" id="btnPreview" disabled
-                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition duration-200 flex items-center shadow-md">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="bg-green-700 hover:bg-green-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition duration-200 flex items-center shadow-md">
+                <svg id="btnPreviewIcon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                 </svg>
-                Vista Previa de Asignación
+                <svg id="btnPreviewSpinner" class="hidden animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="btnPreviewText">Vista Previa de Asignación</span>
             </button>
         </div>
         @endif
@@ -295,5 +304,14 @@
         cb.checked = !cb.checked;
         cb.dispatchEvent(new Event('change'));
     }
+
+    // Spinner al enviar formulario
+    document.getElementById('formAsignacion').addEventListener('submit', function() {
+        const btn = document.getElementById('btnPreview');
+        btn.disabled = true;
+        document.getElementById('btnPreviewIcon').classList.add('hidden');
+        document.getElementById('btnPreviewSpinner').classList.remove('hidden');
+        document.getElementById('btnPreviewText').textContent = 'Calculando asignación...';
+    });
 </script>
 @endsection

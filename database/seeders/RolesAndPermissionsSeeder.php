@@ -64,6 +64,11 @@ class RolesAndPermissionsSeeder extends Seeder
 
             ['nombre' => 'Generar Difusiones', 'slug' => 'difusiones.generar', 'descripcion' => 'Puede generar difusiones por mail'],
             ['nombre' => 'Generar Difusiones por Comisión', 'slug' => 'difusiones.generar-comision', 'descripcion' => 'Puede generar difusiones por mail para los estudiantes de una comisión'],
+            // Roles
+            ['nombre' => 'Gestionar roles', 'slug' => 'roles.gestionar', 'descripcion' => 'Puede gestionar roles y permisos'],
+
+            // Acceso rápido
+            ['nombre' => 'Solicitar cambio de comisión', 'slug' => 'solicitud-cambio.ver', 'descripcion' => 'Puede solicitar cambio de comisión para alumnos desde el acceso rápido'],
         ];
 
         $permissions = [];
@@ -125,6 +130,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'evaluaciones.ver', 'evaluaciones.crear', 'evaluaciones.editar',
             'reportes.ver', 'reportes.generar',
             'difusiones.generar-comision',
+            'solicitud-cambio.ver',
         ];
         $coordinadorPermIds = collect($permissions)->whereIn('slug', $coordinadorPerms)->pluck('id')->toArray();
         $roles['coordinador']->permissions()->attach($coordinadorPermIds);
@@ -137,6 +143,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'inscripciones.ver',
             'reportes.ver',
             'difusiones.generar-comision',
+            'solicitud-cambio.ver',
         ];
         $docentePermIds = collect($permissions)->whereIn('slug', $docentePerms)->pluck('id')->toArray();
         $roles['docente']->permissions()->attach($docentePermIds);

@@ -8,15 +8,18 @@ Sistema de gestión para el Curso de Ingreso de la Universidad Tecnológica Naci
 
 - Docker 20.10+
 - Docker Compose 2.0+
+- Git
 
-## Instalación
+## Instalación desde cero
 
 ### 1. Clonar repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/paicat.git
-cd paicat
+git clone https://github.com/FranciscoMontiron/PAICAT.git
+cd PAICAT
 ```
+
+> El repositorio ya incluye `database/data/Datos Sysacad.xlsx` (datos maestros de países, provincias y escuelas). No es necesario descargarlo por separado.
 
 ### 2. Descargar archivo de alumnos
 
@@ -26,26 +29,56 @@ Descargar el archivo `alumnos.sql` desde el Drive del proyecto y colocarlo en:
 bases_externas/alumnos.sql
 ```
 
-### 3. Configurar e iniciar
+> Sin este archivo el sistema funciona, pero no tendrá datos de alumnos para inscribir.
+
+### 3. Configurar el entorno
 
 ```bash
-# Copiar configuración
 cp .env.example .env
+```
 
-# Levantar contenedores (Esperar luego de que termine la inicialización de la base de datos 2m aproximadamente, antes de seguir con los demas comandos)
+### 4. Levantar contenedores
+
+```bash
 docker compose up -d --build
+```
 
-# Instalar dependencias
+Esperar que MariaDB termine de inicializarse (~1-2 minutos). Podés verificar con:
+
+```bash
+docker compose logs mariadb
+# Cuando aparezca "mariadb ready for connections" podés continuar
+```
+
+### 5. Instalar dependencias PHP
+
+```bash
 docker compose exec app composer install
+```
 
-# Configurar base de datos (migraciones + seeders)
+### 6. Configurar base de datos
+
+```bash
 docker compose exec app php artisan paicat:setup --fresh --seed
+```
 
-# Importar alumnos desde archivo SQL
+Este comando hace todo automáticamente:
+- Genera la `APP_KEY`
+- Limpia caché
+- Crea todas las tablas (`migrate:fresh`)
+- Carga datos iniciales: roles, permisos, usuario admin, configuración del sistema y datos de Sysacad
+- Crea el enlace de storage
+- Optimiza la aplicación
+
+### 7. Importar datos de alumnos
+
+```bash
 docker compose exec app php artisan paicat:import-alumnos
 ```
 
-### 4. Acceder
+> Requiere `bases_externas/alumnos.sql` del paso 2. Si no tenés el archivo, podés saltar este paso.
+
+### 8. Acceder
 
 Abrir en el navegador: **http://localhost**
 
@@ -68,29 +101,49 @@ Abrir en el navegador: **http://localhost**
 | Usuario  | `paicat`    |
 | Password | `paicat`    |
 
+## Datos cargados automáticamente por el seeder
+
+| Dato | Fuente |
+|------|--------|
+| Roles y permisos del sistema | `RolesAndPermissionsSeeder` |
+| Usuario admin | `CreateAdminUserSeeder` |
+| Variables de configuración del sistema | `ConfiguracionSeeder` |
+| Países, provincias, escuelas (Sysacad) | `SysacadDataSeeder` + `database/data/Datos Sysacad.xlsx` |
+
+## Datos NO recuperables sin backup de producción
+
+Los siguientes datos no tienen seeder y se pierden al hacer `migrate:fresh`:
+
+- Municipios, aulas y comisiones
+- Inscripciones y cursadas
+- Docentes y alumnos cargados manualmente
+
 ## Comandos Útiles
 
 ```bash
-# Acceder al contenedor
+# Acceder al contenedor de la app
 docker compose exec app bash
 
-# Limpiar cache
-docker compose exec app php artisan cache:clear
-
-# Limpiar cache, routes y config
+# Limpiar caché de config, rutas y vistas
 docker compose exec app php artisan optimize:clear
 
-# Resetear base de datos completamente
+# Resetear base de datos completamente (borra todo y re-seedea)
 docker compose exec app php artisan paicat:setup --fresh --seed
 
 # Re-importar alumnos
 docker compose exec app php artisan paicat:import-alumnos
 
-# Ver logs
+# Importar alumnos desde otro archivo
+docker compose exec app php artisan paicat:import-alumnos --file=bases_externas/otro_archivo.sql
+
+# Ver logs de la app
 docker compose logs -f app
 
 # Detener contenedores
 docker compose down
+
+# Detener y borrar volúmenes (borra la base de datos)
+docker compose down -v
 ```
 
 ## Estructura de Contenedores

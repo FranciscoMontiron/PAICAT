@@ -5,8 +5,8 @@
 
     {{-- Header --}}
     <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900">Gestión de Evaluaciones</h1>
-        <p class="text-gray-600 mt-1">Selecciona una comisión para gestionar sus evaluaciones y calificaciones</p>
+        <h1 class="text-3xl font-bold text-gray-900">Evaluaciones</h1>
+        <p class="text-gray-600 mt-1">Seleccion&aacute; una comisi&oacute;n para gestionar evaluaciones y calificaciones</p>
     </div>
 
     {{-- Mensajes --}}
@@ -30,29 +30,35 @@
     <div class="bg-white shadow-md rounded-lg p-4 mb-6">
         <form action="{{ route('evaluaciones.index') }}" method="GET" class="flex flex-wrap gap-4 items-end">
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Buscar comisión</label>
-                <input type="text" name="buscar" value="{{ request('buscar') }}"
-                       placeholder="Nombre o código..."
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                <div class="relative">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" name="buscar" value="{{ request('buscar') }}"
+                           placeholder="Nombre o c&oacute;digo de comisi&oacute;n..."
+                           class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
+                </div>
             </div>
-            <div class="w-32">
+            <div class="w-28">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Año</label>
-                <select name="anio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+                <select name="anio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todos</option>
-                    @for($y = date('Y'); $y >= date('Y') - 3; $y--)
-                        <option value="{{ $y }}" {{ request('anio', date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
-                    @endfor
+                    @foreach($aniosDisponibles as $anio)
+                        <option value="{{ $anio }}" {{ request('anio', date('Y')) == $anio ? 'selected' : '' }}>{{ $anio }}</option>
+                    @endforeach
                 </select>
             </div>
-            <div class="w-40">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Periodo</label>
-                <select name="periodo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue focus:border-transparent">
+            <div class="w-36">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Período</label>
+                <select name="periodo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-utn-blue-dark focus:border-transparent">
                     <option value="">Todos</option>
-                    <option value="Intensivo" {{ request('periodo') == 'Intensivo' ? 'selected' : '' }}>Intensivo</option>
-                    <option value="Extensivo" {{ request('periodo') == 'Extensivo' ? 'selected' : '' }}>Extensivo</option>
+                    @foreach(\App\Models\Comision::getTiposIngreso() as $clave => $label)
+                        <option value="{{ $label }}" {{ request('periodo') == $label ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
-            <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-blue-800 transition-colors">
+            <button type="submit" class="px-4 py-2 bg-utn-blue text-white rounded-lg hover:bg-utn-dark transition-colors">
                 Filtrar
             </button>
             @if(request()->hasAny(['buscar', 'anio', 'periodo']))
@@ -63,96 +69,77 @@
         </form>
     </div>
 
-    {{-- Grid de Comisiones --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @forelse($comisiones as $comision)
-            @php
-                $evaluacionesCount = $comision->evaluaciones->count();
-                $materiasCount = $comision->materias->count();
-                $alumnosCount = $comision->inscripciones()->whereIn('estado', ['inscripto', 'confirmado'])->count();
-            @endphp
-            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-                {{-- Header de la comisión --}}
-                <div class="bg-gradient-to-r from-utn-blue to-blue-700 px-5 py-4">
-                    <h3 class="text-lg font-bold text-white">{{ $comision->nombre }}</h3>
-                    <div class="flex items-center gap-3 mt-1 text-blue-100 text-sm">
-                        <span>{{ $comision->periodo }}</span>
-                        <span>•</span>
-                        <span>{{ $comision->anio }}</span>
-                        @if($comision->turno)
-                            <span>•</span>
-                            <span class="capitalize">{{ $comision->turno }}</span>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Estadísticas --}}
-                <div class="grid grid-cols-3 divide-x divide-gray-100 bg-gray-50">
-                    <div class="p-3 text-center">
-                        <p class="text-2xl font-bold text-gray-800">{{ $alumnosCount }}</p>
-                        <p class="text-xs text-gray-500">Alumnos</p>
-                    </div>
-                    <div class="p-3 text-center">
-                        <p class="text-2xl font-bold text-gray-800">{{ $materiasCount }}</p>
-                        <p class="text-xs text-gray-500">Materias</p>
-                    </div>
-                    <div class="p-3 text-center">
-                        <p class="text-2xl font-bold text-gray-800">{{ $evaluacionesCount }}</p>
-                        <p class="text-xs text-gray-500">Evaluaciones</p>
-                    </div>
-                </div>
-
-                {{-- Materias con evaluaciones --}}
-                <div class="p-4">
-                    @if($comision->materias->count() > 0)
-                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Materias</p>
-                        <div class="flex flex-wrap gap-1.5">
-                            @foreach($comision->materias->take(4) as $materia)
-                                @php
-                                    $evalsMateria = $comision->evaluaciones->where('materia_id', $materia->id)->count();
-                                @endphp
-                                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-700">
-                                    {{ Str::limit($materia->nombre, 15) }}
-                                    @if($evalsMateria > 0)
-                                        <span class="bg-purple-200 text-purple-800 px-1.5 rounded-full text-[10px]">{{ $evalsMateria }}</span>
-                                    @endif
-                                </span>
-                            @endforeach
-                            @if($comision->materias->count() > 4)
-                                <span class="text-xs text-gray-400">+{{ $comision->materias->count() - 4 }} más</span>
-                            @endif
-                        </div>
-                    @else
-                        <p class="text-sm text-gray-400 italic">Sin materias asignadas</p>
-                    @endif
-                </div>
-
-                {{-- Acciones --}}
-                <div class="px-4 pb-4 flex gap-2">
-                    <a href="{{ route('evaluaciones.comision', $comision) }}"
-                       class="flex-1 text-center px-3 py-2 bg-utn-blue text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition-colors">
-                        Ver Evaluaciones
-                    </a>
-                    <a href="{{ route('evaluaciones.notas.index', $comision) }}"
-                       class="flex-1 text-center px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                        Ver Notas
-                    </a>
-                </div>
-            </div>
-        @empty
-            <div class="col-span-full">
-                <div class="bg-white rounded-xl shadow-md p-12 text-center">
-                    <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                    </svg>
-                    <h3 class="mt-4 text-lg font-medium text-gray-900">No hay comisiones</h3>
-                    <p class="mt-2 text-gray-500">No se encontraron comisiones con los filtros seleccionados.</p>
-                </div>
-            </div>
-        @endforelse
+    {{-- Tabla de Comisiones --}}
+    <div class="bg-white shadow-md rounded-xl overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Comisi&oacute;n</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Periodo</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Alumnos</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Materias</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Evaluaciones</th>
+                    <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @forelse($comisiones as $comision)
+                    @php
+                        $evaluacionesCount = $comision->evaluaciones->count();
+                        $materiasCount = $comision->materias->count();
+                        $alumnosCount = $comision->inscripciones()->whereIn('estado', ['inscripto', 'confirmado'])->count();
+                    @endphp
+                    <tr class="hover:bg-gray-50 transition-colors cursor-pointer group" onclick="window.location='{{ route('evaluaciones.comision', $comision) }}'">
+                        <td class="px-5 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-utn-blue/10 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900 group-hover:text-utn-blue-dark transition-colors">{{ $comision->nombre }}</p>
+                                    <p class="text-xs text-gray-500">{{ $comision->codigo ?? '' }} {{ $comision->turno ? '&bull; ' . ucfirst($comision->turno) : '' }} {{ $comision->modalidad ? '&bull; ' . $comision->modalidad : '' }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-utn-blue/10 text-utn-blue-dark">
+                                {{ $comision->periodo }} {{ $comision->anio }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="text-sm font-semibold text-gray-700">{{ $alumnosCount }}</span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="text-sm font-semibold text-gray-700">{{ $materiasCount }}</span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="text-sm font-semibold {{ $evaluacionesCount > 0 ? 'text-green-600' : 'text-gray-400' }}">{{ $evaluacionesCount }}</span>
+                        </td>
+                        <td class="px-5 py-4 text-right">
+                            <span class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-utn-blue-dark opacity-0 group-hover:opacity-100 transition-opacity">
+                                Abrir
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </span>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-5 py-16 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                            <p class="mt-3 text-gray-500">No se encontraron comisiones con los filtros seleccionados.</p>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
-    {{-- Paginación --}}
     @if($comisiones->hasPages())
     <div class="mt-6">
         {{ $comisiones->withQueryString()->links() }}

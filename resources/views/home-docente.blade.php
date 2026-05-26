@@ -6,14 +6,14 @@
 <div class="space-y-6">
     {{-- Bienvenida --}}
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="bg-gradient-to-r from-green-600 to-green-700 p-6">
+        <div class="bg-gradient-to-r from-utn-dark to-utn-dark-light p-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 class="text-2xl font-bold text-white">
                         Bienvenido, {{ auth()->user()->nombre ?? 'Docente' }}
                     </h1>
                     <p class="text-white/80 mt-1">
-                        Panel Docente - Curso de Ingreso UTN FRLP
+                        Panel Docente - Curso de Ingreso UTN {{ \App\Services\ConfiguracionService::get('sigla_institucion', 'FRLP') }}
                     </p>
                 </div>
                 <div class="mt-4 md:mt-0 text-white/70 text-sm">
@@ -21,7 +21,7 @@
                 </div>
             </div>
         </div>
-        <div class="h-1 bg-utn-orange"></div>
+        <div class="h-1 bg-utn-blue"></div>
     </div>
 
     {{-- Alertas --}}
@@ -61,10 +61,10 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-500 uppercase">Mis Comisiones</p>
-                    <p class="text-2xl font-bold text-green-600 mt-1">{{ $stats['mis_comisiones'] }}</p>
+                    <p class="text-2xl font-bold text-utn-dark-lighter mt-1">{{ $stats['mis_comisiones'] }}</p>
                 </div>
                 <div class="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-utn-dark-lighter" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                 </div>
@@ -75,10 +75,10 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-500 uppercase">Mis Alumnos</p>
-                    <p class="text-2xl font-bold text-utn-blue mt-1">{{ $stats['mis_alumnos'] }}</p>
+                    <p class="text-2xl font-bold text-utn-blue-dark mt-1">{{ $stats['mis_alumnos'] }}</p>
                 </div>
                 <div class="w-10 h-10 bg-utn-blue/10 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-utn-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
                 </div>
@@ -89,10 +89,10 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-500 uppercase">Asistencias Hoy</p>
-                    <p class="text-2xl font-bold text-utn-orange mt-1">{{ $stats['asistencias_hoy'] }}</p>
+                    <p class="text-2xl font-bold text-utn-blue-dark mt-1">{{ $stats['asistencias_hoy'] }}</p>
                 </div>
-                <div class="w-10 h-10 bg-utn-orange/10 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-utn-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 bg-utn-blue/10 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                     </svg>
                 </div>
@@ -102,7 +102,7 @@
 
     {{-- Mis Comisiones - Acceso rápido --}}
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="bg-gradient-to-r from-green-500 to-green-600 px-5 py-3">
+        <div class="bg-gradient-to-r from-utn-dark to-utn-dark-light px-5 py-3">
             <h2 class="text-lg font-semibold text-white flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -117,12 +117,12 @@
                     @php
                         $esPresencial = strtolower($comision->modalidad ?? '') === 'presencial';
                     @endphp
-                    <div class="border rounded-lg p-4 {{ $esPresencial ? 'border-gray-200 hover:border-green-300' : 'border-gray-200 bg-gray-50' }} hover:shadow-md transition">
+                    <div class="border rounded-lg p-4 {{ $esPresencial ? 'border-gray-200 hover:border-utn-blue' : 'border-gray-200 bg-gray-50' }} hover:shadow-md transition">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-lg font-bold text-gray-800">{{ $comision->codigo }}</h3>
                             <span class="px-2 py-1 text-xs font-semibold rounded
-                                @if($comision->modalidad === 'Presencial') bg-blue-100 text-blue-800
-                                @elseif($comision->modalidad === 'Semipresencial') bg-purple-100 text-purple-800
+                                @if($comision->modalidad === 'Presencial') bg-utn-blue/10 text-utn-blue-dark
+                                @elseif($comision->modalidad === 'Semipresencial') bg-utn-blue-dark/10 text-utn-dark
                                 @else bg-gray-100 text-gray-600
                                 @endif">
                                 {{ $comision->modalidad ?? 'Sin modalidad' }}
@@ -135,9 +135,9 @@
                         </div>
 
                         <div class="flex flex-col gap-2">
-                            @if($esPresencial)
-                                <a href="{{ route('asistencias.create', $comision) }}"
-                                   class="w-full bg-green-600 hover:bg-green-700 text-white text-center px-3 py-2 rounded-lg transition text-sm font-medium flex items-center justify-center gap-1">
+                            @if($esPresencial && auth()->user()->hasPermission('asistencias.ver'))
+                                <a href="{{ route('asistencias.comision.materias', $comision) }}"
+                                   class="w-full bg-utn-blue-darker hover:bg-utn-dark-light text-white text-center px-3 py-2 rounded-lg transition text-sm font-medium flex items-center justify-center gap-1">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                                     </svg>
@@ -146,11 +146,11 @@
                             @endif
                             <div class="flex gap-2">
                                 <a href="{{ route('comisiones.show', $comision) }}"
-                                   class="flex-1 bg-utn-blue hover:bg-utn-blue-dark text-white text-center px-3 py-2 rounded-lg transition text-sm font-medium">
+                                   class="flex-1 bg-utn-blue-darker hover:bg-utn-dark text-white text-center px-3 py-2 rounded-lg transition text-sm font-medium">
                                     Ver Comisión
                                 </a>
                                 <a href="{{ route('asistencias.historial', $comision) }}"
-                                   class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-800 text-center px-3 py-2 rounded-lg transition text-sm font-medium">
+                                   class="flex-1 bg-utn-blue/10 hover:bg-utn-blue/20 text-utn-blue-dark text-center px-3 py-2 rounded-lg transition text-sm font-medium">
                                     Historial
                                 </a>
                             </div>
@@ -174,7 +174,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- Acciones frecuentes --}}
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-utn-blue to-utn-blue-dark px-5 py-3">
+            <div class="bg-gradient-to-r from-utn-dark to-utn-dark-light px-5 py-3">
                 <h2 class="text-lg font-semibold text-white flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -184,46 +184,46 @@
             </div>
             <div class="p-4 space-y-2">
                 <a href="{{ route('asistencias.index') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
-                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 bg-utn-dark/10 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-utn-dark-lighter" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <p class="font-medium text-gray-900 group-hover:text-green-600">Asistencias</p>
+                        <p class="font-medium text-gray-900 group-hover:text-utn-dark-lighter">Asistencias</p>
                         <p class="text-xs text-gray-500">Registrar y consultar asistencias</p>
                     </div>
-                    <svg class="w-5 h-5 text-gray-300 group-hover:text-green-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-dark-lighter group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
                 </a>
 
                 <a href="{{ route('evaluaciones.index') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
-                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 bg-utn-blue/10 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <p class="font-medium text-gray-900 group-hover:text-blue-600">Evaluaciones</p>
+                        <p class="font-medium text-gray-900 group-hover:text-utn-blue-dark">Evaluaciones</p>
                         <p class="text-xs text-gray-500">Registrar y gestionar evaluaciones</p>
                     </div>
-                    <svg class="w-5 h-5 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue-dark group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
                 </a>
 
                 <a href="{{ route('inscripciones.index') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
-                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 bg-utn-blue-dark/10 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <p class="font-medium text-gray-900 group-hover:text-purple-600">Inscripciones</p>
+                        <p class="font-medium text-gray-900 group-hover:text-utn-blue-dark">Inscripciones</p>
                         <p class="text-xs text-gray-500">Consultar alumnos inscriptos</p>
                     </div>
-                    <svg class="w-5 h-5 text-gray-300 group-hover:text-purple-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-utn-blue-dark group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
                 </a>
@@ -244,6 +244,23 @@
                     </svg>
                 </a>
                 @endif
+
+                @if(auth()->user()->hasPermission('difusiones.generar'))
+                <a href="{{ route('difusiones.index') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900 group-hover:text-gray-700">Difusiones</p>
+                        <p class="text-xs text-gray-500">Generar nueva difusión por mail</p>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+                @endif
             </div>
         </div>
 
@@ -251,13 +268,13 @@
         <div class="space-y-6">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
                 <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 rounded-full bg-green-600 flex items-center justify-center">
+                    <div class="w-14 h-14 rounded-full bg-utn-blue-darker flex items-center justify-center">
                         <span class="text-xl font-bold text-white">{{ substr(auth()->user()->nombre ?? 'D', 0, 1) }}{{ substr(auth()->user()->apellido ?? '', 0, 1) }}</span>
                     </div>
                     <div>
                         <p class="font-medium text-gray-900 text-lg">{{ auth()->user()->nombre_completo ?? 'Docente' }}</p>
                         <p class="text-sm text-gray-500">{{ auth()->user()->email ?? '' }}</p>
-                        <p class="text-xs text-green-600 font-medium mt-1">Docente</p>
+                        <p class="text-xs text-utn-dark-lighter font-medium mt-1">Docente</p>
                     </div>
                 </div>
             </div>
@@ -276,7 +293,7 @@
                             <p class="text-xs text-gray-500">{{ $comision->turno }} - {{ $comision->modalidad }}</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-sm font-bold text-utn-blue">{{ $comision->alumnos_activos_count }}</p>
+                            <p class="text-sm font-bold text-utn-blue-dark">{{ $comision->alumnos_activos_count }}</p>
                             <p class="text-xs text-gray-500">alumnos</p>
                         </div>
                     </div>

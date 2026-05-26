@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Historial de Asistencias')
 @section('content')
+@php $asistenciaMinima = \App\Services\ConfiguracionService::get('asistencia_minima', 75); @endphp
 <div class="container mx-auto px-4 py-6">
     <!-- Header -->
     <div class="mb-6">
@@ -11,7 +12,7 @@
             </div>
             <div class="flex gap-3">
                 @if(auth()->user()->hasPermission('asistencias.crear'))
-                    <a href="{{ route('asistencias.create', $comision) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200">
+                    <a href="{{ route('asistencias.create', $comision) }}" class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg transition duration-200">
                         <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>
@@ -32,8 +33,8 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center">
-                <div class="bg-blue-100 rounded-full p-3 mr-4">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-utn-blue/10 rounded-full p-3 mr-4">
+                    <svg class="w-6 h-6 text-utn-blue-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
                 </div>
@@ -107,7 +108,7 @@
                         Alumnos en Riesgo de Deserción
                     </h3>
                     <p class="mt-1 text-sm text-red-700">
-                        Hay {{ $estadisticas->where('en_riesgo', true)->count() }} alumno(s) con menos del 75% de asistencia o con 3+ ausencias consecutivas.
+                        Hay {{ $estadisticas->where('en_riesgo', true)->count() }} alumno(s) con menos del {{ $asistenciaMinima }}% de asistencia o con 3+ ausencias consecutivas.
                     </p>
                 </div>
             </div>
@@ -162,7 +163,7 @@
                                             </svg>
                                         @endif
                                         <div>
-                                            <a href="{{ route('asistencias.alumno.historial', [$comision, $stat['inscripcion']]) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                                            <a href="{{ route('asistencias.alumno.historial', [$comision, $stat['inscripcion']]) }}" class="text-sm font-medium text-utn-blue-dark hover:text-utn-blue-dark hover:underline">
                                                 {{ $stat['inscripcion']->alumno->name }}
                                             </a>
                                             <div class="text-sm text-gray-500">
@@ -190,7 +191,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded bg-utn-blue/10 text-utn-blue-dark">
                                         {{ $stat['justificados'] }}
                                     </span>
                                 </td>
@@ -198,14 +199,14 @@
                                     <div class="flex items-center justify-center">
                                         <div class="w-16">
                                             <div class="text-sm font-bold
-                                                @if($stat['porcentaje'] >= 75) text-green-600
+                                                @if($stat['porcentaje'] >= $asistenciaMinima) text-green-600
                                                 @elseif($stat['porcentaje'] >= 50) text-yellow-600
                                                 @else text-red-600 @endif">
                                                 {{ $stat['porcentaje'] }}%
                                             </div>
                                             <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
                                                 <div class="h-1.5 rounded-full
-                                                    @if($stat['porcentaje'] >= 75) bg-green-600
+                                                    @if($stat['porcentaje'] >= $asistenciaMinima) bg-green-700
                                                     @elseif($stat['porcentaje'] >= 50) bg-yellow-600
                                                     @else bg-red-600 @endif"
                                                     style="width: {{ $stat['porcentaje'] }}%"></div>
@@ -238,7 +239,7 @@
                 <p class="mt-2 text-sm text-gray-500">Aún no se ha registrado ninguna asistencia para esta comisión.</p>
                 @if(auth()->user()->hasPermission('asistencias.crear'))
                     <div class="mt-6">
-                        <a href="{{ route('asistencias.create', $comision) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                        <a href="{{ route('asistencias.create', $comision) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-800">
                             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
@@ -250,23 +251,100 @@
         @endif
     </div>
 
+    <!-- Clases Registradas -->
+    @if(isset($fechasClases) && $fechasClases->count() > 0)
+    <div class="bg-white rounded-lg shadow overflow-hidden mt-6">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800">Clases Registradas</h2>
+                <p class="text-sm text-gray-500 mt-1">{{ $fechasClases->count() }} clase(s) en el historial</p>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materia</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Presentes</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ausentes</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tardanzas</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Justificados</th>
+                        @if(auth()->user()->hasPermission('asistencias.editar'))
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        @endif
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach($fechasClases as $clase)
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <p class="text-sm font-semibold text-gray-900">{{ \Carbon\Carbon::parse($clase->fecha)->format('d/m/Y') }}</p>
+                            <p class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($clase->fecha)->isoFormat('dddd') }}</p>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            @if($clase->materia)
+                                {{ $clase->materia->nombre }}
+                            @else
+                                <span class="text-gray-400 italic">General</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">
+                                {{ $clase->presentes }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800">
+                                {{ $clase->ausentes }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                                {{ $clase->tardanzas }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                                {{ $clase->justificados }}
+                            </span>
+                        </td>
+                        @if(auth()->user()->hasPermission('asistencias.editar'))
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <a href="{{ route('asistencias.edit', [$comision, $clase->fecha]) }}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-xs font-semibold rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Editar
+                            </a>
+                        </td>
+                        @endif
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
     <!-- Leyenda -->
     <div class="bg-white rounded-lg shadow p-6 mt-6">
         <h3 class="text-sm font-semibold text-gray-800 mb-3">Leyenda</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
                 <p class="text-gray-700"><span class="font-semibold">% Asistencia:</span> (Presentes + Tardanzas + Justificados) / Total Clases</p>
-                <p class="text-gray-700 mt-2"><span class="font-semibold">En Riesgo:</span> Menos del 75% de asistencia o 3+ ausencias consecutivas</p>
+                <p class="text-gray-700 mt-2"><span class="font-semibold">En Riesgo:</span> Menos del {{ $asistenciaMinima }}% de asistencia o 3+ ausencias consecutivas</p>
             </div>
             <div>
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center">
-                        <span class="w-3 h-3 bg-green-600 rounded-full mr-2"></span>
-                        <span class="text-gray-700">≥75% Asistencia</span>
+                        <span class="w-3 h-3 bg-green-700 rounded-full mr-2"></span>
+                        <span class="text-gray-700">≥{{ $asistenciaMinima }}% Asistencia</span>
                     </div>
                     <div class="flex items-center">
                         <span class="w-3 h-3 bg-yellow-600 rounded-full mr-2"></span>
-                        <span class="text-gray-700">50-74% Asistencia</span>
+                        <span class="text-gray-700">50-{{ $asistenciaMinima - 1 }}% Asistencia</span>
                     </div>
                     <div class="flex items-center">
                         <span class="w-3 h-3 bg-red-600 rounded-full mr-2"></span>
