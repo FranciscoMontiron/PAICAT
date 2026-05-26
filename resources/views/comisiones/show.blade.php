@@ -2,6 +2,19 @@
 @section('title', 'Detalle de Comisión')
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Alertas -->
+    @if(session('success'))
+    <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+        {{ session('success') }}
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        {{ session('error') }}
+    </div>
+    @endif
+
     <!-- Header -->
     <div class="mb-6">
         <div class="flex items-center justify-between">
@@ -164,16 +177,27 @@
                         <h2 class="text-xl font-bold text-gray-800">Alumnos Inscritos</h2>
                         <span class="text-sm text-gray-600">{{ $comision->inscripciones->count() }} alumnos</span>
                     </div>
-                    @if(auth()->user()->hasPermission('comisiones.editar') && $comision->cupos_disponibles > 0)
-                    <button onclick="document.getElementById('modal-agregar-alumno').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center text-sm">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
-                        </svg>
-                        Agregar Alumno
-                    </button>
-                    @elseif(auth()->user()->hasPermission('comisiones.editar') && $comision->cupos_disponibles <= 0)
-                    <span class="text-sm text-red-600 font-medium">Sin cupos disponibles</span>
-                    @endif
+                    <div class="flex items-center space-x-2">
+                        @if(auth()->user()->hasPermission('difusiones.generar-comision') && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('coordinador') || $comision->docente_id === auth()->id() || $comision->docentesActivos()->where('user_id', auth()->id())->exists()))
+                        <button onclick="document.getElementById('modal-difundir-comision').classList.remove('hidden')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center text-sm shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            Enviar Comunicado
+                        </button>
+                        @endif
+
+                        @if(auth()->user()->hasPermission('comisiones.editar') && $comision->cupos_disponibles > 0)
+                        <button onclick="document.getElementById('modal-agregar-alumno').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center text-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                            </svg>
+                            Agregar Alumno
+                        </button>
+                        @elseif(auth()->user()->hasPermission('comisiones.editar') && $comision->cupos_disponibles <= 0)
+                        <span class="text-sm text-red-600 font-medium">Sin cupos disponibles</span>
+                        @endif
+                    </div>
                 </div>
                 <div class="p-6">
                     @if($comision->inscripciones->count() > 0)
@@ -517,6 +541,52 @@
         }, 300);
     }
 </script>
+@endif
+
+<!-- Modal Enviar Comunicado (Difundir) -->
+@if(auth()->user()->hasPermission('difusiones.generar-comision') && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('coordinador') || $comision->docente_id === auth()->id() || $comision->docentesActivos()->where('user_id', auth()->id())->exists()))
+<div id="modal-difundir-comision" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+    <div class="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900">Enviar Comunicado a {{ $comision->nombre }}</h3>
+            <button onclick="document.getElementById('modal-difundir-comision').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <form action="{{ route('comisiones.difundir', $comision) }}" method="POST" class="space-y-4">
+            @csrf
+            
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-3 text-sm text-blue-900 rounded-r">
+                El mail se enviará a los <strong>{{ $comision->inscripciones()->whereIn('estado', ['inscripto', 'confirmado', 'aprobado'])->count() }}</strong> alumnos activos inscriptos en esta comisión.
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Asunto</label>
+                <input type="text" name="asunto" required placeholder="Ej: Reprogramación de clase / Información importante"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
+                <textarea name="mensaje" rows="6" required placeholder="Escriba el cuerpo del mail aquí..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                <button type="button" onclick="document.getElementById('modal-difundir-comision').classList.add('hidden')"
+                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-sm transition">
+                    Enviar Comunicado
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 @endif
 @endsection
 

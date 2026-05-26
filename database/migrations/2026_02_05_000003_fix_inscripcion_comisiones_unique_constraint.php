@@ -14,6 +14,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('inscripcion_comisiones', function (Blueprint $table) {
+            // Asegurar índice individual en academico_dato_id para no romper FKs
+            $table->index('academico_dato_id', 'inscripcion_comisiones_academico_dato_id_index');
             // Eliminar el constraint único obsoleto (academico_dato_id, comision_id)
             $table->dropUnique('inscripcion_comisiones_academico_dato_id_comision_id_unique');
         });

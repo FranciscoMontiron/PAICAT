@@ -12,6 +12,7 @@ use App\Http\Controllers\AsignacionAlumnosController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\AulaController;
+use App\Http\Controllers\DifusionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -273,4 +274,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/detectar-trueques', [App\Http\Controllers\SolicitudCambioController::class, 'detectarTrueques'])->name('detectar-trueques');
         Route::get('/comision/{comision}/cupos', [App\Http\Controllers\SolicitudCambioController::class, 'verificarCupos'])->name('verificar-cupos');
     });
+
+    // Módulo: Difusiones
+    Route::prefix('difusiones')->name('difusiones.')->middleware('auth')->group(function () {
+        Route::get('/', [App\Http\Controllers\DifusionController::class, 'index'])->name('index');
+        Route::post('/store', [App\Http\Controllers\DifusionController::class, 'create'])->middleware('permission:difusiones.generar')->name('create');
+    });
+
+    Route::post('/comisiones/{comision}/difundir', [App\Http\Controllers\DifusionController::class, 'createPorComision'])
+        ->middleware('permission:difusiones.generar-comision')
+        ->name('comisiones.difundir');
 }); // Cierre del middleware auth
