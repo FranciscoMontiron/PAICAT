@@ -101,6 +101,66 @@ Abrir en el navegador: **http://localhost**
 | Usuario  | `paicat`    |
 | Password | `paicat`    |
 
+---
+
+##  Configuración
+
+### Conexión a la base de datos de alumnos (`alumnos_utn`)
+
+> [!IMPORTANT]
+> La base de datos `alumnos_utn` es una BD externa de solo lectura que contiene los datos de los aspirantes (nombres, DNI, formulario de preinscripción, etc.). **Sin ella el sistema funciona**, pero no mostrará datos de alumnos en las inscripciones y el buscador de aspirantes estará deshabilitado.
+
+El sistema detecta automáticamente si la conexión está disponible y muestra un aviso descriptivo en pantalla en lugar de un error fatal cuando no lo está.
+
+#### Variables de entorno relevantes (`.env`)
+
+| Variable | Por defecto | Descripción |
+|---|---|---|
+| `DB_HOST_ALUMNOS` | hereda `DB_HOST` | Host del servidor de BD |
+| `DB_PORT_ALUMNOS` | hereda `DB_PORT` | Puerto del servidor |
+| `DB_DATABASE_ALUMNOS` | `alumnos_utn` | Nombre de la base de datos |
+| `DB_USERNAME_ALUMNOS` | hereda `DB_USERNAME` | Usuario con acceso a la BD |
+| `DB_PASSWORD_ALUMNOS` | hereda `DB_PASSWORD` | Contraseña del usuario |
+
+#### Escenarios de configuración
+
+**A) BD en el mismo servidor que PAICAT (configuración por defecto)**
+
+Si `alumnos_utn` está en el mismo MariaDB que la BD principal, no hace falta configurar nada extra. Solo asegurate de que `DB_DATABASE_ALUMNOS` esté definido en `.env`:
+
+```env
+DB_DATABASE_ALUMNOS=alumnos_utn
+```
+
+Las demás variables (`DB_HOST_ALUMNOS`, `DB_PORT_ALUMNOS`, etc.) se heredan automáticamente de la conexión principal.
+
+**B) BD en un servidor externo (integración con sistema de la facultad)**
+
+Configurá todas las variables en `.env` apuntando al servidor remoto:
+
+```env
+DB_HOST_ALUMNOS=192.168.1.100
+DB_PORT_ALUMNOS=3306
+DB_DATABASE_ALUMNOS=alumnos_utn
+DB_USERNAME_ALUMNOS=usuario_externo
+DB_PASSWORD_ALUMNOS=contraseña_externa
+```
+
+**C) Sin BD de alumnos (modo reducido)**
+
+Si no se configuran las variables o la BD no está disponible, el sistema opera con funcionalidad reducida:
+- Las páginas de inscripciones muestran un aviso amarillo con instrucciones.
+- El buscador de aspirantes devuelve un mensaje de error en lugar de resultados.
+- Las demás funciones (comisiones, notas, asistencia) no se ven afectadas.
+
+Para cargar datos de prueba una vez que la BD esté disponible:
+
+```bash
+docker compose exec app php artisan paicat:import-alumnos
+```
+
+---
+
 ## Datos cargados automáticamente por el seeder
 
 | Dato | Fuente |

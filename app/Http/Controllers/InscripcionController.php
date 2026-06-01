@@ -9,6 +9,7 @@ use App\Models\AlumnosUtn\Person;
 use App\Models\Cursada;
 use App\Models\Inscripcion;
 use App\Models\Trayectoria;
+use App\Services\AlumnosUtnService;
 use App\Services\DataNormalizationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,8 @@ class InscripcionController extends Controller
      */
     public function index(Request $request): View
     {
+        $alumnosUtnDisponible = AlumnosUtnService::isAvailable();
+
         $query = Inscripcion::query()
             ->with(['usuarioRegistro', 'usuarioValidacion'])
             ->orderBy('created_at', 'desc');
@@ -30,18 +33,20 @@ class InscripcionController extends Controller
         // Filtros
         if ($request->filled('buscar')) {
             $termino = $request->input('buscar');
-            // Buscar por datos del alumno en alumnos_utn
-            $personIds = Person::on('alumnos_utn')
-                ->where(function ($q) use ($termino) {
-                    $q->where('nombre', 'like', "%{$termino}%")
-                        ->orWhere('apellido', 'like', "%{$termino}%")
-                        ->orWhere('documento', 'like', "%{$termino}%")
-                        ->orWhere('email', 'like', "%{$termino}%");
-                })
-                ->pluck('id')
-                ->toArray();
+            if ($alumnosUtnDisponible) {
+                // Buscar por datos del alumno en alumnos_utn
+                $personIds = Person::on('alumnos_utn')
+                    ->where(function ($q) use ($termino) {
+                        $q->where('nombre', 'like', "%{$termino}%")
+                            ->orWhere('apellido', 'like', "%{$termino}%")
+                            ->orWhere('documento', 'like', "%{$termino}%")
+                            ->orWhere('email', 'like', "%{$termino}%");
+                    })
+                    ->pluck('id')
+                    ->toArray();
 
-            $query->whereIn('person_id', $personIds);
+                $query->whereIn('person_id', $personIds);
+            }
         }
 
         if ($request->filled('estado')) {
@@ -94,10 +99,13 @@ class InscripcionController extends Controller
 
         // Cargar datos de personas para cada inscripción
         $personIds = $inscripciones->pluck('person_id')->unique()->toArray();
-        $personas = Person::on('alumnos_utn')
-            ->whereIn('id', $personIds)
-            ->get()
-            ->keyBy('id');
+        $personas = collect();
+        if ($alumnosUtnDisponible && !empty($personIds)) {
+            $personas = Person::on('alumnos_utn')
+                ->whereIn('id', $personIds)
+                ->get()
+                ->keyBy('id');
+        }
 
         // Obtener especialidades para el filtro (conexión sysacad)
         $especialidades = DB::connection('sysacad')->table('sysacad_especialidades')
@@ -128,13 +136,17 @@ class InscripcionController extends Controller
             $aniosDisponibles = collect([date('Y')]);
         }
 
+        $alumnosUtnMensaje = $alumnosUtnDisponible ? null : AlumnosUtnService::getMensajeNoDisponible();
+
         return view('inscripciones.index', compact(
             'inscripciones',
             'personas',
             'especialidades',
             'turnos',
             'modalidades',
-            'aniosDisponibles'
+            'aniosDisponibles',
+            'alumnosUtnDisponible',
+            'alumnosUtnMensaje'
         ));
     }
 
@@ -159,18 +171,23 @@ class InscripcionController extends Controller
 
         // Si se pasa un person_id, precargar datos del alumno
         $personaSeleccionada = null;
-        if ($request->filled('person_id')) {
+        if ($request->filled('person_id') && AlumnosUtnService::isAvailable()) {
             $personaSeleccionada = Person::on('alumnos_utn')
                 ->with(['academicoDatos', 'secundariaDato', 'formularioDato'])
                 ->find($request->input('person_id'));
         }
+
+        $alumnosUtnDisponible = AlumnosUtnService::isAvailable();
+        $alumnosUtnMensaje = $alumnosUtnDisponible ? null : AlumnosUtnService::getMensajeNoDisponible();
 
         return view('inscripciones.create', compact(
             'especialidades',
             'turnos',
             'modalidades',
             'tiposIngreso',
-            'personaSeleccionada'
+            'personaSeleccionada',
+            'alumnosUtnDisponible',
+            'alumnosUtnMensaje'
         ));
     }
 
@@ -189,13 +206,15 @@ class InscripcionController extends Controller
                 ->with('error', 'Ya existe una inscripción activa para este alumno.');
         }
 
-        // Verificar que el alumno existe en alumnos_utn
-        $persona = Person::on('alumnos_utn')->find($data['person_id']);
-        if (!$persona) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'El alumno seleccionado no existe en el sistema.');
+        // Verificar que el alumno existe en alumnos_utn (solo si la BD está disponible)
+        if (AlumnosUtnService::isAvailable()) {
+            $persona = Person::on('alumnos_utn')->find($data['person_id']);
+            if (!$persona) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'El alumno seleccionado no existe en el sistema.');
+            }
         }
 
         // Normalizar datos antes de guardar
@@ -239,9 +258,12 @@ class InscripcionController extends Controller
         ]);
 
         // Cargar datos del alumno
-        $persona = Person::on('alumnos_utn')
-            ->with(['academicoDatos', 'secundariaDato', 'formularioDato'])
-            ->find($inscripcion->person_id);
+        $persona = null;
+        if (AlumnosUtnService::isAvailable()) {
+            $persona = Person::on('alumnos_utn')
+                ->with(['academicoDatos', 'secundariaDato', 'formularioDato'])
+                ->find($inscripcion->person_id);
+        }
 
         // Obtener especialidad (conexión sysacad)
         $especialidad = DB::connection('sysacad')->table('sysacad_especialidades')
@@ -428,9 +450,12 @@ class InscripcionController extends Controller
         }
 
         // Cargar datos del alumno
-        $persona = Person::on('alumnos_utn')
-            ->with(['academicoDatos', 'secundariaDato'])
-            ->find($inscripcion->person_id);
+        $persona = null;
+        if (AlumnosUtnService::isAvailable()) {
+            $persona = Person::on('alumnos_utn')
+                ->with(['academicoDatos', 'secundariaDato'])
+                ->find($inscripcion->person_id);
+        }
 
         // Obtener especialidades (conexión sysacad)
         $especialidades = DB::connection('sysacad')->table('sysacad_especialidades')
@@ -725,6 +750,14 @@ class InscripcionController extends Controller
             return response()->json([]);
         }
 
+        if (!AlumnosUtnService::isAvailable()) {
+            return response()->json([
+                'error' => true,
+                'mensaje' => 'No se encontró conexión con la base de datos de alumnos. '
+                    . AlumnosUtnService::getMensajeNoDisponible(),
+            ], 503);
+        }
+
         $personas = Person::on('alumnos_utn')
             ->where(function ($query) use ($termino) {
                 $query->where('nombre', 'like', "%{$termino}%")
@@ -753,6 +786,22 @@ class InscripcionController extends Controller
      */
     public function showImportar(Request $request): View
     {
+        if (!AlumnosUtnService::isAvailable()) {
+            $alumnosUtnMensaje = AlumnosUtnService::getMensajeNoDisponible();
+
+            return view('inscripciones.importar', [
+                'alumnosDisponibles' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25),
+                'especialidades' => collect(),
+                'turnos' => collect(),
+                'modalidades' => collect(),
+                'aniosDisponibles' => collect(),
+                'reinscripciones' => [],
+                'cantidadReinscripciones' => 0,
+                'alumnosUtnDisponible' => false,
+                'alumnosUtnMensaje' => $alumnosUtnMensaje,
+            ]);
+        }
+
         // Obtener alumnos de alumnos_utn que no tienen inscripción activa
         $inscripcionesActivas = Inscripcion::activas()
             ->pluck('person_id')
@@ -881,7 +930,7 @@ class InscripcionController extends Controller
             'aniosDisponibles',
             'reinscripciones',
             'cantidadReinscripciones'
-        ));
+        ) + ['alumnosUtnDisponible' => true, 'alumnosUtnMensaje' => null]);
     }
 
     /**

@@ -36,6 +36,16 @@ RUN echo '<Directory /var/www/html/public>\n\
 # Configurar directorio de trabajo
 WORKDIR /var/www/html
 
+# Crear directorios de storage y fijar permisos base para www-data
+# (el entrypoint los reaplica en cada inicio para cubrir volúmenes montados)
+RUN mkdir -p storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 # Copiar configuración PHP personalizada
 COPY php.ini /usr/local/etc/php/conf.d/custom.ini
 
