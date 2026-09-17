@@ -13,18 +13,32 @@ services:
       dockerfile: Dockerfile
     container_name: paicat_app
     ports:
-      - "80:80"
+      # Puerto configurable: en servidores compartidos el 80 puede estar ocupado.
+      - "${APP_PORT:-80}:80"
     volumes:
       - ./:/var/www/html:cached
     environment:
       - APP_ENV=production
       - APP_DEBUG=false
-      - DB_CONNECTION=mysql
+      - APP_URL=${APP_URL:-http://localhost}
+      # Conexión principal (config/database.php -> 'paicat')
+      - DB_CONNECTION=${DB_CONNECTION:-paicat}
       - DB_HOST=mariadb
       - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE:-paicat}
+      - DB_DATABASE_PAICAT=${DB_DATABASE_PAICAT:-paicat}
       - DB_USERNAME=${DB_USERNAME:-paicat}
       - DB_PASSWORD=${DB_PASSWORD}
+      # Conexión a la BD externa de alumnos (solo lectura).
+      # Si no se define, hereda de la conexión principal y el sistema
+      # opera en modo reducido.
+      - DB_HOST_ALUMNOS=${DB_HOST_ALUMNOS:-mariadb}
+      - DB_PORT_ALUMNOS=${DB_PORT_ALUMNOS:-3306}
+      - DB_DATABASE_ALUMNOS=${DB_DATABASE_ALUMNOS:-alumnos_utn}
+      - DB_USERNAME_ALUMNOS=${DB_USERNAME_ALUMNOS:-paicat}
+      - DB_PASSWORD_ALUMNOS=${DB_PASSWORD_ALUMNOS:-}
+      # Contraseña del usuario administrador inicial (CreateAdminUserSeeder)
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
     depends_on:
       mariadb:
         condition: service_healthy
@@ -45,6 +59,10 @@ services:
       MARIADB_COLLATION_SERVER: utf8mb4_unicode_ci
     volumes:
       - mariadb_data:/var/lib/mysql
+      # Crea la BD alumnos_utn local (escenario A). Si se usa una BD externa
+      # (escenario B) queda vacía y no molesta.
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init-alumnos.sql:ro
+      - ./docker/mariadb-custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
