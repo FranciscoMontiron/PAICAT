@@ -23,7 +23,8 @@ export default defineConfig({
     },
     build: {
         // Optimizar el build
-        manifest: true,
+        // Laravel lee public/build/manifest.json; con `true` Vite 6 lo escribe en .vite/
+        manifest: 'manifest.json',
         outDir: 'public/build',
         rollupOptions: {
             output: {
