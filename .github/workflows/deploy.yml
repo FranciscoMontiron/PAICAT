@@ -1,0 +1,29 @@
+name: Deploy
+
+# Despliega en el servidor del Ingreso FRLP cuando los tests de main pasan.
+# Corre en el runner self-hosted instalado en el servidor (~/actions-runner),
+# porque el servidor está detrás de la VPN y GitHub no puede llegar a él.
+on:
+  workflow_run:
+    workflows: ["Tests CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: [self-hosted, paicat-prod]
+    timeout-minutes: 20
+    steps:
+      - name: Deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd "$HOME/paicat"
+          git pull --ff-only "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" main
+          bash ./deploy.sh
